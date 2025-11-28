@@ -1,0 +1,182 @@
+import {
+  JD_ANALYSIS_PROMPT,
+  RESUME_GRADING_PROMPT,
+  COVER_LETTER_PROMPT,
+  INTERVIEW_PREP_PROMPT,
+  QA_SYSTEM_PROMPT,
+} from '../utils/prompts';
+import type { JobSummary, ResumeAnalysis, QAEntry } from '../types';
+import { generateId, decodeApiKey } from '../utils/helpers';
+import { useAppStore } from '../stores/appStore';
+
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+
+interface ClaudeMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// Get current AI config from store (works outside React components)
+function getAIConfig() {
+  const { settings } = useAppStore.getState();
+  return {
+    apiKey: decodeApiKey(settings.apiKey),
+    model: settings.model || 'claude-sonnet-4-5-20250514',
+  };
+}
+
+async function callClaude(
+  messages: ClaudeMessage[],
+  systemPrompt?: string,
+  overrideConfig?: { apiKey?: string; model?: string }
+): Promise<string> {
+  const config = getAIConfig();
+  const apiKey = overrideConfig?.apiKey || config.apiKey;
+  const model = overrideConfig?.model || config.model;
+
+  if (!apiKey) {
+    throw new Error('API key not configured. Please add your Claude API key in Settings.');
+  }
+
+  const response = await fetch(CLAUDE_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Claude API error: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+function extractJSON(text: string): string {
+  // Try to find JSON in the response
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return jsonMatch[0];
+  }
+  return text;
+}
+
+export async function analyzeJobDescription(
+  jdText: string
+): Promise<{ company: string; title: string; summary: JobSummary }> {
+  const prompt = JD_ANALYSIS_PROMPT.replace('{jdText}', jdText);
+
+  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+
+  return {
+    company: parsed.company || 'Unknown Company',
+    title: parsed.title || 'Unknown Position',
+    summary: {
+      shortDescription: parsed.shortDescription || '',
+      requirements: parsed.requirements || [],
+      niceToHaves: parsed.niceToHaves || [],
+      salary: parsed.salary || undefined,
+      jobType: parsed.jobType || 'unknown',
+      level: parsed.level || 'Mid',
+      keySkills: parsed.keySkills || [],
+    },
+  };
+}
+
+export async function gradeResume(
+  jdText: string,
+  resumeText: string
+): Promise<ResumeAnalysis> {
+  const prompt = RESUME_GRADING_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', resumeText);
+
+  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+
+  return {
+    grade: parsed.grade || 'N/A',
+    matchPercentage: parsed.matchPercentage || 0,
+    strengths: parsed.strengths || [],
+    gaps: parsed.gaps || [],
+    suggestions: parsed.suggestions || [],
+  };
+}
+
+export async function generateCoverLetter(
+  jdText: string,
+  resumeText: string
+): Promise<string> {
+  const prompt = COVER_LETTER_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', resumeText);
+
+  return await callClaude([{ role: 'user', content: prompt }]);
+}
+
+export async function generateInterviewPrep(
+  jdText: string,
+  resumeText: string
+): Promise<string> {
+  const prompt = INTERVIEW_PREP_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', resumeText);
+
+  return await callClaude([{ role: 'user', content: prompt }]);
+}
+
+export async function chatAboutJob(
+  jdText: string,
+  resumeText: string,
+  history: QAEntry[],
+  newQuestion: string
+): Promise<QAEntry> {
+  const systemPrompt = QA_SYSTEM_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', resumeText);
+
+  // Build message history
+  const messages: ClaudeMessage[] = [];
+  for (const entry of history) {
+    messages.push({ role: 'user', content: entry.question });
+    messages.push({ role: 'assistant', content: entry.answer });
+  }
+  messages.push({ role: 'user', content: newQuestion });
+
+  const answer = await callClaude(messages, systemPrompt);
+
+  return {
+    id: generateId(),
+    question: newQuestion,
+    answer,
+    timestamp: new Date(),
+  };
+}
+
+// testApiKey needs explicit params since it's used before settings are saved
+export async function testApiKey(apiKey: string, model: string): Promise<boolean> {
+  try {
+    await callClaude(
+      [{ role: 'user', content: 'Say "OK" if you can read this.' }],
+      undefined,
+      { apiKey, model }
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
