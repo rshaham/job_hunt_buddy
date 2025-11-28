@@ -166,7 +166,7 @@ export function PrepTab({ job }: PrepTabProps) {
   ];
 
   return (
-    <div className="flex flex-col h-[500px]">
+    <div className="flex flex-col h-full">
       {/* Generate Prep Button */}
       <div className="flex gap-2 mb-3">
         <Button

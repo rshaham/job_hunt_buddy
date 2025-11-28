@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import MDEditor from '@uiw/react-md-editor';
 import {
   Plus,
   Trash2,
@@ -100,7 +101,7 @@ const eventTypes = [
 ];
 
 export function NotesTab({ job }: NotesTabProps) {
-  const { updateJob } = useAppStore();
+  const { updateJob, settings } = useAppStore();
 
   // Notes state
   const [newNote, setNewNote] = useState('');
@@ -239,24 +240,27 @@ export function NotesTab({ job }: NotesTabProps) {
             ))}
           </div>
 
-          {/* Textarea with embedded button */}
-          <div className="relative p-3">
-            <textarea
+          {/* Markdown Editor */}
+          <div className="p-3" data-color-mode={settings.theme}>
+            <MDEditor
               value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Add a note..."
-              rows={3}
-              className="w-full pr-12 p-3 bg-slate-50 dark:bg-slate-900/50 border-0 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-sm placeholder:text-slate-400"
+              onChange={(val) => setNewNote(val || '')}
+              preview="edit"
+              height={150}
+              visibleDragbar={true}
+              hideToolbar={false}
             />
-            <button
-              type="button"
-              onClick={handleAddNote}
-              disabled={!newNote.trim()}
-              className="absolute right-5 bottom-5 p-2 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-              title="Add note"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            <div className="flex justify-end mt-3">
+              <button
+                type="button"
+                onClick={handleAddNote}
+                disabled={!newNote.trim()}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Note
+              </button>
+            </div>
           </div>
         </div>
 
