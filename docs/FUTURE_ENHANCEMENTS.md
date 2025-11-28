@@ -4,6 +4,35 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
+### Kanban Drag & Drop
+- Drag and drop job cards between status columns on the swim lane board
+- Visual feedback during drag operations
+- Reorder cards within columns
+
+### Interactive Resume Tailoring
+- Chat interface to iteratively refine resume for specific job
+- AI suggests initial edits based on JD analysis
+- AI asks follow-up questions about "missing" areas (experience gaps)
+- User provides more context, AI refines those sections to shine
+- Final tailored resume output
+
+### Cover Letter Chat
+- Chat interface to iteratively improve generated cover letter
+- Similar to resume tailoring - ask questions, refine, polish
+- Conversational refinement of tone, length, and focus
+
+### Replace Browser Prompts with Modals
+- Replace ugly browser `confirm()` dialogs (e.g., delete confirmation)
+- Replace `prompt()` inputs with styled modal components
+- Consistent UI throughout the app
+
+### Interviewer Profile Analysis
+- User pastes interviewer's LinkedIn profile info (manually copied)
+- AI analyzes their background, experience, and interests
+- Generates likely interview questions based on interviewer's expertise
+- User can add more context or search for additional info
+- Avoids legal/TOS issues by not scraping
+
 ### Browser Extension
 - One-click JD capture from job sites (LinkedIn, Indeed, Glassdoor, etc.)
 - Auto-populate job details without copy/paste
