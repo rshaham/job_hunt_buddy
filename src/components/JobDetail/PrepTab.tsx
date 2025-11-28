@@ -1,14 +1,68 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Trash2, Sparkles, AlertCircle } from 'lucide-react';
-import { Button, Textarea } from '../ui';
+import { Button } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep } from '../../services/ai';
 import { decodeApiKey } from '../../utils/helpers';
 import { format } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 import type { Job } from '../../types';
 
 interface PrepTabProps {
   job: Job;
+}
+
+// Markdown renderer component with proper styling
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <div className="text-sm text-slate-700 dark:text-slate-300">
+      <ReactMarkdown
+        components={{
+        h1: ({ children }) => (
+          <h1 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
+            {children}
+          </h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-base font-semibold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
+            {children}
+          </h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-sm font-semibold mt-3 mb-1.5 text-slate-700 dark:text-slate-300">
+            {children}
+          </h3>
+        ),
+        p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+        strong: ({ children }) => (
+          <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
+        ),
+        em: ({ children }) => <em className="italic">{children}</em>,
+        code: ({ children }) => (
+          <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono">
+            {children}
+          </code>
+        ),
+        pre: ({ children }) => (
+          <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto mb-3 text-xs">
+            {children}
+          </pre>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-slate-600 dark:text-slate-400">
+            {children}
+          </blockquote>
+        ),
+        hr: () => <hr className="my-4 border-slate-200 dark:border-slate-700" />,
+      }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 export function PrepTab({ job }: PrepTabProps) {
@@ -19,6 +73,7 @@ export function PrepTab({ job }: PrepTabProps) {
   const [error, setError] = useState('');
   const [prepMaterial, setPrepMaterial] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const apiKey = decodeApiKey(settings.apiKey);
   const resumeText = job.resumeText || settings.defaultResumeText;
@@ -26,6 +81,15 @@ export function PrepTab({ job }: PrepTabProps) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [job.qaHistory]);
+
+  // Auto-resize textarea
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+  };
 
   const handleSend = async () => {
     if (!question.trim()) return;
@@ -50,6 +114,10 @@ export function PrepTab({ job }: PrepTabProps) {
         qaHistory: [...job.qaHistory, newEntry],
       });
       setQuestion('');
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
     } finally {
@@ -129,28 +197,30 @@ export function PrepTab({ job }: PrepTabProps) {
 
       {/* Prep Material */}
       {prepMaterial && (
-        <div className="mb-3 p-3 bg-primary/5 rounded-lg max-h-48 overflow-y-auto">
-          <h4 className="text-xs font-medium text-primary uppercase mb-2">Interview Prep</h4>
-          <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-            {prepMaterial}
-          </div>
+        <div className="mb-3 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 max-h-64 overflow-y-auto">
+          <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />
+            Interview Prep
+          </h4>
+          <MarkdownContent content={prepMaterial} />
         </div>
       )}
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
         {job.qaHistory.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4">
             <p className="text-sm text-slate-500 mb-4">
               Ask questions about this job, get interview coaching, or practice responses.
             </p>
             <div className="space-y-2 w-full max-w-md">
-              <p className="text-xs text-slate-400 uppercase">Suggested questions:</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Suggested questions:</p>
               {suggestedQuestions.slice(0, 3).map((q, i) => (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => setQuestion(q)}
-                  className="w-full text-left text-sm p-2 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-colors"
+                  className="w-full text-left text-sm p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-colors"
                 >
                   {q}
                 </button>
@@ -160,22 +230,24 @@ export function PrepTab({ job }: PrepTabProps) {
         ) : (
           <>
             {job.qaHistory.map((entry) => (
-              <div key={entry.id} className="space-y-2">
-                {/* Question */}
+              <div key={entry.id} className="space-y-3">
+                {/* User Question */}
                 <div className="flex justify-end">
-                  <div className="max-w-[80%] p-2 bg-primary text-white rounded-lg rounded-br-none">
-                    <p className="text-sm">{entry.question}</p>
-                    <p className="text-xs opacity-70 mt-1">
+                  <div className="max-w-[85%]">
+                    <div className="p-3 bg-primary text-white rounded-2xl rounded-br-sm">
+                      <p className="text-sm">{entry.question}</p>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1 text-right">
                       {format(new Date(entry.timestamp), 'h:mm a')}
                     </p>
                   </div>
                 </div>
-                {/* Answer */}
+                {/* AI Answer */}
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] p-2 bg-white dark:bg-slate-800 rounded-lg rounded-bl-none border border-slate-200 dark:border-slate-700">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                      {entry.answer}
-                    </p>
+                  <div className="max-w-[85%]">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
+                      <MarkdownContent content={entry.answer} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -186,25 +258,40 @@ export function PrepTab({ job }: PrepTabProps) {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-danger mb-2">
-          <AlertCircle className="w-4 h-4" />
-          {error}
+        <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Input */}
-      <div className="flex gap-2">
-        <Textarea
+      {/* Chat Input - Unified Design */}
+      <div className="relative">
+        <textarea
+          ref={textareaRef}
           value={question}
-          onChange={(e) => setQuestion(e.target.value)}
+          onChange={(e) => {
+            setQuestion(e.target.value);
+            adjustTextareaHeight();
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Ask about the job, interview prep, or get coaching..."
-          rows={2}
-          className="flex-1"
+          rows={1}
+          className="w-full pr-14 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400"
+          style={{ minHeight: '48px', maxHeight: '120px' }}
         />
-        <Button onClick={handleSend} disabled={isLoading || !question.trim()}>
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </Button>
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={isLoading || !question.trim()}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+          title="Send message"
+        >
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </button>
       </div>
     </div>
   );

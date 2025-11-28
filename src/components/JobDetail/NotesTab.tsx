@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   Plus,
   Trash2,
@@ -27,6 +28,49 @@ import type { LucideIcon } from 'lucide-react';
 
 interface NotesTabProps {
   job: Job;
+}
+
+// Markdown renderer for notes
+function NoteMarkdown({ content }: { content: string }) {
+  return (
+    <div className="text-sm text-slate-700 dark:text-slate-300">
+      <ReactMarkdown
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-base font-bold mt-3 mb-1.5 text-slate-800 dark:text-slate-200 first:mt-0">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-sm font-semibold mt-3 mb-1 text-slate-800 dark:text-slate-200 first:mt-0">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-sm font-medium mt-2 mb-1 text-slate-700 dark:text-slate-300">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          strong: ({ children }) => (
+            <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
+          ),
+          em: ({ children }) => <em className="italic">{children}</em>,
+          code: ({ children }) => (
+            <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-xs font-mono">
+              {children}
+            </code>
+          ),
+          hr: () => <hr className="my-2 border-slate-200 dark:border-slate-700" />,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 // Note templates for quick entry
@@ -178,44 +222,50 @@ export function NotesTab({ job }: NotesTabProps) {
           <h3 className="font-semibold text-slate-800 dark:text-slate-200">Notes</h3>
         </div>
 
-        {/* Note Templates */}
-        <div className="flex gap-2 mb-3 flex-wrap">
-          {noteTemplates.map((t) => (
+        {/* Unified Notes Input Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-800/30 overflow-hidden mb-4 shadow-sm">
+          {/* Template buttons inside the card */}
+          <div className="flex gap-2 px-3 pt-3 flex-wrap">
+            {noteTemplates.map((t) => (
+              <button
+                type="button"
+                key={t.label}
+                onClick={() => setNewNote(t.template)}
+                className="text-xs px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full transition-colors flex items-center gap-1"
+              >
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Textarea with embedded button */}
+          <div className="relative p-3">
+            <textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Add a note..."
+              rows={3}
+              className="w-full pr-12 p-3 bg-slate-50 dark:bg-slate-900/50 border-0 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-sm placeholder:text-slate-400"
+            />
             <button
               type="button"
-              key={t.label}
-              onClick={() => setNewNote(t.template)}
-              className="text-xs px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full transition-colors flex items-center gap-1"
+              onClick={handleAddNote}
+              disabled={!newNote.trim()}
+              className="absolute right-5 bottom-5 p-2 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              title="Add note"
             >
-              <span>{t.icon}</span>
-              <span>{t.label}</span>
+              <Plus className="w-4 h-4" />
             </button>
-          ))}
-        </div>
-
-        {/* Note Input */}
-        <div className="flex gap-2 mb-4">
-          <Textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add a note..."
-            rows={3}
-            className="flex-1"
-          />
-          <Button onClick={handleAddNote} disabled={!newNote.trim()} className="self-end">
-            <Plus className="w-4 h-4" />
-          </Button>
+          </div>
         </div>
 
         {/* Notes List */}
         <div className="space-y-3">
           {job.notes.length === 0 ? (
-            <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
-              <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                <FileText className="w-6 h-6 text-amber-500" />
-              </div>
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No notes yet</p>
-              <p className="text-xs text-slate-400 mt-1">Capture interview insights, research, or reminders</p>
+            <div className="text-center py-6 text-slate-400">
+              <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Your notes will appear here</p>
             </div>
           ) : (
             [...job.notes]
@@ -249,9 +299,7 @@ export function NotesTab({ job }: NotesTabProps) {
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                        {note.content}
-                      </p>
+                      <NoteMarkdown content={note.content} />
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-amber-100 dark:border-amber-800/20">
                         <span className="text-xs text-slate-400">
                           {format(new Date(note.createdAt), 'MMM d, h:mm a')}
