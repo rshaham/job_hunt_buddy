@@ -2,23 +2,58 @@ import { useState } from 'react';
 import {
   Plus,
   Trash2,
-  User,
+  Users,
   Mail,
   Linkedin,
-  Calendar,
   Edit2,
   Save,
   X,
+  FileText,
+  Clock,
+  Copy,
+  Phone,
+  Video,
+  Send,
+  Gift,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import { Button, Input, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId } from '../../utils/helpers';
 import { format } from 'date-fns';
 import type { Job, Contact, Note, TimelineEvent } from '../../types';
+import type { LucideIcon } from 'lucide-react';
 
 interface NotesTabProps {
   job: Job;
 }
+
+// Note templates for quick entry
+const noteTemplates = [
+  { label: 'Call Notes', icon: '📞', template: '## Call Notes\n\nDate: \nWith: \n\n### Key Points\n- \n\n### Action Items\n- ' },
+  { label: 'Research', icon: '🔍', template: '## Research Notes\n\n### Company Info\n- \n\n### Team/Culture\n- ' },
+  { label: 'Follow-up', icon: '✅', template: '## Follow-up\n\nAction: \nDeadline: \n\nDetails:\n' },
+];
+
+// Event types with icons and colors
+const eventTypeConfig: Record<string, { icon: LucideIcon; color: string; bgColor: string }> = {
+  'Applied': { icon: Send, color: 'text-blue-500', bgColor: 'bg-blue-500' },
+  'Interview': { icon: Video, color: 'text-purple-500', bgColor: 'bg-purple-500' },
+  'Call': { icon: Phone, color: 'text-green-500', bgColor: 'bg-green-500' },
+  'Email': { icon: Mail, color: 'text-amber-500', bgColor: 'bg-amber-500' },
+  'Offer': { icon: Gift, color: 'text-emerald-500', bgColor: 'bg-emerald-500' },
+  'Update': { icon: RefreshCw, color: 'text-slate-500', bgColor: 'bg-slate-500' },
+};
+
+const eventTypes = [
+  { label: 'Call', icon: '📞' },
+  { label: 'Email', icon: '📧' },
+  { label: 'Interview', icon: '🎥' },
+  { label: 'Applied', icon: '📤' },
+  { label: 'Offer', icon: '🎁' },
+  { label: 'Update', icon: '📝' },
+];
 
 export function NotesTab({ job }: NotesTabProps) {
   const { updateJob } = useAppStore();
@@ -37,9 +72,19 @@ export function NotesTab({ job }: NotesTabProps) {
 
   // Timeline state
   const [showEventForm, setShowEventForm] = useState(false);
-  const [eventType, setEventType] = useState('');
+  const [eventType, setEventType] = useState('Update');
   const [eventDescription, setEventDescription] = useState('');
   const [eventDate, setEventDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+  // Copy state for feedback
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // Helper function to copy to clipboard
+  const copyToClipboard = async (text: string, email: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedEmail(email);
+    setTimeout(() => setCopiedEmail(null), 2000);
+  };
 
   // Notes handlers
   const handleAddNote = async () => {
@@ -100,14 +145,14 @@ export function NotesTab({ job }: NotesTabProps) {
 
     const event: TimelineEvent = {
       id: generateId(),
-      type: eventType.trim() || 'Update',
+      type: eventType || 'Update',
       description: eventDescription.trim(),
       date: new Date(eventDate),
     };
 
     await updateJob(job.id, { timeline: [...job.timeline, event] });
     setShowEventForm(false);
-    setEventType('');
+    setEventType('Update');
     setEventDescription('');
     setEventDate(format(new Date(), 'yyyy-MM-dd'));
   };
@@ -116,117 +161,164 @@ export function NotesTab({ job }: NotesTabProps) {
     await updateJob(job.id, { timeline: job.timeline.filter((e) => e.id !== eventId) });
   };
 
+  // Get event config with fallback
+  const getEventConfig = (type: string) => {
+    return eventTypeConfig[type] || eventTypeConfig['Update'];
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Notes Section */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Notes</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* Notes Section - Takes 3 columns on large screens */}
+      <section className="lg:col-span-3">
+        {/* Section Header */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+            <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h3 className="font-semibold text-slate-800 dark:text-slate-200">Notes</h3>
         </div>
 
-        <div className="space-y-2 mb-3">
-          {job.notes.length === 0 ? (
-            <p className="text-sm text-slate-500 italic">No notes yet</p>
-          ) : (
-            job.notes.map((note) => (
-              <div
-                key={note.id}
-                className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg group"
-              >
-                {editingNoteId === note.id ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={editingNoteContent}
-                      onChange={(e) => setEditingNoteContent(e.target.value)}
-                      rows={3}
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleUpdateNote(note.id)}>
-                        <Save className="w-3 h-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingNoteId(null)}
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                      {note.content}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-slate-400">
-                        {format(new Date(note.createdAt), 'MMM d, h:mm a')}
-                      </span>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <button
-                          onClick={() => {
-                            setEditingNoteId(note.id);
-                            setEditingNoteContent(note.content);
-                          }}
-                          className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteNote(note.id)}
-                          className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-danger"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
-          )}
+        {/* Note Templates */}
+        <div className="flex gap-2 mb-3 flex-wrap">
+          {noteTemplates.map((t) => (
+            <button
+              type="button"
+              key={t.label}
+              onClick={() => setNewNote(t.template)}
+              className="text-xs px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full transition-colors flex items-center gap-1"
+            >
+              <span>{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="flex gap-2">
+        {/* Note Input */}
+        <div className="flex gap-2 mb-4">
           <Textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Add a note..."
-            rows={2}
+            rows={3}
             className="flex-1"
           />
-          <Button onClick={handleAddNote} disabled={!newNote.trim()}>
+          <Button onClick={handleAddNote} disabled={!newNote.trim()} className="self-end">
             <Plus className="w-4 h-4" />
           </Button>
+        </div>
+
+        {/* Notes List */}
+        <div className="space-y-3">
+          {job.notes.length === 0 ? (
+            <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
+              <div className="w-12 h-12 mx-auto mb-3 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                <FileText className="w-6 h-6 text-amber-500" />
+              </div>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No notes yet</p>
+              <p className="text-xs text-slate-400 mt-1">Capture interview insights, research, or reminders</p>
+            </div>
+          ) : (
+            [...job.notes]
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map((note) => (
+                <div
+                  key={note.id}
+                  className="p-4 bg-gradient-to-br from-amber-50 to-slate-50 dark:from-amber-900/10 dark:to-slate-800/50 rounded-xl border border-amber-100 dark:border-amber-800/20 group"
+                >
+                  {editingNoteId === note.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editingNoteContent}
+                        onChange={(e) => setEditingNoteContent(e.target.value)}
+                        rows={4}
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleUpdateNote(note.id)}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingNoteId(null)}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                        {note.content}
+                      </p>
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-amber-100 dark:border-amber-800/20">
+                        <span className="text-xs text-slate-400">
+                          {format(new Date(note.createdAt), 'MMM d, h:mm a')}
+                          {note.updatedAt > note.createdAt && ' (edited)'}
+                        </span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingNoteId(note.id);
+                              setEditingNoteContent(note.content);
+                            }}
+                            className="p-1.5 hover:bg-amber-200/50 dark:hover:bg-amber-800/30 rounded-lg transition-colors"
+                            title="Edit note"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNote(note.id)}
+                            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+          )}
         </div>
       </section>
 
-      {/* Contacts Section */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Contacts</h3>
-          <Button size="sm" variant="ghost" onClick={() => setShowContactForm(!showContactForm)}>
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {showContactForm && (
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg mb-3 space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                placeholder="Name"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-              />
-              <Input
-                placeholder="Role (e.g., Recruiter)"
-                value={contactRole}
-                onChange={(e) => setContactRole(e.target.value)}
-              />
+      {/* Right Column - Contacts and Timeline */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Contacts Section */}
+        <section>
+          {/* Section Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200">Contacts</h3>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setShowContactForm(!showContactForm)}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Add Contact Form */}
+          {showContactForm && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl mb-4 space-y-3 border border-blue-100 dark:border-blue-800/30">
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Name"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                />
+                <Input
+                  placeholder="Role"
+                  value={contactRole}
+                  onChange={(e) => setContactRole(e.target.value)}
+                />
+              </div>
               <Input
                 placeholder="Email"
                 type="email"
@@ -238,143 +330,225 @@ export function NotesTab({ job }: NotesTabProps) {
                 value={contactLinkedIn}
                 onChange={(e) => setContactLinkedIn(e.target.value)}
               />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAddContact} disabled={!contactName.trim()}>
+                  Add Contact
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowContactForm(false)}>
+                  Cancel
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleAddContact}>
-                Add Contact
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowContactForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
 
-        <div className="space-y-2">
-          {job.contacts.length === 0 ? (
-            <p className="text-sm text-slate-500 italic">No contacts yet</p>
-          ) : (
-            job.contacts.map((contact) => (
-              <div
-                key={contact.id}
-                className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg group"
-              >
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary" />
+          {/* Contacts List */}
+          <div className="space-y-3">
+            {job.contacts.length === 0 ? (
+              <div className="text-center py-6 px-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
+                <div className="w-10 h-10 mx-auto mb-2 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-500" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{contact.name}</p>
-                  <p className="text-xs text-slate-500 truncate">{contact.role}</p>
+                <p className="text-sm text-slate-500">No contacts yet</p>
+                <p className="text-xs text-slate-400 mt-1">Track recruiters and hiring managers</p>
+              </div>
+            ) : (
+              job.contacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="p-3 bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-800/50 rounded-xl border border-blue-100 dark:border-blue-800/30 group"
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm shrink-0">
+                      {contact.name.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-slate-800 dark:text-slate-200">{contact.name}</p>
+                          {contact.role && (
+                            <p className="text-sm text-slate-500">{contact.role}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteContact(contact.id)}
+                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete contact"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
+
+                      {/* Contact Actions */}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {contact.email && (
+                          <div className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            <span className="text-slate-600 dark:text-slate-400 truncate max-w-[120px]">
+                              {contact.email}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(contact.email!, contact.id)}
+                              className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                              title="Copy email"
+                            >
+                              {copiedEmail === contact.id ? (
+                                <span className="text-green-500 text-xs">✓</span>
+                              ) : (
+                                <Copy className="w-3 h-3 text-slate-400" />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                        {contact.linkedin && (
+                          <a
+                            href={contact.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          >
+                            <Linkedin className="w-3 h-3 text-blue-500" />
+                            <span className="text-blue-600 dark:text-blue-400">LinkedIn</span>
+                            <ExternalLink className="w-3 h-3 text-blue-400" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {contact.email && (
-                    <a
-                      href={`mailto:${contact.email}`}
-                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+              ))
+            )}
+          </div>
+        </section>
+
+        {/* Timeline Section */}
+        <section>
+          {/* Section Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200">Timeline</h3>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setShowEventForm(!showEventForm)}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Add Event Form */}
+          {showEventForm && (
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl mb-4 space-y-3 border border-purple-100 dark:border-purple-800/30">
+              {/* Event Type Quick Select */}
+              <div>
+                <label className="text-xs text-slate-500 mb-1.5 block">Event Type</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {eventTypes.map((type) => (
+                    <button
+                      type="button"
+                      key={type.label}
+                      onClick={() => setEventType(type.label)}
+                      className={`text-xs px-2.5 py-1.5 rounded-full transition-colors flex items-center gap-1 ${
+                        eventType === type.label
+                          ? 'bg-purple-500 text-white'
+                          : 'bg-white dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-600 dark:text-slate-400'
+                      }`}
                     >
-                      <Mail className="w-4 h-4 text-slate-400" />
-                    </a>
-                  )}
-                  {contact.linkedin && (
-                    <a
-                      href={contact.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
-                    >
-                      <Linkedin className="w-4 h-4 text-slate-400" />
-                    </a>
-                  )}
-                  <button
-                    onClick={() => handleDeleteContact(contact.id)}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-danger opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                      <span>{type.icon}</span>
+                      <span>{type.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </section>
 
-      {/* Timeline Section */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Timeline</h3>
-          <Button size="sm" variant="ghost" onClick={() => setShowEventForm(!showEventForm)}>
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {showEventForm && (
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg mb-3 space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                placeholder="Event type (e.g., Interview)"
-                value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
-              />
               <Input
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
               />
+              <Input
+                placeholder="Description (e.g., Phone screen with recruiter)"
+                value={eventDescription}
+                onChange={(e) => setEventDescription(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAddEvent} disabled={!eventDescription.trim()}>
+                  Add Event
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowEventForm(false)}>
+                  Cancel
+                </Button>
+              </div>
             </div>
-            <Input
-              placeholder="Description"
-              value={eventDescription}
-              onChange={(e) => setEventDescription(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={handleAddEvent}>
-                Add Event
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowEventForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {job.timeline.length === 0 ? (
-            <p className="text-sm text-slate-500 italic">No events yet</p>
-          ) : (
-            [...job.timeline]
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start gap-3 p-2 group"
-                >
-                  <div className="flex flex-col items-center">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                    <div className="w-0.5 h-full bg-slate-200 dark:bg-slate-700" />
-                  </div>
-                  <div className="flex-1 pb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-primary">{event.type}</span>
-                      <span className="text-xs text-slate-400">
-                        <Calendar className="w-3 h-3 inline mr-1" />
-                        {format(new Date(event.date), 'MMM d, yyyy')}
-                      </span>
-                      <button
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-danger opacity-0 group-hover:opacity-100 transition-opacity ml-auto"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
-                      {event.description}
-                    </p>
-                  </div>
-                </div>
-              ))
           )}
-        </div>
-      </section>
+
+          {/* Timeline List */}
+          <div>
+            {job.timeline.length === 0 ? (
+              <div className="text-center py-6 px-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
+                <div className="w-10 h-10 mx-auto mb-2 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-purple-500" />
+                </div>
+                <p className="text-sm text-slate-500">No events yet</p>
+                <p className="text-xs text-slate-400 mt-1">Track calls, interviews, and milestones</p>
+              </div>
+            ) : (
+              <div className="space-y-0">
+                {[...job.timeline]
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((event, index, arr) => {
+                    const config = getEventConfig(event.type);
+                    const Icon = config.icon;
+                    const isLast = index === arr.length - 1;
+
+                    return (
+                      <div key={event.id} className="flex items-start gap-3 group">
+                        {/* Timeline dot and line */}
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 ${config.bgColor} rounded-full flex items-center justify-center shrink-0`}>
+                            <Icon className="w-4 h-4 text-white" />
+                          </div>
+                          {!isLast && (
+                            <div className="w-0.5 flex-1 min-h-[24px] bg-slate-200 dark:bg-slate-700 my-1" />
+                          )}
+                        </div>
+
+                        {/* Event content */}
+                        <div className={`flex-1 ${!isLast ? 'pb-4' : 'pb-0'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm text-slate-800 dark:text-slate-200">
+                              {event.type}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-400">
+                                {format(new Date(event.date), 'MMM d, yyyy')}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteEvent(event.id)}
+                                className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete event"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                            {event.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
