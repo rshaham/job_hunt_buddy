@@ -9,6 +9,11 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Visual feedback during drag operations
 - Reorder cards within columns
 
+### Replace Browser Prompts with Modals
+- Replace ugly browser `confirm()` dialogs (e.g., delete confirmation)
+- Replace `prompt()` inputs with styled modal components
+- Consistent UI throughout the app
+- 
 ### Interactive Resume Tailoring
 - Chat interface to iteratively refine resume for specific job
 - AI suggests initial edits based on JD analysis
@@ -20,11 +25,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Chat interface to iteratively improve generated cover letter
 - Similar to resume tailoring - ask questions, refine, polish
 - Conversational refinement of tone, length, and focus
-
-### Replace Browser Prompts with Modals
-- Replace ugly browser `confirm()` dialogs (e.g., delete confirmation)
-- Replace `prompt()` inputs with styled modal components
-- Consistent UI throughout the app
 
 ### Interviewer Profile Analysis
 - User pastes interviewer's LinkedIn profile info (manually copied)
