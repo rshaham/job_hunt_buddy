@@ -20,7 +20,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from 'lucide-react';
-import { Button, Input, Textarea } from '../ui';
+import { Button, Input } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId } from '../../utils/helpers';
 import { format } from 'date-fns';
@@ -245,7 +245,7 @@ export function NotesTab({ job }: NotesTabProps) {
             <MDEditor
               value={newNote}
               onChange={(val) => setNewNote(val || '')}
-              preview="edit"
+              preview="live"
               height={150}
               visibleDragbar={true}
               hideToolbar={false}
@@ -280,11 +280,13 @@ export function NotesTab({ job }: NotesTabProps) {
                   className="p-4 bg-gradient-to-br from-amber-50 to-slate-50 dark:from-amber-900/10 dark:to-slate-800/50 rounded-xl border border-amber-100 dark:border-amber-800/20 group"
                 >
                   {editingNoteId === note.id ? (
-                    <div className="space-y-2">
-                      <Textarea
+                    <div className="space-y-3" data-color-mode={settings.theme}>
+                      <MDEditor
                         value={editingNoteContent}
-                        onChange={(e) => setEditingNoteContent(e.target.value)}
-                        rows={4}
+                        onChange={(val) => setEditingNoteContent(val || '')}
+                        preview="live"
+                        height={200}
+                        visibleDragbar={true}
                       />
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleUpdateNote(note.id)}>
