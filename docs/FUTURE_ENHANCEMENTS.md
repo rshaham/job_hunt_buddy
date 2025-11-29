@@ -4,11 +4,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
-### Browser Extension
-- One-click JD capture from job sites (LinkedIn, Indeed, Glassdoor, etc.)
-- Auto-populate job details without copy/paste
-- Quick-add to tracker from any job posting page
-
 ### Calendar Integration
 - Sync interviews to Google Calendar / Outlook
 - Set reminders for follow-ups
@@ -81,6 +76,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] Browser Extension (one-click JD capture from LinkedIn, Indeed, Greenhouse, Lever)
 - [x] Cover Letter Chat (iterative refinement with AI)
 - [x] More Responsive AI Chat (optimistic UI + ThinkingBubble animation)
 - [x] Interactive Resume Tailoring (split-pane chat + preview, auto-tailor, re-grading)
