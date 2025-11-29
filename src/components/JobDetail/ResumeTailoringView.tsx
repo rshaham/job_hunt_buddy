@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
 import * as Diff from 'diff';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -218,7 +219,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     if (!printWindow) return;
 
     // Convert markdown to simple HTML for printing
-    const htmlContent = tailoredResume
+    const rawHtml = tailoredResume
       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
       .replace(/^## (.+)$/gm, '<h2>$1</h2>')
       .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -228,11 +229,21 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
       .replace(/\n\n/g, '</p><p>')
       .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
 
+    // Sanitize HTML to prevent XSS attacks
+    const htmlContent = DOMPurify.sanitize(rawHtml, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'ul', 'li', 'strong', 'em', 'br'],
+      ALLOWED_ATTR: [],
+    });
+
+    // Sanitize title content as well
+    const safeCompany = DOMPurify.sanitize(job.company, { ALLOWED_TAGS: [] });
+    const safeTitle = DOMPurify.sanitize(job.title, { ALLOWED_TAGS: [] });
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${job.company} - ${job.title} Resume</title>
+          <title>${safeCompany} - ${safeTitle} Resume</title>
           <style>
             body {
               font-family: 'Georgia', serif;
@@ -424,6 +435,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                             {entry.role === 'assistant' ? (
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
+                                skipHtml
                                 components={{
                                   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                                   ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
@@ -610,6 +622,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                   <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
+                      skipHtml
                       components={{
                         h1: ({ children }) => <h1 className="text-base font-bold mb-1">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-slate-600 dark:text-slate-400">{children}</h2>,
@@ -641,6 +654,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                   <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
+                      skipHtml
                       components={{
                         h1: ({ children }) => <h1 className="text-base font-bold mb-1">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-primary">{children}</h2>,
@@ -662,6 +676,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  skipHtml
                   components={{
                     h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-lg font-semibold mt-4 mb-2 text-primary">{children}</h2>,

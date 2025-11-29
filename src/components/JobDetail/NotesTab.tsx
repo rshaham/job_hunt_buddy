@@ -36,6 +36,7 @@ function NoteMarkdown({ content }: { content: string }) {
   return (
     <div className="text-sm text-slate-700 dark:text-slate-300">
       <ReactMarkdown
+        skipHtml
         components={{
           h1: ({ children }) => (
             <h1 className="text-base font-bold mt-3 mb-1.5 text-slate-800 dark:text-slate-200 first:mt-0">

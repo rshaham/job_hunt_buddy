@@ -20,6 +20,7 @@ function MarkdownContent({ content }: { content: string }) {
     <div className="text-sm text-slate-700 dark:text-slate-300">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        skipHtml
         components={{
         h1: ({ children }) => (
           <h1 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">

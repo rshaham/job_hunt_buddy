@@ -314,7 +314,7 @@ export function SettingsModal() {
                   {showResumePreview && (
                     <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 max-h-[50vh] overflow-y-auto">
                       <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown>{settings.defaultResumeText}</ReactMarkdown>
+                        <ReactMarkdown skipHtml>{settings.defaultResumeText}</ReactMarkdown>
                       </div>
                     </div>
                   )}

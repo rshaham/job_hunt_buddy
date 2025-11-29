@@ -169,7 +169,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   importData: async (jsonData) => {
-    const data = JSON.parse(jsonData);
+    // Parse JSON and let db.importData validate the schema
+    let data: unknown;
+    try {
+      data = JSON.parse(jsonData);
+    } catch {
+      throw new Error('Invalid JSON format');
+    }
     await db.importData(data);
     await get().loadData();
   },

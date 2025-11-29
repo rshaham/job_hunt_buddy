@@ -108,19 +108,25 @@ export async function analyzeJobDescription(
 
   const response = await callClaude([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
-  const parsed = JSON.parse(jsonStr);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    throw new Error('Failed to parse AI response. Please try again.');
+  }
 
   return {
-    company: parsed.company || 'Unknown Company',
-    title: parsed.title || 'Unknown Position',
+    company: (parsed.company as string) || 'Unknown Company',
+    title: (parsed.title as string) || 'Unknown Position',
     summary: {
-      shortDescription: parsed.shortDescription || '',
-      requirements: parsed.requirements || [],
-      niceToHaves: parsed.niceToHaves || [],
-      salary: parsed.salary || undefined,
-      jobType: parsed.jobType || 'unknown',
-      level: parsed.level || 'Mid',
-      keySkills: parsed.keySkills || [],
+      shortDescription: (parsed.shortDescription as string) || '',
+      requirements: (parsed.requirements as string[]) || [],
+      niceToHaves: (parsed.niceToHaves as string[]) || [],
+      salary: (parsed.salary as string) || undefined,
+      jobType: (parsed.jobType as JobSummary['jobType']) || 'unknown',
+      level: (parsed.level as string) || 'Mid',
+      keySkills: (parsed.keySkills as string[]) || [],
     },
   };
 }
@@ -136,14 +142,20 @@ export async function gradeResume(
 
   const response = await callClaude([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
-  const parsed = JSON.parse(jsonStr);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    throw new Error('Failed to parse AI response. Please try again.');
+  }
 
   return {
-    grade: parsed.grade || 'N/A',
-    matchPercentage: parsed.matchPercentage || 0,
-    strengths: parsed.strengths || [],
-    gaps: parsed.gaps || [],
-    suggestions: parsed.suggestions || [],
+    grade: (parsed.grade as string) || 'N/A',
+    matchPercentage: (parsed.matchPercentage as number) || 0,
+    strengths: (parsed.strengths as string[]) || [],
+    gaps: (parsed.gaps as string[]) || [],
+    suggestions: (parsed.suggestions as string[]) || [],
   };
 }
 
@@ -229,12 +241,18 @@ export async function autoTailorResume(
 
   const response = await callClaude([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
-  const parsed = JSON.parse(jsonStr);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    throw new Error('Failed to parse AI response. Please try again.');
+  }
 
   return {
-    tailoredResume: parsed.tailoredResume || originalResume,
-    changesSummary: parsed.changesSummary || 'No changes made',
-    suggestedQuestions: parsed.suggestedQuestions || [],
+    tailoredResume: (parsed.tailoredResume as string) || originalResume,
+    changesSummary: (parsed.changesSummary as string) || 'No changes made',
+    suggestedQuestions: (parsed.suggestedQuestions as string[]) || [],
   };
 }
 
@@ -349,10 +367,17 @@ export async function rewriteForMemory(
 
   const response = await callClaude([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
-  const parsed = JSON.parse(jsonStr);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    // If parsing fails, return original content
+    return { question: originalQuestion, answer: originalAnswer };
+  }
 
   return {
-    question: parsed.question || originalQuestion,
-    answer: parsed.answer || originalAnswer,
+    question: (parsed.question as string) || originalQuestion,
+    answer: (parsed.answer as string) || originalAnswer,
   };
 }

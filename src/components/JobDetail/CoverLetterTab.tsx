@@ -295,6 +295,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                               {entry.role === 'assistant' ? (
                                 <ReactMarkdown
                                   remarkPlugins={[remarkGfm]}
+                                  skipHtml
                                   components={{
                                     p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                                   }}

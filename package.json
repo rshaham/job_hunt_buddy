@@ -41,6 +41,7 @@
     "dexie": "^4.0.4",
     "dexie-react-hooks": "^1.1.7",
     "diff": "^8.0.2",
+    "dompurify": "^3.3.0",
     "lucide-react": "^0.363.0",
     "pdfjs-dist": "^4.0.379",
     "react": "^18.2.0",
@@ -48,10 +49,12 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.2.0",
+    "zod": "^4.1.13",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@types/diff": "^7.0.2",
+    "@types/dompurify": "^3.0.5",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
 import { Button, Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { gradeResume, convertResumeToMarkdown } from '../../services/ai';
@@ -66,7 +67,8 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const htmlContent = job.resumeText!
+    // Convert markdown to HTML
+    const rawHtml = job.resumeText!
       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
       .replace(/^## (.+)$/gm, '<h2>$1</h2>')
       .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -76,11 +78,21 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       .replace(/\n\n/g, '</p><p>')
       .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
 
+    // Sanitize HTML to prevent XSS attacks
+    const htmlContent = DOMPurify.sanitize(rawHtml, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'ul', 'li', 'strong', 'em', 'br'],
+      ALLOWED_ATTR: [],
+    });
+
+    // Sanitize title content as well
+    const safeCompany = DOMPurify.sanitize(job.company, { ALLOWED_TAGS: [] });
+    const safeTitle = DOMPurify.sanitize(job.title, { ALLOWED_TAGS: [] });
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${job.company} - ${job.title} Resume</title>
+          <title>${safeCompany} - ${safeTitle} Resume</title>
           <style>
             body {
               font-family: 'Georgia', serif;
@@ -356,7 +368,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       >
         <div className="p-6">
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>
               {job.resumeText || ''}
             </ReactMarkdown>
           </div>

@@ -4,13 +4,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
-### Interviewer Profile Analysis
-- User pastes interviewer's LinkedIn profile info (manually copied)
-- AI analyzes their background, experience, and interests
-- Generates likely interview questions based on interviewer's expertise
-- User can add more context or search for additional info
-- Avoids legal/TOS issues by not scraping
-
 ### Browser Extension
 - One-click JD capture from job sites (LinkedIn, Indeed, Glassdoor, etc.)
 - Auto-populate job details without copy/paste
@@ -28,6 +21,13 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Customizable with job context
 
 ## Medium Priority
+
+### Interviewer Profile Analysis
+- User pastes interviewer's LinkedIn profile info (manually copied)
+- AI analyzes their background, experience, and interests
+- Generates likely interview questions based on interviewer's expertise
+- User can add more context or search for additional info
+- Avoids legal/TOS issues by not scraping
 
 ### Analytics Dashboard
 - Track applications over time
