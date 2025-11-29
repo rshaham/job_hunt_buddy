@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Hunt Buddy Settings</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      background: #f8fafc;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    header img {
+      width: 40px;
+      height: 40px;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #6366f1;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .field small {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    button:hover {
+      background: #4f46e5;
+    }
+
+    .saved {
+      font-size: 13px;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .saved.show {
+      opacity: 1;
+    }
+
+    .saved svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .info {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f0f9ff;
+      border-radius: 8px;
+      border: 1px solid #bae6fd;
+    }
+
+    .info h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0369a1;
+      margin-bottom: 8px;
+    }
+
+    .info p {
+      font-size: 12px;
+      color: #0c4a6e;
+    }
+
+    .info code {
+      background: #e0f2fe;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="../../icons/icon48.png" alt="">
+      <h1>Job Hunt Buddy Settings</h1>
+    </header>
+
+    <div class="field">
+      <label for="appUrl">App URL</label>
+      <input type="url" id="appUrl" placeholder="http://localhost:5173">
+      <small>The URL where Job Hunt Buddy is running</small>
+    </div>
+
+    <div class="actions">
+      <button id="save">Save Settings</button>
+      <span id="status" class="saved">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Saved!
+      </span>
+    </div>
+
+    <div class="info">
+      <h3>How to use</h3>
+      <p>
+        Navigate to a job posting on LinkedIn, Indeed, Greenhouse, Lever, or any other site.
+        Click the extension icon to capture the job and send it to Job Hunt Buddy.
+      </p>
+      <p style="margin-top: 8px;">
+        Default URL: <code>http://localhost:5173</code>
+      </p>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

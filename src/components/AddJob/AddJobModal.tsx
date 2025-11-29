@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -22,6 +22,26 @@ export function AddJobModal() {
   const [summary, setSummary] = useState<JobSummary | null>(null);
 
   const apiKey = decodeApiKey(settings.apiKey);
+
+  // Check for extension-imported data
+  useEffect(() => {
+    if (isAddJobModalOpen) {
+      const extData = sessionStorage.getItem('extension_jd');
+      if (extData) {
+        try {
+          const { url, text, title: extTitle, company: extCompany } = JSON.parse(extData);
+          setJdLink(url || '');
+          setJdText(text || '');
+          // Pre-fill company and title if extracted by extension
+          if (extCompany) setCompany(extCompany);
+          if (extTitle) setTitle(extTitle);
+          sessionStorage.removeItem('extension_jd');
+        } catch {
+          // Ignore invalid JSON
+        }
+      }
+    }
+  }, [isAddJobModalOpen]);
 
   const handleAnalyze = async () => {
     if (!jdText.trim()) {
