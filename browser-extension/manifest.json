@@ -7,7 +7,7 @@
   "host_permissions": [
     "https://www.linkedin.com/*",
     "https://www.indeed.com/*",
-    "https://boards.greenhouse.io/*",
+    "https://*.greenhouse.io/*",
     "https://jobs.lever.co/*",
     "https://*/*"
   ],
@@ -29,7 +29,9 @@
         "https://www.linkedin.com/jobs/*",
         "https://www.indeed.com/*job*",
         "https://www.indeed.com/viewjob*",
-        "https://boards.greenhouse.io/*/jobs/*",
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://*.greenhouse.io/*/jobs/*",
         "https://jobs.lever.co/*"
       ],
       "js": ["src/content/content.js"],
