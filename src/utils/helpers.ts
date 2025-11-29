@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { formatDistanceToNow } from 'date-fns';
+import TurndownService from 'turndown';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -60,4 +61,17 @@ export function decodeApiKey(encoded: string): string {
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
+}
+
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  bulletListMarker: '-',
+  codeBlockStyle: 'fenced',
+});
+
+export function htmlToMarkdown(html: string): string {
+  if (!html) return '';
+  // Check if it's already plain text (no HTML tags)
+  if (!/<[^>]+>/.test(html)) return html;
+  return turndownService.turndown(html);
 }

@@ -1,7 +1,10 @@
 import { ExternalLink, Calendar, MapPin, Briefcase, DollarSign } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Job } from '../../types';
 import { Badge } from '../ui';
 import { format } from 'date-fns';
+import { htmlToMarkdown } from '../../utils/helpers';
 
 interface OverviewTabProps {
   job: Job;
@@ -99,10 +102,10 @@ export function OverviewTab({ job }: OverviewTabProps) {
       {/* Raw JD */}
       <div>
         <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Full Job Description</h4>
-        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg max-h-64 overflow-y-auto">
-          <pre className="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap font-mono">
-            {job.jdText || 'No job description available'}
-          </pre>
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg max-h-64 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {htmlToMarkdown(job.jdText) || 'No job description available'}
+          </ReactMarkdown>
         </div>
       </div>
     </div>
