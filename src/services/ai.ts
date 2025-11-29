@@ -112,7 +112,8 @@ export async function analyzeJobDescription(
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonStr);
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse JD analysis response:', { response, jsonStr, error: e });
     throw new Error('Failed to parse AI response. Please try again.');
   }
 
@@ -146,7 +147,8 @@ export async function gradeResume(
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonStr);
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse resume grading response:', { response, jsonStr, error: e });
     throw new Error('Failed to parse AI response. Please try again.');
   }
 
@@ -245,7 +247,8 @@ export async function autoTailorResume(
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonStr);
-  } catch {
+  } catch (e) {
+    console.error('Failed to parse auto-tailor response:', { response, jsonStr, error: e });
     throw new Error('Failed to parse AI response. Please try again.');
   }
 
