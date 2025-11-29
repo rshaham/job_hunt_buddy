@@ -354,6 +354,13 @@
   // =============================================================================
 
   /**
+   * Check if we're on LinkedIn
+   */
+  function isLinkedIn() {
+    return window.location.hostname.includes('linkedin.com');
+  }
+
+  /**
    * Get the appropriate extractor for the current site
    */
   function getExtractor() {
@@ -400,20 +407,58 @@
     }
   }
 
+  /**
+   * Extract with retry logic for SPAs like LinkedIn that load content dynamically
+   * @param {number} maxRetries - Maximum number of retry attempts
+   * @param {number} delay - Delay between retries in ms
+   */
+  function extractWithRetry(maxRetries = 5, delay = 1000) {
+    let attempts = 0;
+
+    function tryExtract() {
+      attempts++;
+      const data = extractAndStore();
+
+      // Check if we got meaningful content
+      const hasContent = data && (data.title || data.description.length > 100);
+
+      if (hasContent) {
+        console.log(`[Job Hunt Buddy] Successfully extracted on attempt ${attempts}`);
+        return;
+      }
+
+      // Retry if we haven't hit max attempts
+      if (attempts < maxRetries) {
+        console.log(`[Job Hunt Buddy] Content not ready, retrying in ${delay}ms (attempt ${attempts}/${maxRetries})`);
+        setTimeout(tryExtract, delay);
+      } else {
+        console.log(`[Job Hunt Buddy] Max retries reached, extraction may be incomplete`);
+      }
+    }
+
+    // Start first attempt with initial delay for SPAs
+    if (isLinkedIn()) {
+      // LinkedIn needs extra time for initial content load
+      setTimeout(tryExtract, 1500);
+    } else {
+      tryExtract();
+    }
+  }
+
   // =============================================================================
   // INITIALIZATION
   // =============================================================================
 
-  // Extract on page load
-  extractAndStore();
+  // Extract on page load with retry logic for SPAs
+  extractWithRetry();
 
   // Re-extract when URL changes (for SPAs like LinkedIn)
   let lastUrl = window.location.href;
   const observer = new MutationObserver(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      // Delay to let page content load
-      setTimeout(extractAndStore, 1000);
+      // Use retry logic for URL changes too
+      extractWithRetry();
     }
   });
 
@@ -422,6 +467,18 @@
   // Listen for messages from popup or background
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'EXTRACT') {
+      // For manual extraction requests, use retry logic
+      if (isLinkedIn()) {
+        // For LinkedIn, do a fresh extraction with retries
+        extractWithRetry(3, 500);
+        // Return current data immediately, it will update in storage
+        setTimeout(() => {
+          chrome.storage.local.get('currentJob', (result) => {
+            sendResponse(result.currentJob || null);
+          });
+        }, 2000);
+        return true;
+      }
       const data = extractAndStore();
       sendResponse(data);
       return true;

@@ -18,26 +18,41 @@ function App() {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark');
   }, [settings.theme]);
 
-  // Handle extension deep links via URL params
+  // Handle extension deep links via localStorage
   useEffect(() => {
-    // Only process when loading is complete to avoid race condition
     if (isLoading) return;
 
     const params = new URLSearchParams(window.location.search);
-    const jdText = params.get('jd_text');
 
-    if (jdText) {
-      // Store extension data for AddJobModal to pick up
-      sessionStorage.setItem('extension_jd', JSON.stringify({
-        url: params.get('jd_url') || '',
-        text: jdText,
-        title: params.get('jd_title') || '',
-        company: params.get('jd_company') || ''
-      }));
-
-      // Clean URL and open modal
+    if (params.get('from_extension') === '1') {
       window.history.replaceState({}, '', window.location.pathname);
-      openAddJobModal();
+
+      const tryLoadExtensionData = () => {
+        const extData = localStorage.getItem('extension_jd');
+        if (extData) {
+          sessionStorage.setItem('extension_jd', extData);
+          localStorage.removeItem('extension_jd');
+          openAddJobModal();
+          return true;
+        }
+        return false;
+      };
+
+      // Try immediately
+      if (tryLoadExtensionData()) return;
+
+      // Poll every 200ms for up to 5 seconds (extension may still be injecting data)
+      let attempts = 0;
+      const maxAttempts = 25;
+
+      const pollInterval = setInterval(() => {
+        attempts++;
+        if (tryLoadExtensionData() || attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+        }
+      }, 200);
+
+      return () => clearInterval(pollInterval);
     }
   }, [isLoading, openAddJobModal]);
 

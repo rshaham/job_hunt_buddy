@@ -64,21 +64,42 @@ function showDetectedJob(job) {
 }
 
 /**
- * Send job data to the app
+ * Send job data to the app via localStorage (avoids URL length limits)
  */
-function sendToApp(job) {
+async function sendToApp(job) {
   const title = elements.title?.value || job.title || '';
   const company = elements.company?.value || job.company || '';
 
-  const params = new URLSearchParams({
-    jd_url: job.url || '',
-    jd_text: job.description || '',
-    jd_title: title,
-    jd_company: company
-  });
+  const jobData = {
+    url: job.url || '',
+    text: job.description || '',
+    title: title,
+    company: company
+  };
 
-  chrome.tabs.create({ url: `${appUrl}?${params}` });
-  window.close();
+  // Use active: false to prevent popup from losing focus and closing
+  const tab = await chrome.tabs.create({ url: `${appUrl}?from_extension=1`, active: false });
+
+  // Wait for page to load, then inject script to write to localStorage
+  chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+    if (tabId === tab.id && info.status === 'complete') {
+      chrome.tabs.onUpdated.removeListener(listener);
+
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (data) => {
+          localStorage.setItem('extension_jd', JSON.stringify(data));
+        },
+        args: [jobData]
+      }).then(() => {
+        // Switch to the tab and close popup
+        chrome.tabs.update(tab.id, { active: true });
+        window.close();
+      }).catch(() => {
+        // Script injection failed - popup stays open so user can see error state
+      });
+    }
+  });
 }
 
 /**
