@@ -13,6 +13,8 @@ import {
   Printer,
   Save,
   Bookmark,
+  Pencil,
+  X,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -38,6 +40,8 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTailoredResume, setEditedTailoredResume] = useState('');
   const [isSavingMemory, setIsSavingMemory] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [userMessage, setUserMessage] = useState('');
@@ -56,6 +60,14 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  // Sync edited resume with saved tailored resume
+  useEffect(() => {
+    if (job.tailoredResume) {
+      setEditedTailoredResume(job.tailoredResume);
+      setIsEditing(false);
+    }
+  }, [job.tailoredResume]);
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -199,13 +211,15 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(tailoredResume);
+    const contentToCopy = isEditing ? editedTailoredResume : tailoredResume;
+    await navigator.clipboard.writeText(contentToCopy);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleDownload = () => {
-    const blob = new Blob([tailoredResume], { type: 'text/markdown' });
+    const contentToDownload = isEditing ? editedTailoredResume : tailoredResume;
+    const blob = new Blob([contentToDownload], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -214,12 +228,30 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleStartEditing = () => {
+    setEditedTailoredResume(tailoredResume);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    await updateJob(job.id, { tailoredResume: editedTailoredResume });
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTailoredResume(tailoredResume);
+    setIsEditing(false);
+  };
+
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // Use edited content if in edit mode
+    const contentToPrint = isEditing ? editedTailoredResume : tailoredResume;
+
     // Convert markdown to simple HTML for printing
-    const rawHtml = tailoredResume
+    const rawHtml = contentToPrint
       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
       .replace(/^## (.+)$/gm, '<h2>$1</h2>')
       .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -308,11 +340,12 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   // Use AI-generated follow-up questions from auto-tailoring
   const suggestedPrompts = job.tailoringSuggestions || [];
 
-  // Compute diff between original and tailored resume
+  // Compute diff between original and tailored resume (use edited content if editing)
+  const currentTailoredContent = isEditing ? editedTailoredResume : tailoredResume;
   const diffParts = useMemo(() => {
-    if (!job.tailoredResume) return [];
-    return Diff.diffWords(originalResume, tailoredResume);
-  }, [originalResume, tailoredResume, job.tailoredResume]);
+    if (!job.tailoredResume && !isEditing) return [];
+    return Diff.diffWords(originalResume, currentTailoredContent);
+  }, [originalResume, currentTailoredContent, job.tailoredResume, isEditing]);
 
   return (
     <div className="flex flex-col h-full">
@@ -363,24 +396,42 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
 
           {job.tailoredResume && (
             <>
-              <Button variant="secondary" size="sm" onClick={handleRegrade} disabled={isRegrading}>
-                {isRegrading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handleCopy}>
-                {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handleDownload} title="Download Markdown">
-                <Download className="w-4 h-4" />
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handlePrint} title="Print / Save as PDF">
-                <Printer className="w-4 h-4" />
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setIsSaveModalOpen(true)} title="Save as Job Resume">
-                <Save className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
-                <RotateCcw className="w-4 h-4" />
-              </Button>
+              {isEditing ? (
+                <>
+                  <Button variant="primary" size="sm" onClick={handleSaveEdit} title="Save manual edits">
+                    <Check className="w-4 h-4 mr-1" />
+                    Save
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleCancelEdit} title="Cancel editing">
+                    <X className="w-4 h-4 mr-1" />
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" size="sm" onClick={handleStartEditing} title="Edit manually">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleRegrade} disabled={isRegrading}>
+                    {isRegrading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleCopy}>
+                    {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleDownload} title="Download Markdown">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handlePrint} title="Print / Save as PDF">
+                    <Printer className="w-4 h-4" />
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => setIsSaveModalOpen(true)} title="Save as Job Resume">
+                    <Save className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
             </>
           )}
         </div>
@@ -670,6 +721,15 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          ) : isEditing ? (
+            <div className="flex-1 overflow-hidden p-4">
+              <textarea
+                value={editedTailoredResume}
+                onChange={(e) => setEditedTailoredResume(e.target.value)}
+                className="w-full h-full resize-none bg-white dark:bg-slate-900 border border-primary/50 rounded-lg p-4 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Edit your tailored resume..."
+              />
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-4">
