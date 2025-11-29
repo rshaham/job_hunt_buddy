@@ -7,7 +7,7 @@ import { Button, Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { gradeResume, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
-import { decodeApiKey, getGradeColor } from '../../utils/helpers';
+import { isAIConfigured, getGradeColor } from '../../utils/helpers';
 import { ResumeTailoringView } from './ResumeTailoringView';
 import type { Job } from '../../types';
 
@@ -24,7 +24,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const apiKey = decodeApiKey(settings.apiKey);
+  const hasAIConfigured = isAIConfigured(settings);
   const resumeText = job.resumeText || settings.defaultResumeText;
   const hasResume = !!resumeText;
 
@@ -130,8 +130,8 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       return;
     }
 
-    if (!apiKey) {
-      setError('Please configure your Claude API key in Settings');
+    if (!hasAIConfigured) {
+      setError('Please configure your AI provider in Settings');
       return;
     }
 
@@ -241,7 +241,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
       {/* Analyze Button */}
       {hasResume && !job.resumeAnalysis && (
-        <Button onClick={handleAnalyze} disabled={isAnalyzing || !apiKey}>
+        <Button onClick={handleAnalyze} disabled={isAnalyzing || !hasAIConfigured}>
           {isAnalyzing ? (
             <>
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />

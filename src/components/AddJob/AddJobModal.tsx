@@ -3,7 +3,7 @@ import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { analyzeJobDescription } from '../../services/ai';
-import { decodeApiKey } from '../../utils/helpers';
+import { isAIConfigured } from '../../utils/helpers';
 import type { Job, JobSummary } from '../../types';
 
 type Step = 'input' | 'analyzing' | 'review';
@@ -21,7 +21,7 @@ export function AddJobModal() {
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState<JobSummary | null>(null);
 
-  const apiKey = decodeApiKey(settings.apiKey);
+  const hasAIConfigured = isAIConfigured(settings);
 
   // Check for extension-imported data
   useEffect(() => {
@@ -49,8 +49,8 @@ export function AddJobModal() {
       return;
     }
 
-    if (!apiKey) {
-      setError('Please configure your Claude API key in Settings first');
+    if (!hasAIConfigured) {
+      setError('Please configure your AI provider in Settings first');
       return;
     }
 
@@ -119,7 +119,7 @@ export function AddJobModal() {
     <Modal isOpen={isAddJobModalOpen} onClose={handleClose} title="Add New Job" size="lg">
       <div className="p-4">
         {/* API Key Warning */}
-        {!apiKey && step === 'input' && (
+        {!hasAIConfigured && step === 'input' && (
           <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="text-sm">
@@ -172,7 +172,7 @@ export function AddJobModal() {
               <Button variant="secondary" onClick={handleSkipAI}>
                 Skip AI Analysis
               </Button>
-              <Button onClick={handleAnalyze} disabled={!apiKey}>
+              <Button onClick={handleAnalyze} disabled={!hasAIConfigured}>
                 <Sparkles className="w-4 h-4 mr-1" />
                 Analyze with AI
               </Button>

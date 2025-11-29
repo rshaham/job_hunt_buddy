@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   Puzzle,
+  Server,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
@@ -24,7 +25,7 @@ import { useAppStore } from '../../stores/appStore';
 import { testApiKey, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
-import { CLAUDE_MODEL_PRESETS } from '../../types';
+import { PROVIDER_MODELS, type ProviderType } from '../../types';
 import { showToast } from '../../stores/toastStore';
 import ReactMarkdown from 'react-markdown';
 
@@ -38,8 +39,13 @@ export function SettingsModal() {
     importData,
   } = useAppStore();
 
-  const [apiKeyInput, setApiKeyInput] = useState(decodeApiKey(settings.apiKey));
-  const [modelInput, setModelInput] = useState(settings.model || 'claude-sonnet-4-5-20250514');
+  // Provider state
+  const [activeProvider, setActiveProvider] = useState<ProviderType>(settings.activeProvider || 'anthropic');
+  const providerSettings = settings.providers?.[activeProvider] || { apiKey: '', model: '', baseUrl: '' };
+
+  const [apiKeyInput, setApiKeyInput] = useState(decodeApiKey(providerSettings.apiKey || ''));
+  const [modelInput, setModelInput] = useState(providerSettings.model || PROVIDER_MODELS[activeProvider][0]?.id || '');
+  const [baseUrlInput, setBaseUrlInput] = useState(providerSettings.baseUrl || 'http://localhost:11434/v1');
   const [customModel, setCustomModel] = useState('');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [isUploading, setIsUploading] = useState(false);
@@ -50,7 +56,19 @@ export function SettingsModal() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  const isCustomModel = !CLAUDE_MODEL_PRESETS.some((m) => m.id === modelInput);
+  const currentModels = PROVIDER_MODELS[activeProvider] || [];
+  const isCustomModel = !currentModels.some((m) => m.id === modelInput);
+
+  // Update form when provider changes
+  const handleProviderChange = (provider: ProviderType) => {
+    setActiveProvider(provider);
+    const newProviderSettings = settings.providers?.[provider] || { apiKey: '', model: '', baseUrl: '' };
+    setApiKeyInput(decodeApiKey(newProviderSettings.apiKey || ''));
+    setModelInput(newProviderSettings.model || PROVIDER_MODELS[provider][0]?.id || '');
+    setBaseUrlInput(newProviderSettings.baseUrl || 'http://localhost:11434/v1');
+    setCustomModel('');
+    setTestStatus('idle');
+  };
 
   const handleApiKeyChange = (value: string) => {
     setApiKeyInput(value);
@@ -73,19 +91,33 @@ export function SettingsModal() {
     setTestStatus('idle');
   };
 
-  const handleApiKeySave = async () => {
-    await updateSettings({ apiKey: encodeApiKey(apiKeyInput), model: modelInput });
+  const handleProviderSave = async () => {
+    const newProviders = {
+      ...settings.providers,
+      [activeProvider]: {
+        apiKey: encodeApiKey(apiKeyInput),
+        model: modelInput,
+        ...(activeProvider === 'openai-compatible' && { baseUrl: baseUrlInput }),
+      },
+    };
+    await updateSettings({ activeProvider, providers: newProviders });
   };
 
   const handleTestApiKey = async () => {
-    if (!apiKeyInput || !modelInput) return;
+    // OpenAI-compatible doesn't require API key
+    if (activeProvider !== 'openai-compatible' && !apiKeyInput) return;
+    if (!modelInput) return;
 
     setTestStatus('testing');
-    const isValid = await testApiKey(apiKeyInput, modelInput);
+    const isValid = await testApiKey(activeProvider, {
+      apiKey: apiKeyInput,
+      model: modelInput,
+      baseUrl: activeProvider === 'openai-compatible' ? baseUrlInput : undefined,
+    });
     setTestStatus(isValid ? 'success' : 'error');
 
     if (isValid) {
-      await handleApiKeySave();
+      await handleProviderSave();
     }
   };
 
@@ -202,81 +234,262 @@ export function SettingsModal() {
 
           {/* API Tab */}
           <TabsContent value="api" className="space-y-6">
-            {/* API Key Section */}
-            <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                Claude API Key
-              </h3>
-              <div className="flex gap-2 max-w-xl">
-                <Input
-                  type="password"
-                  placeholder="sk-ant-..."
-                  value={apiKeyInput}
-                  onChange={(e) => handleApiKeyChange(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleTestApiKey}
-                  disabled={!apiKeyInput || testStatus === 'testing'}
-                  variant="secondary"
-                >
-                  {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
-                  {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-1 text-green-500" />}
-                  {testStatus === 'error' && <XCircle className="w-4 h-4 mr-1 text-red-500" />}
-                  {testStatus === 'idle' && 'Test & Save'}
-                  {testStatus === 'testing' && 'Testing...'}
-                  {testStatus === 'success' && 'Saved!'}
-                  {testStatus === 'error' && 'Invalid'}
-                </Button>
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Get your API key from the{' '}
-                <a
-                  href="https://console.anthropic.com/settings/keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Anthropic Console
-                </a>
-                . Your key is stored locally and never sent to our servers.
-              </p>
-            </section>
-
-            {/* Model Selection Section */}
+            {/* Provider Selection */}
             <section>
               <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                <Bot className="w-4 h-4" />
-                Claude Model
+                <Server className="w-4 h-4" />
+                AI Provider
               </h3>
-              <div className="space-y-3 max-w-xl">
-                <select
-                  aria-label="Select Claude model"
-                  value={isCustomModel ? 'custom' : modelInput}
-                  onChange={(e) => handleModelChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {CLAUDE_MODEL_PRESETS.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name} - {model.description}
-                    </option>
-                  ))}
-                  <option value="custom">Custom model...</option>
-                </select>
-
-                {(isCustomModel || customModel) && (
-                  <Input
-                    placeholder="Enter model ID (e.g., claude-sonnet-4-5-20250514)"
-                    value={customModel || modelInput}
-                    onChange={(e) => handleCustomModelChange(e.target.value)}
-                  />
-                )}
-
-                <p className="text-xs text-slate-500">
-                  Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
-                </p>
-              </div>
+              <select
+                aria-label="Select AI provider"
+                value={activeProvider}
+                onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
+                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="openai-compatible">Local / OpenAI-Compatible (Ollama, LM Studio)</option>
+                <option value="gemini">Google Gemini</option>
+              </select>
             </section>
+
+            {/* Provider-specific Configuration */}
+            {activeProvider === 'anthropic' && (
+              <>
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                    Anthropic API Key
+                  </h3>
+                  <div className="flex gap-2 max-w-xl">
+                    <Input
+                      type="password"
+                      placeholder="sk-ant-..."
+                      value={apiKeyInput}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleTestApiKey}
+                      disabled={!apiKeyInput || testStatus === 'testing'}
+                      variant="secondary"
+                    >
+                      {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                      {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-1 text-green-500" />}
+                      {testStatus === 'error' && <XCircle className="w-4 h-4 mr-1 text-red-500" />}
+                      {testStatus === 'idle' && 'Test & Save'}
+                      {testStatus === 'testing' && 'Testing...'}
+                      {testStatus === 'success' && 'Saved!'}
+                      {testStatus === 'error' && 'Invalid'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Get your API key from the{' '}
+                    <a
+                      href="https://console.anthropic.com/settings/keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Anthropic Console
+                    </a>
+                    . Your key is stored locally and never sent to our servers.
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <Bot className="w-4 h-4" />
+                    Claude Model
+                  </h3>
+                  <div className="space-y-3 max-w-xl">
+                    <select
+                      aria-label="Select Claude model"
+                      value={isCustomModel ? 'custom' : modelInput}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {currentModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} - {model.description}
+                        </option>
+                      ))}
+                      <option value="custom">Custom model...</option>
+                    </select>
+
+                    {(isCustomModel || customModel) && (
+                      <Input
+                        placeholder="Enter model ID (e.g., claude-sonnet-4-5-20250514)"
+                        value={customModel || modelInput}
+                        onChange={(e) => handleCustomModelChange(e.target.value)}
+                      />
+                    )}
+
+                    <p className="text-xs text-slate-500">
+                      Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
+                    </p>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {activeProvider === 'openai-compatible' && (
+              <>
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                    Server URL
+                  </h3>
+                  <Input
+                    placeholder="http://localhost:11434/v1"
+                    value={baseUrlInput}
+                    onChange={(e) => {
+                      setBaseUrlInput(e.target.value);
+                      setTestStatus('idle');
+                    }}
+                    className="max-w-xl"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Default Ollama URL: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">http://localhost:11434/v1</code>
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                    API Key (Optional)
+                  </h3>
+                  <Input
+                    type="password"
+                    placeholder="Leave empty for local Ollama"
+                    value={apiKeyInput}
+                    onChange={(e) => handleApiKeyChange(e.target.value)}
+                    className="max-w-xl"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Only needed for remote endpoints that require authentication.
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <Bot className="w-4 h-4" />
+                    Model
+                  </h3>
+                  <div className="space-y-3 max-w-xl">
+                    <select
+                      aria-label="Select model"
+                      value={isCustomModel ? 'custom' : modelInput}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {currentModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} - {model.description}
+                        </option>
+                      ))}
+                      <option value="custom">Custom model...</option>
+                    </select>
+
+                    {(isCustomModel || customModel) && (
+                      <Input
+                        placeholder="Enter model name (e.g., llama3.2:latest)"
+                        value={customModel || modelInput}
+                        onChange={(e) => handleCustomModelChange(e.target.value)}
+                      />
+                    )}
+
+                    <Button
+                      onClick={handleTestApiKey}
+                      disabled={!modelInput || testStatus === 'testing'}
+                      variant="secondary"
+                    >
+                      {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                      {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-1 text-green-500" />}
+                      {testStatus === 'error' && <XCircle className="w-4 h-4 mr-1 text-red-500" />}
+                      {testStatus === 'idle' && 'Test & Save'}
+                      {testStatus === 'testing' && 'Testing...'}
+                      {testStatus === 'success' && 'Saved!'}
+                      {testStatus === 'error' && 'Connection Failed'}
+                    </Button>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {activeProvider === 'gemini' && (
+              <>
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                    Google API Key
+                  </h3>
+                  <div className="flex gap-2 max-w-xl">
+                    <Input
+                      type="password"
+                      placeholder="AIza..."
+                      value={apiKeyInput}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleTestApiKey}
+                      disabled={!apiKeyInput || testStatus === 'testing'}
+                      variant="secondary"
+                    >
+                      {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                      {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-1 text-green-500" />}
+                      {testStatus === 'error' && <XCircle className="w-4 h-4 mr-1 text-red-500" />}
+                      {testStatus === 'idle' && 'Test & Save'}
+                      {testStatus === 'testing' && 'Testing...'}
+                      {testStatus === 'success' && 'Saved!'}
+                      {testStatus === 'error' && 'Invalid'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Get your API key from{' '}
+                    <a
+                      href="https://aistudio.google.com/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Google AI Studio
+                    </a>
+                    . Free tier available with generous limits.
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <Bot className="w-4 h-4" />
+                    Gemini Model
+                  </h3>
+                  <div className="space-y-3 max-w-xl">
+                    <select
+                      aria-label="Select Gemini model"
+                      value={isCustomModel ? 'custom' : modelInput}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {currentModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name} - {model.description}
+                        </option>
+                      ))}
+                      <option value="custom">Custom model...</option>
+                    </select>
+
+                    {(isCustomModel || customModel) && (
+                      <Input
+                        placeholder="Enter model ID (e.g., gemini-1.5-pro-latest)"
+                        value={customModel || modelInput}
+                        onChange={(e) => handleCustomModelChange(e.target.value)}
+                      />
+                    )}
+
+                    <p className="text-xs text-slate-500">
+                      Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
+                    </p>
+                  </div>
+                </section>
+              </>
+            )}
           </TabsContent>
 
           {/* Resume Tab */}

@@ -98,9 +98,9 @@ export const PROVIDER_MODELS: Record<ProviderType, { id: string; name: string; d
     { id: 'custom', name: 'Custom...', description: 'Enter model name' },
   ],
   gemini: [
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Fast, free tier available' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Most capable' },
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', description: 'Experimental, fast' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5', description: 'Fast, free tier available' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5', description: 'Most capable' },
+    { id: 'gemini-3-pro-preview', name: 'Gemini 3.0', description: 'Experimental, fast' },
   ],
 };
 ```

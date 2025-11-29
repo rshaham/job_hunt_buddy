@@ -3,7 +3,7 @@ import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X } 
 import { Button, Textarea, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateCoverLetter, refineCoverLetter } from '../../services/ai';
-import { decodeApiKey, generateId } from '../../utils/helpers';
+import { isAIConfigured, generateId } from '../../utils/helpers';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Job, CoverLetterEntry } from '../../types';
@@ -25,7 +25,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const apiKey = decodeApiKey(settings.apiKey);
+  const hasAIConfigured = isAIConfigured(settings);
   const resumeText = job.resumeText || settings.defaultResumeText;
   const history = job.coverLetterHistory || [];
 
@@ -51,8 +51,8 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
       return;
     }
 
-    if (!apiKey) {
-      setError('Please configure your Claude API key in Settings');
+    if (!hasAIConfigured) {
+      setError('Please configure your AI provider in Settings');
       return;
     }
 
@@ -81,7 +81,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
   };
 
   const handleSendMessage = async () => {
-    if (!userMessage.trim() || !apiKey) return;
+    if (!userMessage.trim() || !hasAIConfigured) return;
 
     const messageContent = userMessage.trim();
     setUserMessage('');
@@ -157,7 +157,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
     <div className="flex flex-col h-[calc(100vh-180px)]">
       {/* Actions */}
       <div className="flex gap-2 mb-3">
-        <Button onClick={handleGenerate} disabled={isGenerating || !apiKey}>
+        <Button onClick={handleGenerate} disabled={isGenerating || !hasAIConfigured}>
           {isGenerating ? (
             <>
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />

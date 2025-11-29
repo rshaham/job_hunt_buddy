@@ -59,6 +59,22 @@ export const useAppStore = create<AppState>((set, get) => ({
         db.getAllJobs(),
         db.getSettings(),
       ]);
+
+      // Migrate old settings format (apiKey at root level) to new provider format
+      if (settings.apiKey && !settings.providers) {
+        settings.activeProvider = 'anthropic';
+        settings.providers = {
+          anthropic: {
+            apiKey: settings.apiKey,
+            model: settings.model || 'claude-sonnet-4-5',
+          },
+          'openai-compatible': { apiKey: '', model: 'llama3.2', baseUrl: 'http://localhost:11434/v1' },
+          gemini: { apiKey: '', model: 'gemini-1.5-flash' },
+        };
+        // Save migrated settings
+        await db.saveSettings(settings);
+      }
+
       set({ jobs, settings, isLoading: false });
     } catch (error) {
       console.error('Failed to load data:', error);

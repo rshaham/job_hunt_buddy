@@ -23,7 +23,7 @@ import * as Diff from 'diff';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { autoTailorResume, refineTailoredResume, gradeResume, rewriteForMemory } from '../../services/ai';
-import { decodeApiKey, generateId, getGradeColor } from '../../utils/helpers';
+import { isAIConfigured, generateId, getGradeColor } from '../../utils/helpers';
 import { showToast } from '../../stores/toastStore';
 import type { Job, TailoringEntry, SavedStory } from '../../types';
 
@@ -50,7 +50,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const apiKey = decodeApiKey(settings.apiKey);
+  const hasAIConfigured = isAIConfigured(settings);
   const originalResume = job.resumeText || settings.defaultResumeText;
   const tailoredResume = job.tailoredResume || originalResume;
   const history = job.tailoringHistory || [];
@@ -99,7 +99,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   };
 
   const handleAutoTailor = async () => {
-    if (!apiKey || !originalAnalysis) return;
+    if (!hasAIConfigured || !originalAnalysis) return;
 
     setIsAutoTailoring(true);
     setError('');
@@ -138,7 +138,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   };
 
   const handleSendMessage = async () => {
-    if (!userMessage.trim() || !apiKey || !originalAnalysis) return;
+    if (!userMessage.trim() || !hasAIConfigured || !originalAnalysis) return;
 
     const messageContent = userMessage.trim();
     setUserMessage('');
@@ -195,7 +195,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   };
 
   const handleRegrade = async () => {
-    if (!apiKey) return;
+    if (!hasAIConfigured) return;
 
     setIsRegrading(true);
     setError('');
@@ -378,7 +378,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
           {!job.tailoredResume && (
             <Button
               onClick={handleAutoTailor}
-              disabled={isAutoTailoring || !apiKey}
+              disabled={isAutoTailoring || !hasAIConfigured}
             >
               {isAutoTailoring ? (
                 <>
