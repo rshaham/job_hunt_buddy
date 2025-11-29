@@ -10,67 +10,57 @@ import {
   CONVERT_RESUME_TO_MARKDOWN_PROMPT,
   REWRITE_FOR_MEMORY_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, ProviderType, ProviderSettings } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
-
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-
-interface ClaudeMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { getProvider, type AIMessage } from './providers';
 
 // Get current AI config from store (works outside React components)
-function getAIConfig() {
+function getAIConfig(): { provider: ProviderType; config: ProviderSettings } {
   const { settings } = useAppStore.getState();
+  const provider = settings.activeProvider || 'anthropic';
+  const providerSettings = settings.providers?.[provider];
+
+  // Migration: handle old format where apiKey was at root level
+  if (!providerSettings && settings.apiKey) {
+    return {
+      provider: 'anthropic',
+      config: {
+        apiKey: decodeApiKey(settings.apiKey),
+        model: settings.model || 'claude-sonnet-4-5',
+      },
+    };
+  }
+
   return {
-    apiKey: decodeApiKey(settings.apiKey),
-    model: settings.model || 'claude-sonnet-4-5-20250514',
+    provider,
+    config: {
+      apiKey: decodeApiKey(providerSettings?.apiKey || ''),
+      baseUrl: providerSettings?.baseUrl,
+      model: providerSettings?.model || '',
+    },
   };
 }
 
-// Using anthropic-dangerous-direct-browser-access here because this is meant to be local only client
-// The app user owns the key and it never sent to any servers, but rather used locally only
-
-async function callClaude(
-  messages: ClaudeMessage[],
+async function callAI(
+  messages: AIMessage[],
   systemPrompt?: string,
-  overrideConfig?: { apiKey?: string; model?: string }
+  overrideConfig?: { provider?: ProviderType; apiKey?: string; model?: string; baseUrl?: string }
 ): Promise<string> {
-  const config = getAIConfig();
-  const apiKey = overrideConfig?.apiKey || config.apiKey;
-  const model = overrideConfig?.model || config.model;
+  const aiConfig = getAIConfig();
+  const provider = overrideConfig?.provider || aiConfig.provider;
+  const config: ProviderSettings = {
+    apiKey: overrideConfig?.apiKey || aiConfig.config.apiKey,
+    model: overrideConfig?.model || aiConfig.config.model,
+    baseUrl: overrideConfig?.baseUrl || aiConfig.config.baseUrl,
+  };
 
-  if (!apiKey) {
-    throw new Error('API key not configured. Please add your Claude API key in Settings.');
+  // OpenAI-compatible provider (Ollama) doesn't require API key
+  if (!config.apiKey && provider !== 'openai-compatible') {
+    throw new Error('API key not configured. Please add your API key in Settings.');
   }
 
-  const response = await fetch(CLAUDE_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      // Required because this is a serverless, local-first app.
-      // The user owns the key, so it's safe to use directly from the client.
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Claude API error: ${response.status} - ${error}`);
-  }
-
-  const data = await response.json();
-  return data.content[0].text;
+  return getProvider(provider).call(messages, systemPrompt, config);
 }
 
 function extractJSON(text: string): string {
@@ -106,7 +96,7 @@ export async function analyzeJobDescription(
 ): Promise<{ company: string; title: string; summary: JobSummary }> {
   const prompt = JD_ANALYSIS_PROMPT.replace('{jdText}', jdText);
 
-  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
 
   let parsed: Record<string, unknown>;
@@ -141,7 +131,7 @@ export async function gradeResume(
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
 
-  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
 
   let parsed: Record<string, unknown>;
@@ -170,7 +160,7 @@ export async function generateCoverLetter(
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
 
-  return await callClaude([{ role: 'user', content: prompt }]);
+  return await callAI([{ role: 'user', content: prompt }]);
 }
 
 export async function generateInterviewPrep(
@@ -181,7 +171,7 @@ export async function generateInterviewPrep(
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText);
 
-  return await callClaude([{ role: 'user', content: prompt }]);
+  return await callAI([{ role: 'user', content: prompt }]);
 }
 
 export async function chatAboutJob(
@@ -195,7 +185,7 @@ export async function chatAboutJob(
     .replace('{resumeText}', resumeText);
 
   // Build message history (skip entries with null answers - they're pending)
-  const messages: ClaudeMessage[] = [];
+  const messages: AIMessage[] = [];
   for (const entry of history) {
     if (entry.answer !== null) {
       messages.push({ role: 'user', content: entry.question });
@@ -204,7 +194,7 @@ export async function chatAboutJob(
   }
   messages.push({ role: 'user', content: newQuestion });
 
-  const answer = await callClaude(messages, systemPrompt);
+  const answer = await callAI(messages, systemPrompt);
 
   return {
     id: generateId(),
@@ -215,12 +205,15 @@ export async function chatAboutJob(
 }
 
 // testApiKey needs explicit params since it's used before settings are saved
-export async function testApiKey(apiKey: string, model: string): Promise<boolean> {
+export async function testApiKey(
+  provider: ProviderType,
+  config: { apiKey: string; model: string; baseUrl?: string }
+): Promise<boolean> {
   try {
-    await callClaude(
+    await callAI(
       [{ role: 'user', content: 'Say "OK" if you can read this.' }],
       undefined,
-      { apiKey, model }
+      { provider, ...config }
     );
     return true;
   } catch {
@@ -241,7 +234,7 @@ export async function autoTailorResume(
     .replace('{gaps}', resumeAnalysis.gaps.join(', '))
     .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
 
-  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
 
   let parsed: Record<string, unknown>;
@@ -277,13 +270,13 @@ export async function refineTailoredResume(
     .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
 
   // Build message history
-  const messages: ClaudeMessage[] = [];
+  const messages: AIMessage[] = [];
   for (const entry of history) {
     messages.push({ role: entry.role, content: entry.content });
   }
   messages.push({ role: 'user', content: userMessage });
 
-  const response = await callClaude(messages, systemPrompt);
+  const response = await callAI(messages, systemPrompt);
 
   try {
     const jsonStr = extractJSON(response);
@@ -315,13 +308,13 @@ export async function refineCoverLetter(
     .replace('{currentLetter}', currentLetter);
 
   // Build message history
-  const messages: ClaudeMessage[] = [];
+  const messages: AIMessage[] = [];
   for (const entry of history) {
     messages.push({ role: entry.role, content: entry.content });
   }
   messages.push({ role: 'user', content: userMessage });
 
-  const response = await callClaude(messages, systemPrompt);
+  const response = await callAI(messages, systemPrompt);
 
   try {
     const jsonStr = extractJSON(response);
@@ -343,7 +336,7 @@ export async function refineCoverLetter(
 export async function convertResumeToMarkdown(plainText: string): Promise<string> {
   const prompt = CONVERT_RESUME_TO_MARKDOWN_PROMPT.replace('{resumeText}', plainText);
 
-  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const response = await callAI([{ role: 'user', content: prompt }]);
 
   // Clean up response - remove any markdown code blocks if present
   let markdown = response.trim();
@@ -368,7 +361,7 @@ export async function rewriteForMemory(
     .replace('{question}', originalQuestion)
     .replace('{answer}', originalAnswer);
 
-  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
 
   let parsed: Record<string, unknown>;

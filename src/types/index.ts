@@ -120,16 +120,47 @@ export interface Status {
   order: number;
 }
 
-// Common model presets - users can also enter custom model names
-export const CLAUDE_MODEL_PRESETS: { id: string; name: string; description: string }[] = [
-  { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', description: 'Best balance of speed and intelligence' },
-  { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', description: 'Most capable, best for complex analysis' },
-  { id: 'claude-haiku-4-5', name: 'Claude 4.5 Haiku', description: 'Fastest responses, good for quick tasks' },
-];
+// Provider types for multi-provider AI support
+export type ProviderType = 'anthropic' | 'openai-compatible' | 'gemini';
+
+export interface ProviderSettings {
+  apiKey: string;
+  baseUrl?: string; // Only for openai-compatible
+  model: string;
+}
+
+// Provider-specific model presets
+export const PROVIDER_MODELS: Record<ProviderType, { id: string; name: string; description: string }[]> = {
+  anthropic: [
+    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', description: 'Best balance of speed and intelligence' },
+    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', description: 'Most capable, best for complex analysis' },
+    { id: 'claude-haiku-4-5', name: 'Claude 4.5 Haiku', description: 'Fastest responses, good for quick tasks' },
+  ],
+  'openai-compatible': [
+    { id: 'llama3.2', name: 'Llama 3.2', description: "Meta's latest model" },
+    { id: 'mistral', name: 'Mistral', description: 'Fast and capable' },
+    { id: 'qwen2.5', name: 'Qwen 2.5', description: 'Alibaba model' },
+  ],
+  gemini: [
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast, free tier available' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Most capable' },
+    { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro Preview', description: 'Flagship model' },
+  ],
+};
+
+// Legacy - kept for backward compatibility
+export const CLAUDE_MODEL_PRESETS = PROVIDER_MODELS.anthropic;
 
 export interface AppSettings {
-  apiKey: string;
-  model: string; // Model ID - can be preset or custom
+  // Provider system
+  activeProvider: ProviderType;
+  providers: Record<ProviderType, ProviderSettings>;
+
+  // DEPRECATED - kept for migration from old format
+  apiKey?: string;
+  model?: string;
+
+  // Unchanged
   defaultResumeText: string;
   defaultResumeName: string;
   statuses: Status[];
@@ -149,8 +180,12 @@ export const DEFAULT_STATUSES: Status[] = [
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  apiKey: '',
-  model: 'claude-sonnet-4-5',
+  activeProvider: 'anthropic',
+  providers: {
+    anthropic: { apiKey: '', model: 'claude-sonnet-4-5' },
+    'openai-compatible': { apiKey: '', model: 'llama3.2', baseUrl: 'http://localhost:11434/v1' },
+    gemini: { apiKey: '', model: 'gemini-1.5-flash' },
+  },
   defaultResumeText: '',
   defaultResumeName: '',
   statuses: DEFAULT_STATUSES,

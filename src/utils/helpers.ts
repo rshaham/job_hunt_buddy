@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { formatDistanceToNow } from 'date-fns';
 import TurndownService from 'turndown';
+import type { AppSettings } from '../types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -74,4 +75,23 @@ export function htmlToMarkdown(html: string): string {
   // Check if it's already plain text (no HTML tags)
   if (!/<[^>]+>/.test(html)) return html;
   return turndownService.turndown(html);
+}
+
+// Check if AI is configured for the active provider
+export function isAIConfigured(settings: AppSettings): boolean {
+  const provider = settings.activeProvider || 'anthropic';
+  const providerSettings = settings.providers?.[provider];
+
+  if (!providerSettings) {
+    // Legacy format - check root apiKey
+    return !!settings.apiKey;
+  }
+
+  // OpenAI-compatible (Ollama) doesn't require API key
+  if (provider === 'openai-compatible') {
+    return !!providerSettings.model;
+  }
+
+  // Other providers require API key
+  return !!providerSettings.apiKey;
 }

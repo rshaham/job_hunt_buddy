@@ -3,7 +3,7 @@ import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark } from 'lucide-r
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
-import { decodeApiKey, generateId } from '../../utils/helpers';
+import { isAIConfigured, generateId } from '../../utils/helpers';
 import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
@@ -105,7 +105,7 @@ export function PrepTab({ job }: PrepTabProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const apiKey = decodeApiKey(settings.apiKey);
+  const hasAIConfigured = isAIConfigured(settings);
   const resumeText = job.resumeText || settings.defaultResumeText;
 
   const handleSaveToMemory = async (entryId: string, question: string, answer: string) => {
@@ -145,8 +145,8 @@ export function PrepTab({ job }: PrepTabProps) {
   const handleSend = async () => {
     if (!question.trim()) return;
 
-    if (!apiKey) {
-      setError('Please configure your Claude API key in Settings');
+    if (!hasAIConfigured) {
+      setError('Please configure your AI provider in Settings');
       return;
     }
 
@@ -202,8 +202,8 @@ export function PrepTab({ job }: PrepTabProps) {
   };
 
   const handleGeneratePrep = async () => {
-    if (!apiKey) {
-      setError('Please configure your Claude API key in Settings');
+    if (!hasAIConfigured) {
+      setError('Please configure your AI provider in Settings');
       return;
     }
 
@@ -243,7 +243,7 @@ export function PrepTab({ job }: PrepTabProps) {
           variant="secondary"
           size="sm"
           onClick={handleGeneratePrep}
-          disabled={isGeneratingPrep || !apiKey}
+          disabled={isGeneratingPrep || !hasAIConfigured}
         >
           {isGeneratingPrep ? (
             <>
