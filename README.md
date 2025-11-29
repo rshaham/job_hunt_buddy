@@ -9,16 +9,33 @@ A locally-run React application to help you track job applications with AI-power
 
 ## Features
 
-- **Kanban Board View**: Track jobs across customizable status columns (Interested, Applied, Screening, Interviewing, Offer, etc.)
-- **AI-Powered JD Analysis**: Automatically extract company, title, requirements, skills, and salary from job descriptions
-- **Resume Fit Grading**: Get a letter grade (A-F) showing how well your resume matches the job requirements
-- **Cover Letter Generation**: AI generates tailored cover letters based on your resume and the job description
+### AI-Powered Analysis
+
+- **JD Analysis**: Automatically extract company, title, requirements, skills, and salary from job descriptions
+- **Resume Fit Grading**: Get a letter grade (A-F) showing how well your resume matches job requirements
+- **Interactive Resume Tailoring**: AI tailors your resume to match job requirements with:
+  - Split-pane chat interface for refinements
+  - Side-by-side comparison view (original vs tailored)
+  - Diff view showing exact changes
+  - Manual editing mode for direct touch-ups
+  - Auto-regrade after tailoring
+- **Cover Letter Generation**: AI generates tailored cover letters with iterative chat refinement
 - **Interview Prep & Q&A**: Chat with AI about the job, get likely interview questions, and practice responses
+- **Model Selection**: Choose between different Claude models (Sonnet, Opus, Haiku)
+
+### Organization & Tracking
+
+- **Kanban Board**: Drag-and-drop jobs across customizable status columns
 - **Contacts & Notes**: Track recruiters, hiring managers, and important notes for each application
 - **Timeline Tracking**: Log events like phone screens, interviews, and offers
-- **Dark Mode**: Toggle between light and dark themes
+- **Additional Context**: Add personal context and save successful interview stories that AI uses across all jobs
+
+### Data & Privacy
+
+- **PDF Resume Import**: Upload PDF resumes with automatic text extraction and markdown conversion
 - **Local Storage**: All data stored locally in your browser using IndexedDB
 - **Export/Import**: Backup and restore your data as JSON
+- **Dark Mode**: Toggle between light and dark themes
 
 ## Getting Started
 
