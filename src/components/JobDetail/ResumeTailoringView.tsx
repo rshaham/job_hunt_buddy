@@ -11,8 +11,10 @@ import {
   Check,
   AlertCircle,
   Printer,
+  Save,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import * as Diff from 'diff';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -32,6 +34,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   const [isRegrading, setIsRegrading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [userMessage, setUserMessage] = useState('');
   const [viewMode, setViewMode] = useState<'tailored' | 'compare' | 'diff'>('tailored');
@@ -278,6 +281,19 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     });
   };
 
+  const handleSaveAsJobResume = async () => {
+    await updateJob(job.id, {
+      resumeText: tailoredResume,
+      resumeAnalysis: tailoredAnalysis,
+      // Clear tailoring since this is now the base
+      tailoredResume: undefined,
+      tailoredResumeAnalysis: undefined,
+      tailoringHistory: undefined,
+    });
+    setIsSaveModalOpen(false);
+    onBack();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -356,6 +372,9 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
               <Button variant="secondary" size="sm" onClick={handlePrint} title="Print / Save as PDF">
                 <Printer className="w-4 h-4" />
               </Button>
+              <Button variant="secondary" size="sm" onClick={() => setIsSaveModalOpen(true)} title="Save as Job Resume">
+                <Save className="w-4 h-4" />
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
                 <RotateCcw className="w-4 h-4" />
               </Button>
@@ -405,6 +424,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                       <div className="text-sm whitespace-pre-wrap">
                         {entry.role === 'assistant' ? (
                           <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
                             components={{
                               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                               ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
@@ -568,6 +588,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                 <div className="flex-1 overflow-y-auto p-3">
                   <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
                         h1: ({ children }) => <h1 className="text-base font-bold mb-1">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-slate-600 dark:text-slate-400">{children}</h2>,
@@ -598,6 +619,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                 <div className="flex-1 overflow-y-auto p-3">
                   <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
                         h1: ({ children }) => <h1 className="text-base font-bold mb-1">{children}</h1>,
                         h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-primary">{children}</h2>,
@@ -618,6 +640,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
             <div className="flex-1 overflow-y-auto p-4">
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-lg font-semibold mt-4 mb-2 text-primary">{children}</h2>,
@@ -644,6 +667,16 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
         message="This will discard all tailoring changes and chat history. Are you sure?"
         confirmText="Reset"
         variant="warning"
+      />
+
+      <ConfirmModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onConfirm={handleSaveAsJobResume}
+        title="Save as Job Resume"
+        message="This will save the tailored resume as this job's custom resume and clear the tailoring history. The tailored version will become your new base resume for this job."
+        confirmText="Save"
+        variant="default"
       />
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '../ui';
 import { useAppStore } from '../../stores/appStore';
-import { gradeResume } from '../../services/ai';
+import { gradeResume, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { decodeApiKey, getGradeColor } from '../../utils/helpers';
 import { ResumeTailoringView } from './ResumeTailoringView';
@@ -32,7 +32,9 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
     setError('');
     try {
       const text = await extractTextFromPDF(file);
-      await updateJob(job.id, { resumeText: text });
+      // Convert to markdown for better comparison/diff results
+      const markdown = await convertResumeToMarkdown(text);
+      await updateJob(job.id, { resumeText: markdown });
     } catch (err) {
       setError('Failed to parse PDF. Please try a different file.');
     } finally {

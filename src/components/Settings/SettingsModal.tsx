@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Modal, Button, Input } from '../ui';
 import { useAppStore } from '../../stores/appStore';
-import { testApiKey } from '../../services/ai';
+import { testApiKey, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
 import { CLAUDE_MODEL_PRESETS } from '../../types';
@@ -84,8 +84,10 @@ export function SettingsModal() {
     setIsUploading(true);
     try {
       const text = await extractTextFromPDF(file);
+      // Convert to markdown for better comparison/diff results
+      const markdown = await convertResumeToMarkdown(text);
       await updateSettings({
-        defaultResumeText: text,
+        defaultResumeText: markdown,
         defaultResumeName: file.name,
       });
     } catch (err) {

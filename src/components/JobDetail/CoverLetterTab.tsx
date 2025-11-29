@@ -5,6 +5,7 @@ import { useAppStore } from '../../stores/appStore';
 import { generateCoverLetter, refineCoverLetter } from '../../services/ai';
 import { decodeApiKey, generateId } from '../../utils/helpers';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Job, CoverLetterEntry } from '../../types';
 
 interface CoverLetterTabProps {
@@ -293,6 +294,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                             <div className="text-sm">
                               {entry.role === 'assistant' ? (
                                 <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
                                   components={{
                                     p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                                   }}

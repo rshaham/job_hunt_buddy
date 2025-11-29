@@ -6,6 +6,7 @@ import { chatAboutJob, generateInterviewPrep } from '../../services/ai';
 import { decodeApiKey, generateId } from '../../utils/helpers';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Job, QAEntry } from '../../types';
 
 interface PrepTabProps {
@@ -17,6 +18,7 @@ function MarkdownContent({ content }: { content: string }) {
   return (
     <div className="text-sm text-slate-700 dark:text-slate-300">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
         h1: ({ children }) => (
           <h1 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
@@ -57,6 +59,30 @@ function MarkdownContent({ content }: { content: string }) {
           </blockquote>
         ),
         hr: () => <hr className="my-4 border-slate-200 dark:border-slate-700" />,
+        table: ({ children }) => (
+          <div className="overflow-x-auto my-3">
+            <table className="min-w-full border-collapse border border-slate-300 dark:border-slate-600 text-sm">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-slate-100 dark:bg-slate-700">{children}</thead>
+        ),
+        tbody: ({ children }) => <tbody>{children}</tbody>,
+        tr: ({ children }) => (
+          <tr className="border-b border-slate-300 dark:border-slate-600">{children}</tr>
+        ),
+        th: ({ children }) => (
+          <th className="px-3 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="px-3 py-2 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600">
+            {children}
+          </td>
+        ),
       }}
       >
         {content}

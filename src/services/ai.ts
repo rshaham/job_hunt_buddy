@@ -7,6 +7,7 @@ import {
   AUTO_TAILOR_PROMPT,
   REFINE_RESUME_SYSTEM_PROMPT,
   REFINE_COVER_LETTER_PROMPT,
+  CONVERT_RESUME_TO_MARKDOWN_PROMPT,
 } from '../utils/prompts';
 import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
@@ -285,4 +286,24 @@ export async function refineCoverLetter(
       updatedLetter: currentLetter,
     };
   }
+}
+
+// Convert plain text resume to markdown format
+export async function convertResumeToMarkdown(plainText: string): Promise<string> {
+  const prompt = CONVERT_RESUME_TO_MARKDOWN_PROMPT.replace('{resumeText}', plainText);
+
+  const response = await callClaude([{ role: 'user', content: prompt }]);
+
+  // Clean up response - remove any markdown code blocks if present
+  let markdown = response.trim();
+  if (markdown.startsWith('```markdown')) {
+    markdown = markdown.slice(11);
+  } else if (markdown.startsWith('```')) {
+    markdown = markdown.slice(3);
+  }
+  if (markdown.endsWith('```')) {
+    markdown = markdown.slice(0, -3);
+  }
+
+  return markdown.trim();
 }

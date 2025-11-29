@@ -184,3 +184,21 @@ Return ONLY valid JSON:
 }
 
 Be helpful and provide clear explanations of the changes you make.`;
+
+export const CONVERT_RESUME_TO_MARKDOWN_PROMPT = `Convert this resume text to well-structured markdown format.
+
+Resume text (extracted from PDF):
+{resumeText}
+
+Rules:
+- Use # for the person's name (main heading)
+- Use ## for major sections (Experience, Education, Skills, Summary, etc.)
+- Use ### for job titles or degree names
+- Use **bold** for company names, dates, and other emphasis
+- Use bullet points (-) for responsibilities, achievements, and skills
+- Preserve ALL original content - do not add or remove any information
+- Clean up any formatting artifacts from PDF extraction (extra spaces, broken lines, etc.)
+- Maintain logical section ordering
+- Keep contact information near the top after the name
+
+Return ONLY the markdown-formatted resume. No explanations, no code blocks, no extra text.`;
