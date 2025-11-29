@@ -4,6 +4,14 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
+### Multi-Provider AI Support
+- Add provider abstraction layer for multiple AI backends
+- **Providers:** Anthropic (existing), Ollama/Local, OpenAI-Compatible, Google Gemini
+- Provider selector dropdown in Settings with per-provider configuration
+- Auto-migrate existing Anthropic users to new settings format
+- OpenAI-compatible works without API key (for local Ollama)
+- See `docs/plans/multi-provider-ai.md` for full implementation spec
+
 ### Calendar Integration
 - Sync interviews to Google Calendar / Outlook
 - Set reminders for follow-ups
