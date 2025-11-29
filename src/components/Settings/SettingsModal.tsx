@@ -10,14 +10,22 @@ import {
   FileText,
   Trash2,
   Bot,
+  Key,
+  User,
+  Settings,
+  Eye,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
 import { useAppStore } from '../../stores/appStore';
 import { testApiKey, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
 import { CLAUDE_MODEL_PRESETS } from '../../types';
 import { showToast } from '../../stores/toastStore';
+import ReactMarkdown from 'react-markdown';
 
 export function SettingsModal() {
   const {
@@ -35,6 +43,8 @@ export function SettingsModal() {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [isUploading, setIsUploading] = useState(false);
   const [additionalContextInput, setAdditionalContextInput] = useState(settings.additionalContext || '');
+  const [showResumePreview, setShowResumePreview] = useState(false);
+  const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -107,6 +117,18 @@ export function SettingsModal() {
       defaultResumeText: '',
       defaultResumeName: '',
     });
+    setShowResumePreview(false);
+  };
+
+  const handleDownloadResume = () => {
+    const blob = new Blob([settings.defaultResumeText], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const baseName = settings.defaultResumeName.replace(/\.[^/.]+$/, '');
+    a.download = `${baseName || 'resume'}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleExport = async () => {
@@ -145,225 +167,340 @@ export function SettingsModal() {
   const handleDeleteStory = async (storyId: string) => {
     const updatedStories = (settings.savedStories || []).filter(s => s.id !== storyId);
     await updateSettings({ savedStories: updatedStories });
+    if (expandedStoryId === storyId) {
+      setExpandedStoryId(null);
+    }
+  };
+
+  const toggleStoryExpand = (storyId: string) => {
+    setExpandedStoryId(expandedStoryId === storyId ? null : storyId);
   };
 
   return (
-    <Modal isOpen={isSettingsModalOpen} onClose={closeSettingsModal} title="Settings" size="lg">
-      <div className="p-4 space-y-6">
-        {/* API Key Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Claude API Key
-          </h3>
-          <div className="flex gap-2">
-            <Input
-              type="password"
-              placeholder="sk-ant-..."
-              value={apiKeyInput}
-              onChange={(e) => handleApiKeyChange(e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleTestApiKey}
-              disabled={!apiKeyInput || testStatus === 'testing'}
-              variant="secondary"
-            >
-              {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
-              {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-1 text-green-500" />}
-              {testStatus === 'error' && <XCircle className="w-4 h-4 mr-1 text-red-500" />}
-              {testStatus === 'idle' && 'Test & Save'}
-              {testStatus === 'testing' && 'Testing...'}
-              {testStatus === 'success' && 'Saved!'}
-              {testStatus === 'error' && 'Invalid'}
-            </Button>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Your API key is stored locally and never sent to our servers.
-          </p>
-        </section>
+    <Modal isOpen={isSettingsModalOpen} onClose={closeSettingsModal} title="Settings" size="full">
+      <div className="p-4 h-full">
+        <Tabs defaultValue="api" className="h-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="api">
+              <Key className="w-4 h-4 mr-1.5 inline" />
+              API
+            </TabsTrigger>
+            <TabsTrigger value="resume">
+              <FileText className="w-4 h-4 mr-1.5 inline" />
+              Resume
+            </TabsTrigger>
+            <TabsTrigger value="profile">
+              <User className="w-4 h-4 mr-1.5 inline" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="preferences">
+              <Settings className="w-4 h-4 mr-1.5 inline" />
+              Preferences
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Model Selection Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-            <Bot className="w-4 h-4" />
-            Claude Model
-          </h3>
-          <div className="space-y-3">
-            <select
-              aria-label="Select Claude model"
-              value={isCustomModel ? 'custom' : modelInput}
-              onChange={(e) => handleModelChange(e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {CLAUDE_MODEL_PRESETS.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name} - {model.description}
-                </option>
-              ))}
-              <option value="custom">Custom model...</option>
-            </select>
+          {/* API Tab */}
+          <TabsContent value="api" className="space-y-6">
+            {/* API Key Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Claude API Key
+              </h3>
+              <div className="flex gap-2 max-w-xl">
+                <Input
+                  type="password"
+                  placeholder="sk-ant-..."
+                  value={apiKeyInput}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleTestApiKey}
+                  disabled={!apiKeyInput || testStatus === 'testing'}
+                  variant="secondary"
+                >
+                  {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                  {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-1 text-green-500" />}
+                  {testStatus === 'error' && <XCircle className="w-4 h-4 mr-1 text-red-500" />}
+                  {testStatus === 'idle' && 'Test & Save'}
+                  {testStatus === 'testing' && 'Testing...'}
+                  {testStatus === 'success' && 'Saved!'}
+                  {testStatus === 'error' && 'Invalid'}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Your API key is stored locally and never sent to our servers.
+              </p>
+            </section>
 
-            {(isCustomModel || customModel) && (
-              <Input
-                placeholder="Enter model ID (e.g., claude-sonnet-4-5-20250514)"
-                value={customModel || modelInput}
-                onChange={(e) => handleCustomModelChange(e.target.value)}
-              />
-            )}
+            {/* Model Selection Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <Bot className="w-4 h-4" />
+                Claude Model
+              </h3>
+              <div className="space-y-3 max-w-xl">
+                <select
+                  aria-label="Select Claude model"
+                  value={isCustomModel ? 'custom' : modelInput}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  {CLAUDE_MODEL_PRESETS.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name} - {model.description}
+                    </option>
+                  ))}
+                  <option value="custom">Custom model...</option>
+                </select>
 
-            <p className="text-xs text-slate-500">
-              Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
-            </p>
-          </div>
-        </section>
+                {(isCustomModel || customModel) && (
+                  <Input
+                    placeholder="Enter model ID (e.g., claude-sonnet-4-5-20250514)"
+                    value={customModel || modelInput}
+                    onChange={(e) => handleCustomModelChange(e.target.value)}
+                  />
+                )}
 
-        {/* Default Resume Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Default Resume
-          </h3>
-          {settings.defaultResumeName ? (
-            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-              <FileText className="w-8 h-8 text-primary" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {settings.defaultResumeName}
-                </p>
                 <p className="text-xs text-slate-500">
-                  {settings.defaultResumeText.length.toLocaleString()} characters extracted
+                  Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleClearResume}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={handleResumeUpload}
-                className="hidden"
-              />
-              <Button
-                variant="secondary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4 mr-1" />
-                )}
-                {isUploading ? 'Parsing PDF...' : 'Upload Resume (PDF)'}
-              </Button>
-            </div>
-          )}
-          <p className="text-xs text-slate-500 mt-1">
-            This resume will be used as the default for resume grading and cover letter generation.
-          </p>
-        </section>
+            </section>
+          </TabsContent>
 
-        {/* Additional Context Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Additional Context
-          </h3>
-          <Textarea
-            value={additionalContextInput}
-            onChange={(e) => setAdditionalContextInput(e.target.value)}
-            onBlur={() => updateSettings({ additionalContext: additionalContextInput })}
-            placeholder="Add context the AI should know about you: key projects, achievements, skills not on your resume, career goals, etc."
-            rows={6}
-            className="text-sm"
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            This context is included when grading resumes, tailoring, and generating cover letters.
-          </p>
-        </section>
-
-        {/* Saved Stories Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Saved Stories ({settings.savedStories?.length || 0})
-          </h3>
-          {settings.savedStories?.length > 0 ? (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {settings.savedStories.map((story) => (
-                <div key={story.id} className="p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs">
-                  <div className="flex justify-between items-start gap-2">
-                    <p className="font-medium text-slate-700 dark:text-slate-300 line-clamp-1 flex-1">
-                      {story.question}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteStory(story.id)}
-                      className="text-slate-400 hover:text-danger shrink-0"
-                      title="Delete story"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+          {/* Resume Tab */}
+          <TabsContent value="resume" className="space-y-6">
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Default Resume
+              </h3>
+              {settings.defaultResumeName ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
+                    <FileText className="w-8 h-8 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {settings.defaultResumeName}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {settings.defaultResumeText.length.toLocaleString()} characters
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowResumePreview(!showResumePreview)}
+                        title="View resume"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDownloadResume}
+                        title="Download as markdown"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleClearResume} title="Remove resume">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-slate-500 line-clamp-2 mt-1">{story.answer}</p>
+
+                  {/* Resume Preview */}
+                  {showResumePreview && (
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 max-h-[50vh] overflow-y-auto">
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{settings.defaultResumeText}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleResumeUpload}
+                      className="hidden"
+                      aria-label="Upload resume PDF"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-1" />
+                      )}
+                      {isUploading ? 'Parsing PDF...' : 'Replace Resume'}
+                    </Button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-slate-500">
-              No saved stories yet. Save answers from Prep chats or Resume Tailoring to build your profile.
-            </p>
-          )}
-        </section>
+              ) : (
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleResumeUpload}
+                    className="hidden"
+                    aria-label="Upload resume PDF"
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-1" />
+                    )}
+                    {isUploading ? 'Parsing PDF...' : 'Upload Resume (PDF)'}
+                  </Button>
+                </div>
+              )}
+              <p className="text-xs text-slate-500 mt-2">
+                This resume will be used as the default for resume grading and cover letter generation.
+              </p>
+            </section>
+          </TabsContent>
 
-        {/* Theme Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Appearance
-          </h3>
-          <Button variant="secondary" onClick={handleThemeToggle}>
-            {settings.theme === 'light' ? (
-              <>
-                <Moon className="w-4 h-4 mr-1" />
-                Switch to Dark Mode
-              </>
-            ) : (
-              <>
-                <Sun className="w-4 h-4 mr-1" />
-                Switch to Light Mode
-              </>
-            )}
-          </Button>
-        </section>
-
-        {/* Export/Import Section */}
-        <section>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-            Data Backup
-          </h3>
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleExport}>
-              <Download className="w-4 h-4 mr-1" />
-              Export Data
-            </Button>
-            <div>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            {/* Additional Context Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Additional Context
+              </h3>
+              <Textarea
+                value={additionalContextInput}
+                onChange={(e) => setAdditionalContextInput(e.target.value)}
+                onBlur={() => updateSettings({ additionalContext: additionalContextInput })}
+                placeholder="Add context the AI should know about you: key projects, achievements, skills not on your resume, career goals, etc."
+                rows={10}
+                className="text-sm max-w-2xl"
               />
-              <Button variant="secondary" onClick={() => importInputRef.current?.click()}>
-                <Upload className="w-4 h-4 mr-1" />
-                Import Data
+              <p className="text-xs text-slate-500 mt-2">
+                This context is included when grading resumes, tailoring, and generating cover letters.
+              </p>
+            </section>
+
+            {/* Saved Stories Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Saved Stories ({settings.savedStories?.length || 0})
+              </h3>
+              {settings.savedStories?.length > 0 ? (
+                <div className="space-y-2 max-w-2xl">
+                  {settings.savedStories.map((story) => (
+                    <div
+                      key={story.id}
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleStoryExpand(story.id)}
+                        className="w-full p-3 flex items-center gap-2 text-left bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        {expandedStoryId === story.id ? (
+                          <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+                        )}
+                        <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          {story.question}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteStory(story.id);
+                          }}
+                          className="text-slate-400 hover:text-danger p-1"
+                          title="Delete story"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </button>
+                      {expandedStoryId === story.id && (
+                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                          <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                            {story.answer}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  No saved stories yet. Save answers from Prep chats or Resume Tailoring to build your profile.
+                </p>
+              )}
+            </section>
+          </TabsContent>
+
+          {/* Preferences Tab */}
+          <TabsContent value="preferences" className="space-y-6">
+            {/* Theme Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Appearance
+              </h3>
+              <Button variant="secondary" onClick={handleThemeToggle}>
+                {settings.theme === 'light' ? (
+                  <>
+                    <Moon className="w-4 h-4 mr-1" />
+                    Switch to Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-4 h-4 mr-1" />
+                    Switch to Light Mode
+                  </>
+                )}
               </Button>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Export your data as JSON for backup or import from a previous backup.
-          </p>
-        </section>
+            </section>
+
+            {/* Export/Import Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Data Backup
+              </h3>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Export Data
+                </Button>
+                <div>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleImport}
+                    className="hidden"
+                    aria-label="Import data JSON file"
+                  />
+                  <Button variant="secondary" onClick={() => importInputRef.current?.click()}>
+                    <Upload className="w-4 h-4 mr-1" />
+                    Import Data
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Export your data as JSON for backup or import from a previous backup.
+              </p>
+            </section>
+          </TabsContent>
+        </Tabs>
       </div>
     </Modal>
   );
