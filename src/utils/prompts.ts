@@ -51,6 +51,12 @@ Requirements:
 - Include a strong opening and call to action
 - Do NOT include placeholder text like [Your Name] - just write the letter body
 
+IMPORTANT - Honesty Guidelines:
+- Only reference experiences and skills that are actually in the resume
+- Do not exaggerate qualifications or fabricate achievements
+- Be enthusiastic but honest - authenticity resonates with employers
+- It's okay to frame existing experience positively, but never invent new experience
+
 Write the cover letter now:`;
 
 export const INTERVIEW_PREP_PROMPT = `Generate interview preparation materials for this job application.
@@ -67,6 +73,13 @@ Provide comprehensive interview prep including:
 3. 3-5 questions the candidate should ask the interviewer
 4. Key talking points to emphasize
 5. Potential red flags or concerns to address proactively
+
+IMPORTANT - Honesty Guidelines:
+- Base all suggested responses on the candidate's ACTUAL experience from their resume
+- Never suggest fabricating stories, experiences, or achievements
+- Help the candidate frame their real experiences in the best light
+- If there are genuine gaps, suggest honest ways to address them (e.g., "I haven't done X directly, but I have experience with Y which is similar...")
+- Authenticity and honesty in interviews builds trust and leads to better job fit
 
 Format as clear, actionable advice.`;
 
