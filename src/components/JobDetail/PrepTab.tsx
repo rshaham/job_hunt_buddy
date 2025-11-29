@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Trash2, Sparkles, AlertCircle } from 'lucide-react';
-import { Button } from '../ui';
+import { Button, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep } from '../../services/ai';
 import { decodeApiKey } from '../../utils/helpers';
@@ -72,6 +72,7 @@ export function PrepTab({ job }: PrepTabProps) {
   const [isGeneratingPrep, setIsGeneratingPrep] = useState(false);
   const [error, setError] = useState('');
   const [prepMaterial, setPrepMaterial] = useState('');
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -126,9 +127,8 @@ export function PrepTab({ job }: PrepTabProps) {
   };
 
   const handleClearHistory = async () => {
-    if (confirm('Clear all chat history for this job?')) {
-      await updateJob(job.id, { qaHistory: [] });
-    }
+    await updateJob(job.id, { qaHistory: [] });
+    setIsClearModalOpen(false);
   };
 
   const handleGeneratePrep = async () => {
@@ -188,12 +188,22 @@ export function PrepTab({ job }: PrepTabProps) {
           )}
         </Button>
         {job.qaHistory.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={handleClearHistory}>
+          <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
             <Trash2 className="w-4 h-4 mr-1" />
             Clear Chat
           </Button>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearHistory}
+        title="Clear Chat History"
+        message="Clear all chat history for this job? This cannot be undone."
+        confirmText="Clear"
+        variant="warning"
+      />
 
       {/* Prep Material */}
       {prepMaterial && (

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { OverviewTab } from './OverviewTab';
 import { ResumeFitTab } from './ResumeFitTab';
@@ -14,15 +15,14 @@ interface JobDetailViewProps {
 
 export function JobDetailView({ job }: JobDetailViewProps) {
   const { selectJob, updateJob, deleteJob, settings } = useAppStore();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     await updateJob(job.id, { status: newStatus });
   };
 
   const handleDelete = async () => {
-    if (confirm(`Delete "${job.title}" at ${job.company}? This cannot be undone.`)) {
-      await deleteJob(job.id);
-    }
+    await deleteJob(job.id);
   };
 
   const currentStatus = settings.statuses.find((s) => s.name === job.status);
@@ -57,10 +57,20 @@ export function JobDetailView({ job }: JobDetailViewProps) {
           ))}
         </select>
 
-        <Button variant="ghost" size="sm" onClick={handleDelete} className="text-danger">
+        <Button variant="ghost" size="sm" onClick={() => setIsDeleteModalOpen(true)} className="text-danger">
           <Trash2 className="w-4 h-4" />
         </Button>
       </header>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Job"
+        message={`Delete "${job.title}" at ${job.company}? This cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+      />
 
       {/* Tabs */}
       <div className="flex-1 overflow-hidden">

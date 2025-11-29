@@ -4,6 +4,7 @@ import { BoardView } from './components/Board';
 import { JobDetailView } from './components/JobDetail';
 import { AddJobModal } from './components/AddJob';
 import { SettingsModal } from './components/Settings';
+import { ToastContainer } from './components/ui';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings } = useAppStore();
@@ -36,6 +37,7 @@ function App() {
       {selectedJob && <JobDetailView job={selectedJob} />}
       <AddJobModal />
       <SettingsModal />
+      <ToastContainer />
     </>
   );
 }

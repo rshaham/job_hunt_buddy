@@ -53,15 +53,24 @@ export function BoardView() {
     if (!over) return;
 
     const jobId = active.id as string;
-    const newStatus = over.id as string;
+    const overId = over.id as string;
 
-    // Check if we're dropping on a column
-    const isColumn = settings.statuses.some((s) => s.name === newStatus);
+    // Check if dropping on a column
+    const isColumn = settings.statuses.some((s) => s.name === overId);
+
+    let newStatus: string;
     if (isColumn) {
-      const job = jobs.find((j) => j.id === jobId);
-      if (job && job.status !== newStatus) {
-        moveJob(jobId, newStatus);
-      }
+      newStatus = overId;
+    } else {
+      // Dropping on another job - find that job's status
+      const targetJob = jobs.find((j) => j.id === overId);
+      if (!targetJob) return;
+      newStatus = targetJob.status;
+    }
+
+    const job = jobs.find((j) => j.id === jobId);
+    if (job && job.status !== newStatus) {
+      moveJob(jobId, newStatus);
     }
   };
 

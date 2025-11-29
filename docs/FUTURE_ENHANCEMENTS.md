@@ -4,16 +4,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
-### Kanban Drag & Drop
-- Drag and drop job cards between status columns on the swim lane board
-- Visual feedback during drag operations
-- Reorder cards within columns
-
-### Replace Browser Prompts with Modals
-- Replace ugly browser `confirm()` dialogs (e.g., delete confirmation)
-- Replace `prompt()` inputs with styled modal components
-- Consistent UI throughout the app
-- 
 ### Interactive Resume Tailoring
 - Chat interface to iteratively refine resume for specific job
 - AI suggests initial edits based on JD analysis
@@ -25,6 +15,11 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Chat interface to iteratively improve generated cover letter
 - Similar to resume tailoring - ask questions, refine, polish
 - Conversational refinement of tone, length, and focus
+
+### More Responsive AI chat 
+- Chat with AI feels like it takes a long time because the UI locks up
+- Make the UI do... something while doing that. Maybe show the thinking? 
+- Have some animation of the AI working that makes the user feels like it takes less time
 
 ### Interviewer Profile Analysis
 - User pastes interviewer's LinkedIn profile info (manually copied)
@@ -103,6 +98,8 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] Kanban drag & drop between swim lanes (cross-column movement)
+- [x] Replace browser prompts with styled modals (ConfirmModal + Toast notifications)
 - [x] Basic Kanban board with drag & drop
 - [x] AI-powered JD analysis
 - [x] Resume grading with match score

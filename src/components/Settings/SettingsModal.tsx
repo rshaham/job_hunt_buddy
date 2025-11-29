@@ -17,6 +17,7 @@ import { testApiKey } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
 import { CLAUDE_MODEL_PRESETS } from '../../types';
+import { showToast } from '../../stores/toastStore';
 
 export function SettingsModal() {
   const {
@@ -89,7 +90,7 @@ export function SettingsModal() {
       });
     } catch (err) {
       console.error('Failed to parse PDF:', err);
-      alert('Failed to parse PDF. Please try a different file.');
+      showToast('Failed to parse PDF. Please try a different file.', 'error');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -123,10 +124,10 @@ export function SettingsModal() {
     try {
       const text = await file.text();
       await importData(text);
-      alert('Data imported successfully!');
+      showToast('Data imported successfully!', 'success');
     } catch (err) {
       console.error('Failed to import:', err);
-      alert('Failed to import data. Please check the file format.');
+      showToast('Failed to import data. Please check the file format.', 'error');
     }
 
     if (importInputRef.current) {
