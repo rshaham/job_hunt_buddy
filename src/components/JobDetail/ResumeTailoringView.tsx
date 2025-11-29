@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   Sparkles,
@@ -10,8 +10,10 @@ import {
   RotateCcw,
   Check,
   AlertCircle,
+  Printer,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import * as Diff from 'diff';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { autoTailorResume, refineTailoredResume, gradeResume } from '../../services/ai';
@@ -32,6 +34,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [userMessage, setUserMessage] = useState('');
+  const [viewMode, setViewMode] = useState<'tailored' | 'compare' | 'diff'>('tailored');
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -46,6 +49,40 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  // Track the resume content that was last graded
+  const lastGradedResumeRef = useRef<string | undefined>(undefined);
+
+  // Auto re-grade when tailored resume changes (debounced)
+  useEffect(() => {
+    // Skip if no tailored resume or no API key
+    if (!job.tailoredResume || !apiKey) return;
+
+    // Skip if already grading
+    if (isRegrading) return;
+
+    // Skip if this resume was already graded
+    if (lastGradedResumeRef.current === job.tailoredResume) return;
+
+    const timeoutId = setTimeout(async () => {
+      // Double-check conditions before grading
+      if (!job.tailoredResume || isRegrading) return;
+
+      setIsRegrading(true);
+      try {
+        const newAnalysis = await gradeResume(job.jdText, job.tailoredResume);
+        lastGradedResumeRef.current = job.tailoredResume;
+        await updateJob(job.id, { tailoredResumeAnalysis: newAnalysis });
+      } catch (err) {
+        // Silent fail for auto-regrade - user can manually regrade if needed
+        console.error('Auto-regrade failed:', err);
+      } finally {
+        setIsRegrading(false);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [job.tailoredResume, job.jdText, job.id, apiKey, isRegrading, updateJob]);
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -182,6 +219,57 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Convert markdown to simple HTML for printing
+    const htmlContent = tailoredResume
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^\* (.+)$/gm, '<li>$1</li>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${job.company} - ${job.title} Resume</title>
+          <style>
+            body {
+              font-family: 'Georgia', serif;
+              max-width: 8.5in;
+              margin: 0 auto;
+              padding: 0.5in;
+              font-size: 11pt;
+              line-height: 1.4;
+              color: #333;
+            }
+            h1 { font-size: 18pt; margin-bottom: 0.3em; color: #000; }
+            h2 { font-size: 13pt; margin-top: 1em; margin-bottom: 0.3em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+            h3 { font-size: 11pt; margin-top: 0.8em; margin-bottom: 0.2em; }
+            p { margin: 0.3em 0; }
+            ul { margin: 0.3em 0; padding-left: 1.2em; }
+            li { margin: 0.15em 0; }
+            strong { font-weight: 600; }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <p>${htmlContent}</p>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const handleReset = async () => {
     await updateJob(job.id, {
       tailoredResume: undefined,
@@ -200,6 +288,12 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   const suggestedPrompts = originalAnalysis?.gaps.slice(0, 3).map(gap =>
     `Tell me about your experience with: ${gap}`
   ) || [];
+
+  // Compute diff between original and tailored resume
+  const diffParts = useMemo(() => {
+    if (!job.tailoredResume) return [];
+    return Diff.diffWords(originalResume, tailoredResume);
+  }, [originalResume, tailoredResume, job.tailoredResume]);
 
   return (
     <div className="flex flex-col h-full">
@@ -256,8 +350,11 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
               <Button variant="secondary" size="sm" onClick={handleCopy}>
                 {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleDownload}>
+              <Button variant="secondary" size="sm" onClick={handleDownload} title="Download Markdown">
                 <Download className="w-4 h-4" />
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handlePrint} title="Print / Save as PDF">
+                <Printer className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
                 <RotateCcw className="w-4 h-4" />
@@ -384,9 +481,50 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
         {/* Right: Resume Preview */}
         <div className="flex flex-col min-h-0 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              {job.tailoredResume ? 'Tailored Resume' : 'Original Resume'}
-            </h3>
+            <div className="flex items-center gap-2">
+              {job.tailoredResume && (
+                <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('tailored')}
+                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                      viewMode === 'tailored'
+                        ? 'bg-white dark:bg-slate-600 shadow-sm font-medium'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Tailored
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('compare')}
+                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                      viewMode === 'compare'
+                        ? 'bg-white dark:bg-slate-600 shadow-sm font-medium'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Compare
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('diff')}
+                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                      viewMode === 'diff'
+                        ? 'bg-white dark:bg-slate-600 shadow-sm font-medium'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Changes
+                  </button>
+                </div>
+              )}
+              {!job.tailoredResume && (
+                <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Original Resume
+                </h3>
+              )}
+            </div>
             {tailoredAnalysis && (
               <span className={`text-xs px-2 py-0.5 rounded ${getGradeColor(tailoredAnalysis.grade)}`}>
                 {tailoredAnalysis.grade}
@@ -394,23 +532,107 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown
-                components={{
-                  h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-lg font-semibold mt-4 mb-2 text-primary">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-base font-medium mt-3 mb-1">{children}</h3>,
-                  p: ({ children }) => <p className="mb-2">{children}</p>,
-                  ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-                  li: ({ children }) => <li>{children}</li>,
-                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                }}
-              >
-                {tailoredResume}
-              </ReactMarkdown>
+          {viewMode === 'diff' && job.tailoredResume ? (
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                {diffParts.map((part, index) => (
+                  <span
+                    key={index}
+                    className={
+                      part.added
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
+                        : part.removed
+                        ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 line-through'
+                        : ''
+                    }
+                  >
+                    {part.value}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : viewMode === 'compare' && job.tailoredResume ? (
+            <div className="flex-1 grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 overflow-hidden">
+              {/* Original */}
+              <div className="flex flex-col min-h-0">
+                <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Original</span>
+                    {originalAnalysis && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${getGradeColor(originalAnalysis.grade)}`}>
+                        {originalAnalysis.grade} ({originalAnalysis.matchPercentage}%)
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ children }) => <h1 className="text-base font-bold mb-1">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-slate-600 dark:text-slate-400">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-xs font-medium mt-2 mb-1">{children}</h3>,
+                        p: ({ children }) => <p className="mb-1 text-xs">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+                        li: ({ children }) => <li className="text-xs">{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      }}
+                    >
+                      {originalResume}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+              {/* Tailored */}
+              <div className="flex flex-col min-h-0">
+                <div className="px-3 py-1.5 bg-green-50 dark:bg-green-900/20 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-green-700 dark:text-green-400">Tailored</span>
+                    {tailoredAnalysis && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${getGradeColor(tailoredAnalysis.grade)}`}>
+                        {tailoredAnalysis.grade} ({tailoredAnalysis.matchPercentage}%)
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ children }) => <h1 className="text-base font-bold mb-1">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-sm font-semibold mt-2 mb-1 text-primary">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-xs font-medium mt-2 mb-1">{children}</h3>,
+                        p: ({ children }) => <p className="mb-1 text-xs">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+                        li: ({ children }) => <li className="text-xs">{children}</li>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      }}
+                    >
+                      {tailoredResume}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-lg font-semibold mt-4 mb-2 text-primary">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-base font-medium mt-3 mb-1">{children}</h3>,
+                    p: ({ children }) => <p className="mb-2">{children}</p>,
+                    ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                    li: ({ children }) => <li>{children}</li>,
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                  }}
+                >
+                  {tailoredResume}
+                </ReactMarkdown>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
