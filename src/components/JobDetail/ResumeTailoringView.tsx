@@ -53,40 +53,6 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
 
-  // Track the resume content that was last graded
-  const lastGradedResumeRef = useRef<string | undefined>(undefined);
-
-  // Auto re-grade when tailored resume changes (debounced)
-  useEffect(() => {
-    // Skip if no tailored resume or no API key
-    if (!job.tailoredResume || !apiKey) return;
-
-    // Skip if already grading
-    if (isRegrading) return;
-
-    // Skip if this resume was already graded
-    if (lastGradedResumeRef.current === job.tailoredResume) return;
-
-    const timeoutId = setTimeout(async () => {
-      // Double-check conditions before grading
-      if (!job.tailoredResume || isRegrading) return;
-
-      setIsRegrading(true);
-      try {
-        const newAnalysis = await gradeResume(job.jdText, job.tailoredResume);
-        lastGradedResumeRef.current = job.tailoredResume;
-        await updateJob(job.id, { tailoredResumeAnalysis: newAnalysis });
-      } catch (err) {
-        // Silent fail for auto-regrade - user can manually regrade if needed
-        console.error('Auto-regrade failed:', err);
-      } finally {
-        setIsRegrading(false);
-      }
-    }, 2000); // 2 second debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [job.tailoredResume, job.jdText, job.id, apiKey, isRegrading, updateJob]);
-
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
