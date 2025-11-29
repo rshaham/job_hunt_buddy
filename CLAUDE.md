@@ -1,4 +1,53 @@
-# CLAUDE.md - Development Guidelines
+# CLAUDE.md - Job Hunt Buddy
+
+## What is This?
+
+**Job Hunt Buddy** is a local-first job application tracker with AI-powered features. It helps job seekers organize their job search, prepare for interviews, and manage the entire application pipeline.
+
+### Core Features
+
+1. **Kanban Board** - Visual job pipeline with customizable status columns (Interested → Applied → Interviewing → Offer)
+2. **JD Analysis** - Paste a job description, AI extracts company, title, requirements, and key skills
+3. **Resume Grading** - AI analyzes resume fit against job requirements with match percentage and suggestions
+4. **Cover Letter Generation** - AI generates tailored cover letters based on JD and resume
+5. **Prep & Q&A Chat** - Chat with AI about the job, get interview coaching, practice responses
+6. **Notes & Contacts** - Track notes, contacts (recruiters/hiring managers), and timeline events per job
+7. **Dark Mode** - Full dark mode support
+8. **Export/Import** - Backup and restore all data as JSON
+
+### Key User Flows
+
+1. **Add Job**: Paste JD URL + text → AI analyzes → Creates job card with summary
+2. **Prepare**: Upload resume → Get fit score → Generate cover letter → Chat for prep
+3. **Track**: Add notes, contacts, timeline events → Move through pipeline stages
+
+## Architecture Overview
+
+```
+src/
+├── components/
+│   ├── ui/              # Reusable UI primitives (Button, Input, Modal, Tabs, etc.)
+│   ├── AddJobModal.tsx  # Job creation flow with JD parsing
+│   ├── JobCard.tsx      # Kanban card component
+│   ├── KanbanBoard.tsx  # Main board view with status columns
+│   ├── SettingsModal.tsx# API key, resume, theme settings
+│   └── JobDetail/       # Job detail view tabs
+│       ├── OverviewTab.tsx    # Job summary display
+│       ├── ResumeFitTab.tsx   # Resume grading
+│       ├── CoverLetterTab.tsx # Cover letter generation
+│       ├── PrepTab.tsx        # Q&A chat interface
+│       └── NotesTab.tsx       # Notes, contacts, timeline
+├── services/
+│   ├── ai.ts            # Claude API integration
+│   └── db.ts            # Dexie.js IndexedDB wrapper
+├── stores/
+│   └── appStore.ts      # Zustand global state
+├── types/
+│   └── index.ts         # TypeScript interfaces
+└── utils/
+    ├── helpers.ts       # Utility functions
+    └── prompts.ts       # AI prompt templates
+```
 
 ## Communication Principles
 
