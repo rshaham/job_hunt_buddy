@@ -6,8 +6,9 @@ import {
   QA_SYSTEM_PROMPT,
   AUTO_TAILOR_PROMPT,
   REFINE_RESUME_SYSTEM_PROMPT,
+  REFINE_COVER_LETTER_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 
@@ -244,6 +245,44 @@ export async function refineTailoredResume(
     return {
       reply: response,
       updatedResume: currentTailoredResume,
+    };
+  }
+}
+
+// Refine cover letter via chat
+export async function refineCoverLetter(
+  jdText: string,
+  resumeText: string,
+  currentLetter: string,
+  history: CoverLetterEntry[],
+  userMessage: string
+): Promise<{ reply: string; updatedLetter: string }> {
+  const systemPrompt = REFINE_COVER_LETTER_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', resumeText)
+    .replace('{currentLetter}', currentLetter);
+
+  // Build message history
+  const messages: ClaudeMessage[] = [];
+  for (const entry of history) {
+    messages.push({ role: entry.role, content: entry.content });
+  }
+  messages.push({ role: 'user', content: userMessage });
+
+  const response = await callClaude(messages, systemPrompt);
+
+  try {
+    const jsonStr = extractJSON(response);
+    const parsed = JSON.parse(jsonStr);
+    return {
+      reply: parsed.reply || 'I had trouble processing that. Could you try again?',
+      updatedLetter: parsed.updatedLetter || currentLetter,
+    };
+  } catch {
+    // AI responded naturally without JSON - use response as reply, keep letter as-is
+    return {
+      reply: response,
+      updatedLetter: currentLetter,
     };
   }
 }

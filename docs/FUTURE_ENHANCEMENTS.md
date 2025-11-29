@@ -4,11 +4,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
-### Cover Letter Chat
-- Chat interface to iteratively improve generated cover letter
-- Similar to resume tailoring - ask questions, refine, polish
-- Conversational refinement of tone, length, and focus
-
 ### Interviewer Profile Analysis
 - User pastes interviewer's LinkedIn profile info (manually copied)
 - AI analyzes their background, experience, and interests
@@ -86,6 +81,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] Cover Letter Chat (iterative refinement with AI)
 - [x] More Responsive AI Chat (optimistic UI + ThinkingBubble animation)
 - [x] Interactive Resume Tailoring (split-pane chat + preview, auto-tailor, re-grading)
 - [x] Kanban drag & drop between swim lanes (cross-column movement)

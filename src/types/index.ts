@@ -18,6 +18,7 @@ export interface Job {
 
   // Cover letter
   coverLetter: string | null;
+  coverLetterHistory?: CoverLetterEntry[];
 
   // Tracking
   contacts: Contact[];
@@ -92,6 +93,14 @@ export interface TailoringEntry {
   role: 'user' | 'assistant';
   content: string;
   resumeSnapshot?: string; // Resume state after this message (for assistant msgs)
+  timestamp: Date;
+}
+
+export interface CoverLetterEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  letterSnapshot?: string; // Cover letter state after this message
   timestamp: Date;
 }
 
