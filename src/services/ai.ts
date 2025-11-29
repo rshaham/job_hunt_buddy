@@ -29,6 +29,9 @@ function getAIConfig() {
   };
 }
 
+// Using anthropic-dangerous-direct-browser-access here because this is meant to be local only client
+// The app user owns the key and it never sent to any servers, but rather used locally only
+
 async function callClaude(
   messages: ClaudeMessage[],
   systemPrompt?: string,
