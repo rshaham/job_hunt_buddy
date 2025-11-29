@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Hunt Buddy</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <img src="../../icons/icon48.png" alt="" class="logo">
+      <h1>Job Hunt Buddy</h1>
+    </header>
+
+    <!-- Job Detected State -->
+    <div id="detected" class="hidden">
+      <div class="status status-success">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Job detected!
+      </div>
+
+      <div class="field">
+        <label for="title">Job Title</label>
+        <input type="text" id="title" placeholder="e.g., Senior Software Engineer">
+      </div>
+
+      <div class="field">
+        <label for="company">Company</label>
+        <input type="text" id="company" placeholder="e.g., Acme Corp">
+      </div>
+
+      <div class="field">
+        <label>Description Preview</label>
+        <div id="preview" class="preview"></div>
+      </div>
+
+      <button id="send" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14"/>
+          <path d="m12 5 7 7-7 7"/>
+        </svg>
+        Send to Job Hunt Buddy
+      </button>
+    </div>
+
+    <!-- No Job Detected State -->
+    <div id="notDetected" class="hidden">
+      <div class="status status-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        No job detected on this page
+      </div>
+
+      <p class="hint">Select text on the page and click below to capture it:</p>
+
+      <button id="useSelection" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 7V4h16v3"/>
+          <path d="M9 20h6"/>
+          <path d="M12 4v16"/>
+        </svg>
+        Use Selected Text
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="hidden">
+      <div class="spinner"></div>
+      <p>Detecting job...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error" class="hidden">
+      <div class="status status-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <span id="errorMessage">Something went wrong</span>
+      </div>
+      <button id="retry" class="btn btn-secondary">Try Again</button>
+    </div>
+
+    <footer class="footer">
+      <a href="#" id="openOptions">Settings</a>
+    </footer>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

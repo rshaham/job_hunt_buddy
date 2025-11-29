@@ -7,7 +7,7 @@ import { SettingsModal } from './components/Settings';
 import { ToastContainer } from './components/ui';
 
 function App() {
-  const { loadData, isLoading, selectedJobId, jobs, settings } = useAppStore();
+  const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal } = useAppStore();
 
   useEffect(() => {
     loadData();
@@ -17,6 +17,29 @@ function App() {
     // Apply theme on load and changes
     document.documentElement.classList.toggle('dark', settings.theme === 'dark');
   }, [settings.theme]);
+
+  // Handle extension deep links via URL params
+  useEffect(() => {
+    // Only process when loading is complete to avoid race condition
+    if (isLoading) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const jdText = params.get('jd_text');
+
+    if (jdText) {
+      // Store extension data for AddJobModal to pick up
+      sessionStorage.setItem('extension_jd', JSON.stringify({
+        url: params.get('jd_url') || '',
+        text: jdText,
+        title: params.get('jd_title') || '',
+        company: params.get('jd_company') || ''
+      }));
+
+      // Clean URL and open modal
+      window.history.replaceState({}, '', window.location.pathname);
+      openAddJobModal();
+    }
+  }, [isLoading, openAddJobModal]);
 
   if (isLoading) {
     return (

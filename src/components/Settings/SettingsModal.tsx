@@ -16,6 +16,7 @@ import {
   Eye,
   ChevronDown,
   ChevronRight,
+  Puzzle,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
@@ -468,6 +469,28 @@ export function SettingsModal() {
                   </>
                 )}
               </Button>
+            </section>
+
+            {/* Browser Extension Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <Puzzle className="w-4 h-4" />
+                Browser Extension
+              </h3>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  Capture jobs from LinkedIn, Indeed, Greenhouse, and more with one click.
+                </p>
+                <ol className="text-sm text-slate-600 dark:text-slate-400 list-decimal list-inside space-y-1 mb-3">
+                  <li>Open <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">chrome://extensions</code> in Chrome</li>
+                  <li>Enable "Developer mode" (top right toggle)</li>
+                  <li>Click "Load unpacked"</li>
+                  <li>Select the <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">browser-extension</code> folder</li>
+                </ol>
+                <p className="text-xs text-slate-500">
+                  The extension is included in the app directory.
+                </p>
+              </div>
             </section>
 
             {/* Export/Import Section */}
