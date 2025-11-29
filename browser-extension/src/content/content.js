@@ -226,6 +226,17 @@
       }
     }
 
+    // Fallback: extract from URL path (e.g., /anthropic/jobs/...)
+    if (!company) {
+      const pathMatch = window.location.pathname.match(/^\/([^\/]+)\/jobs/);
+      if (pathMatch) {
+        // Convert slug to title case (e.g., "anthropic" -> "Anthropic")
+        company = pathMatch[1]
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+      }
+    }
+
     return {
       title: getTextFromAny(titleSelectors),
       company,

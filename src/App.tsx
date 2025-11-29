@@ -20,6 +20,9 @@ function App() {
 
   // Handle extension deep links via URL params
   useEffect(() => {
+    // Only process when loading is complete to avoid race condition
+    if (isLoading) return;
+
     const params = new URLSearchParams(window.location.search);
     const jdText = params.get('jd_text');
 
@@ -32,13 +35,9 @@ function App() {
         company: params.get('jd_company') || ''
       }));
 
-      // Clean URL
+      // Clean URL and open modal
       window.history.replaceState({}, '', window.location.pathname);
-
-      // Open modal after data loads
-      if (!isLoading) {
-        openAddJobModal();
-      }
+      openAddJobModal();
     }
   }, [isLoading, openAddJobModal]);
 
