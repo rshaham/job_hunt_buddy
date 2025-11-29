@@ -3,6 +3,28 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "A local-first job application tracker with AI-powered features for resume grading, cover letter generation, and interview prep",
+  "author": "Ronen Shaham",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rshaham/job_hunt_buddy.git"
+  },
+  "homepage": "https://github.com/rshaham/job_hunt_buddy",
+  "bugs": {
+    "url": "https://github.com/rshaham/job_hunt_buddy/issues"
+  },
+  "keywords": [
+    "job-search",
+    "career",
+    "ai",
+    "react",
+    "kanban",
+    "resume",
+    "cover-letter",
+    "interview-prep",
+    "local-first"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

@@ -1,6 +1,11 @@
 # Job Hunt Buddy
 
-A locally-run React application to help you track job interviews with AI-powered features for job description analysis, resume grading, cover letter generation, and interview preparation.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5-purple.svg)](https://vitejs.dev/)
+
+A locally-run React application to help you track job applications with AI-powered features for job description analysis, resume grading, cover letter generation, and interview preparation.
 
 ## Features
 
@@ -27,8 +32,8 @@ A locally-run React application to help you track job interviews with AI-powered
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/job-hunt-buddy.git
-   cd job-hunt-buddy
+   git clone https://github.com/rshaham/job_hunt_buddy.git
+   cd job_hunt_buddy
    ```
 
 2. Install dependencies:
