@@ -12,7 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Button, ConfirmModal } from '../ui';
+import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { autoTailorResume, refineTailoredResume, gradeResume } from '../../services/ai';
 import { decodeApiKey, generateId, getGradeColor } from '../../utils/helpers';
@@ -96,15 +96,29 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
   const handleSendMessage = async () => {
     if (!userMessage.trim() || !apiKey || !originalAnalysis) return;
 
-    setIsRefining(true);
+    const messageContent = userMessage.trim();
+    setUserMessage('');
     setError('');
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
 
     const userEntry: TailoringEntry = {
       id: generateId(),
       role: 'user',
-      content: userMessage.trim(),
+      content: messageContent,
       timestamp: new Date(),
     };
+
+    // Optimistic update: show user message immediately
+    const originalHistory = history;
+    await updateJob(job.id, {
+      tailoringHistory: [...history, userEntry],
+    });
+
+    setIsRefining(true);
 
     try {
       const { reply, updatedResume } = await refineTailoredResume(
@@ -112,8 +126,8 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
         originalResume,
         tailoredResume,
         originalAnalysis,
-        history,
-        userMessage.trim()
+        originalHistory,
+        messageContent
       );
 
       const assistantEntry: TailoringEntry = {
@@ -126,15 +140,11 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
 
       await updateJob(job.id, {
         tailoredResume: updatedResume,
-        tailoringHistory: [...history, userEntry, assistantEntry],
+        tailoringHistory: [...originalHistory, userEntry, assistantEntry],
       });
-
-      setUserMessage('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refine resume');
+      // User message stays visible
     } finally {
       setIsRefining(false);
     }
@@ -314,6 +324,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
                     </div>
                   </div>
                 ))}
+                {isRefining && <ThinkingBubble />}
                 <div ref={chatEndRef} />
               </>
             )}

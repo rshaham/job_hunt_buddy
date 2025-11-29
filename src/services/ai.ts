@@ -151,11 +151,13 @@ export async function chatAboutJob(
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText);
 
-  // Build message history
+  // Build message history (skip entries with null answers - they're pending)
   const messages: ClaudeMessage[] = [];
   for (const entry of history) {
-    messages.push({ role: 'user', content: entry.question });
-    messages.push({ role: 'assistant', content: entry.answer });
+    if (entry.answer !== null) {
+      messages.push({ role: 'user', content: entry.question });
+      messages.push({ role: 'assistant', content: entry.answer });
+    }
   }
   messages.push({ role: 'user', content: newQuestion });
 

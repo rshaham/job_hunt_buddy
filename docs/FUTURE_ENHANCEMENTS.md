@@ -9,12 +9,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Similar to resume tailoring - ask questions, refine, polish
 - Conversational refinement of tone, length, and focus
 
-### More Responsive AI chat 
-- Chat with AI feels like it takes a long time because the UI locks up
-- Make the UI do... something while doing that. Maybe show the thinking? 
-- Have some animation of the AI working that makes the user feels like it takes less time
-- When sending AI chat, the user response does not show up in the chat, until the AI respond. it should first show up in the chat, and then the AI can say "thinking" or something fun. 
-
 ### Interviewer Profile Analysis
 - User pastes interviewer's LinkedIn profile info (manually copied)
 - AI analyzes their background, experience, and interests
@@ -92,6 +86,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] More Responsive AI Chat (optimistic UI + ThinkingBubble animation)
 - [x] Interactive Resume Tailoring (split-pane chat + preview, auto-tailor, re-grading)
 - [x] Kanban drag & drop between swim lanes (cross-column movement)
 - [x] Replace browser prompts with styled modals (ConfirmModal + Toast notifications)

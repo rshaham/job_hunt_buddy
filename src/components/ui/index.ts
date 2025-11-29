@@ -8,3 +8,4 @@ export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Card, CardHeader, CardContent, CardFooter } from './Card';
+export { ThinkingBubble } from './ThinkingBubble';

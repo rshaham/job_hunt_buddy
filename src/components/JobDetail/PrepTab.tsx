@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Trash2, Sparkles, AlertCircle } from 'lucide-react';
-import { Button, ConfirmModal } from '../ui';
+import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep } from '../../services/ai';
-import { decodeApiKey } from '../../utils/helpers';
+import { decodeApiKey, generateId } from '../../utils/helpers';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
-import type { Job } from '../../types';
+import type { Job, QAEntry } from '../../types';
 
 interface PrepTabProps {
   job: Job;
@@ -100,27 +100,47 @@ export function PrepTab({ job }: PrepTabProps) {
       return;
     }
 
-    setIsLoading(true);
+    const userQuestion = question.trim();
+    setQuestion('');
     setError('');
 
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
+    // Optimistic update: show user message immediately with null answer
+    const pendingEntry: QAEntry = {
+      id: generateId(),
+      question: userQuestion,
+      answer: null,
+      timestamp: new Date(),
+    };
+
+    await updateJob(job.id, {
+      qaHistory: [...job.qaHistory, pendingEntry],
+    });
+
+    setIsLoading(true);
+
+    // Store original history for the API call (before pending entry was added)
+    const originalHistory = job.qaHistory;
+
     try {
-      const newEntry = await chatAboutJob(
+      const response = await chatAboutJob(
         job.jdText,
         resumeText,
-        job.qaHistory,
-        question.trim()
+        originalHistory,
+        userQuestion
       );
 
+      // Replace pending entry with completed entry (original history + completed entry)
       await updateJob(job.id, {
-        qaHistory: [...job.qaHistory, newEntry],
+        qaHistory: [...originalHistory, { ...pendingEntry, answer: response.answer }],
       });
-      setQuestion('');
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
+      // Keep the user's question visible with null answer to show error state
     } finally {
       setIsLoading(false);
     }
@@ -252,14 +272,18 @@ export function PrepTab({ job }: PrepTabProps) {
                     </p>
                   </div>
                 </div>
-                {/* AI Answer */}
-                <div className="flex justify-start">
-                  <div className="max-w-[85%]">
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
-                      <MarkdownContent content={entry.answer} />
+                {/* AI Answer or Thinking Bubble */}
+                {entry.answer === null ? (
+                  <ThinkingBubble />
+                ) : (
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%]">
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <MarkdownContent content={entry.answer} />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
             <div ref={chatEndRef} />

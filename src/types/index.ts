@@ -83,7 +83,7 @@ export interface PrepMaterial {
 export interface QAEntry {
   id: string;
   question: string;
-  answer: string;
+  answer: string | null; // null while waiting for AI response
   timestamp: Date;
 }
 
