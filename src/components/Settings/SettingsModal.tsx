@@ -230,7 +230,16 @@ export function SettingsModal() {
                 </Button>
               </div>
               <p className="text-xs text-slate-500 mt-2">
-                Your API key is stored locally and never sent to our servers.
+                Get your API key from the{' '}
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Anthropic Console
+                </a>
+                . Your key is stored locally and never sent to our servers.
               </p>
             </section>
 
