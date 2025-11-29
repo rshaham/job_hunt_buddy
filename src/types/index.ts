@@ -31,6 +31,7 @@ export interface Job {
   tailoredResume?: string;
   tailoredResumeAnalysis?: ResumeAnalysis;
   tailoringHistory?: TailoringEntry[];
+  tailoringSuggestions?: string[]; // AI-generated follow-up questions for tailoring
 }
 
 export interface JobSummary {

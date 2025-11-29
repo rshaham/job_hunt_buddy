@@ -92,7 +92,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     setError('');
 
     try {
-      const { tailoredResume: newResume, changesSummary } = await autoTailorResume(
+      const { tailoredResume: newResume, changesSummary, suggestedQuestions } = await autoTailorResume(
         job.jdText,
         originalResume,
         originalAnalysis
@@ -115,6 +115,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
         tailoredResume: newResume,
         tailoredResumeAnalysis: newAnalysis,
         tailoringHistory: [assistantMessage],
+        tailoringSuggestions: suggestedQuestions,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to tailor resume');
@@ -268,6 +269,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
       tailoredResume: undefined,
       tailoredResumeAnalysis: undefined,
       tailoringHistory: undefined,
+      tailoringSuggestions: undefined,
     });
   };
 
@@ -279,6 +281,7 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
       tailoredResume: undefined,
       tailoredResumeAnalysis: undefined,
       tailoringHistory: undefined,
+      tailoringSuggestions: undefined,
     });
     setIsSaveModalOpen(false);
     onBack();
@@ -291,9 +294,8 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     }
   };
 
-  const suggestedPrompts = originalAnalysis?.gaps.slice(0, 3).map(gap =>
-    `Tell me about your experience with: ${gap}`
-  ) || [];
+  // Use AI-generated follow-up questions from auto-tailoring
+  const suggestedPrompts = job.tailoringSuggestions || [];
 
   // Compute diff between original and tailored resume
   const diffParts = useMemo(() => {

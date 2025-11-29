@@ -120,10 +120,13 @@ CRITICAL RULES:
 4. Quantify achievements where possible using the candidate's actual experience
 5. Adjust skill descriptions to match JD terminology (if the skill is genuinely equivalent)
 
+Also generate 2-3 short, specific follow-up questions (under 60 chars each) that would help gather information to address the remaining gaps. These should be direct questions the user can answer to improve their resume further.
+
 Return ONLY valid JSON with this exact structure:
 {
   "tailoredResume": "Full markdown-formatted resume with all sections",
-  "changesSummary": "Brief bullet-point summary of key changes made"
+  "changesSummary": "Brief bullet-point summary of key changes made",
+  "suggestedQuestions": ["Short question 1?", "Short question 2?", "Short question 3?"]
 }
 
 The resume should be in clean markdown format with:

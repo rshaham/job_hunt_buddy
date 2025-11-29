@@ -52,6 +52,8 @@ async function callClaude(
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
+      // Required because this is a serverless, local-first app.
+      // The user owns the key, so it's safe to use directly from the client.
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
@@ -217,7 +219,7 @@ export async function autoTailorResume(
   jdText: string,
   originalResume: string,
   resumeAnalysis: ResumeAnalysis
-): Promise<{ tailoredResume: string; changesSummary: string }> {
+): Promise<{ tailoredResume: string; changesSummary: string; suggestedQuestions: string[] }> {
   const additionalContext = getAdditionalContext();
   const prompt = AUTO_TAILOR_PROMPT
     .replace('{jdText}', jdText)
@@ -232,6 +234,7 @@ export async function autoTailorResume(
   return {
     tailoredResume: parsed.tailoredResume || originalResume,
     changesSummary: parsed.changesSummary || 'No changes made',
+    suggestedQuestions: parsed.suggestedQuestions || [],
   };
 }
 
