@@ -25,6 +25,11 @@ export interface Job {
   timeline: TimelineEvent[];
   prepMaterials: PrepMaterial[];
   qaHistory: QAEntry[];
+
+  // Resume tailoring
+  tailoredResume?: string;
+  tailoredResumeAnalysis?: ResumeAnalysis;
+  tailoringHistory?: TailoringEntry[];
 }
 
 export interface JobSummary {
@@ -79,6 +84,14 @@ export interface QAEntry {
   id: string;
   question: string;
   answer: string;
+  timestamp: Date;
+}
+
+export interface TailoringEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  resumeSnapshot?: string; // Resume state after this message (for assistant msgs)
   timestamp: Date;
 }
 

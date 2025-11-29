@@ -4,8 +4,10 @@ import {
   COVER_LETTER_PROMPT,
   INTERVIEW_PREP_PROMPT,
   QA_SYSTEM_PROMPT,
+  AUTO_TAILOR_PROMPT,
+  REFINE_RESUME_SYSTEM_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 
@@ -178,5 +180,68 @@ export async function testApiKey(apiKey: string, model: string): Promise<boolean
     return true;
   } catch {
     return false;
+  }
+}
+
+// Auto-tailor resume based on JD and analysis
+export async function autoTailorResume(
+  jdText: string,
+  originalResume: string,
+  resumeAnalysis: ResumeAnalysis
+): Promise<{ tailoredResume: string; changesSummary: string }> {
+  const prompt = AUTO_TAILOR_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', originalResume)
+    .replace('{gaps}', resumeAnalysis.gaps.join(', '))
+    .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
+
+  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+
+  return {
+    tailoredResume: parsed.tailoredResume || originalResume,
+    changesSummary: parsed.changesSummary || 'No changes made',
+  };
+}
+
+// Refine tailored resume via chat
+export async function refineTailoredResume(
+  jdText: string,
+  originalResume: string,
+  currentTailoredResume: string,
+  resumeAnalysis: ResumeAnalysis,
+  history: TailoringEntry[],
+  userMessage: string
+): Promise<{ reply: string; updatedResume: string }> {
+  const systemPrompt = REFINE_RESUME_SYSTEM_PROMPT
+    .replace('{jdText}', jdText)
+    .replace('{originalResume}', originalResume)
+    .replace('{currentResume}', currentTailoredResume)
+    .replace('{gaps}', resumeAnalysis.gaps.join(', '))
+    .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
+
+  // Build message history
+  const messages: ClaudeMessage[] = [];
+  for (const entry of history) {
+    messages.push({ role: entry.role, content: entry.content });
+  }
+  messages.push({ role: 'user', content: userMessage });
+
+  const response = await callClaude(messages, systemPrompt);
+
+  try {
+    const jsonStr = extractJSON(response);
+    const parsed = JSON.parse(jsonStr);
+    return {
+      reply: parsed.reply || 'I had trouble processing that. Could you try again?',
+      updatedResume: parsed.updatedResume || currentTailoredResume,
+    };
+  } catch {
+    // AI responded naturally without JSON - use response as reply, keep resume as-is
+    return {
+      reply: response,
+      updatedResume: currentTailoredResume,
+    };
   }
 }

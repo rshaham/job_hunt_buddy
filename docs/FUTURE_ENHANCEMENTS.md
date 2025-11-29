@@ -4,13 +4,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
-### Interactive Resume Tailoring
-- Chat interface to iteratively refine resume for specific job
-- AI suggests initial edits based on JD analysis
-- AI asks follow-up questions about "missing" areas (experience gaps)
-- User provides more context, AI refines those sections to shine
-- Final tailored resume output
-
 ### Cover Letter Chat
 - Chat interface to iteratively improve generated cover letter
 - Similar to resume tailoring - ask questions, refine, polish
@@ -20,6 +13,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Chat with AI feels like it takes a long time because the UI locks up
 - Make the UI do... something while doing that. Maybe show the thinking? 
 - Have some animation of the AI working that makes the user feels like it takes less time
+- When sending AI chat, the user response does not show up in the chat, until the AI respond. it should first show up in the chat, and then the AI can say "thinking" or something fun. 
 
 ### Interviewer Profile Analysis
 - User pastes interviewer's LinkedIn profile info (manually copied)
@@ -98,6 +92,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] Interactive Resume Tailoring (split-pane chat + preview, auto-tailor, re-grading)
 - [x] Kanban drag & drop between swim lanes (cross-column movement)
 - [x] Replace browser prompts with styled modals (ConfirmModal + Toast notifications)
 - [x] Basic Kanban board with drag & drop

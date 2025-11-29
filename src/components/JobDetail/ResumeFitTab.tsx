@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2 } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { gradeResume } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { decodeApiKey, getGradeColor } from '../../utils/helpers';
+import { ResumeTailoringView } from './ResumeTailoringView';
 import type { Job } from '../../types';
 
 interface ResumeFitTabProps {
@@ -15,6 +16,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
   const { settings, updateJob } = useAppStore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isTailoringMode, setIsTailoringMode] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +70,18 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       setIsAnalyzing(false);
     }
   };
+
+  // Show tailoring view if in tailoring mode
+  if (isTailoringMode) {
+    return (
+      <div className="h-[calc(100vh-180px)] overflow-hidden">
+        <ResumeTailoringView
+          job={job}
+          onBack={() => setIsTailoringMode(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -184,15 +198,23 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                 <span className="text-sm font-medium">{job.resumeAnalysis.matchPercentage}%</span>
               </div>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="ml-auto"
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-            >
-              Re-analyze
-            </Button>
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+              >
+                Re-analyze
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setIsTailoringMode(true)}
+              >
+                <Sparkles className="w-4 h-4 mr-1" />
+                Tailor Resume
+              </Button>
+            </div>
           </div>
 
           {/* Strengths */}
