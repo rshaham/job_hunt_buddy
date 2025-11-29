@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
-import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles } from 'lucide-react';
-import { Button } from '../ui';
+import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Button, Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { gradeResume, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
@@ -17,6 +19,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isTailoringMode, setIsTailoringMode] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,6 +50,66 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
   const handleClearResume = async () => {
     await updateJob(job.id, { resumeText: undefined, resumeAnalysis: null });
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([job.resumeText!], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${job.company}-${job.title}-resume.md`.replace(/\s+/g, '-').toLowerCase();
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const htmlContent = job.resumeText!
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^\* (.+)$/gm, '<li>$1</li>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${job.company} - ${job.title} Resume</title>
+          <style>
+            body {
+              font-family: 'Georgia', serif;
+              max-width: 8.5in;
+              margin: 0 auto;
+              padding: 0.5in;
+              font-size: 11pt;
+              line-height: 1.4;
+              color: #333;
+            }
+            h1 { font-size: 18pt; margin-bottom: 0.3em; color: #000; }
+            h2 { font-size: 13pt; margin-top: 1em; margin-bottom: 0.3em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+            h3 { font-size: 11pt; margin-top: 0.8em; margin-bottom: 0.2em; }
+            p { margin: 0.3em 0; }
+            ul { margin: 0.3em 0; padding-left: 1.2em; }
+            li { margin: 0.15em 0; }
+            strong { font-weight: 600; }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <p>${htmlContent}</p>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const handleAnalyze = async () => {
@@ -95,12 +158,21 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
           <div className="flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary" />
             <div className="flex-1">
-              <p className="text-sm font-medium">Job-specific resume uploaded</p>
+              <p className="text-sm font-medium">Job-specific resume</p>
               <p className="text-xs text-slate-500">
                 {job.resumeText.length.toLocaleString()} characters
               </p>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleClearResume}>
+            <Button variant="secondary" size="sm" onClick={() => setIsViewModalOpen(true)} title="View Resume">
+              <Eye className="w-4 h-4" />
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleDownload} title="Download Markdown">
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handlePrint} title="Print / Save as PDF">
+              <Printer className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleClearResume} title="Remove">
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
@@ -274,6 +346,22 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
           </div>
         </div>
       )}
+
+      {/* View Resume Modal */}
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        title="Job Resume"
+        size="full"
+      >
+        <div className="p-6">
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {job.resumeText || ''}
+            </ReactMarkdown>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
