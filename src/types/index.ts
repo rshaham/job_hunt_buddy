@@ -104,6 +104,14 @@ export interface CoverLetterEntry {
   timestamp: Date;
 }
 
+export interface SavedStory {
+  id: string;
+  question: string;  // The topic/question this story answers
+  answer: string;    // The user's experience/story
+  category?: string; // Optional: "leadership", "technical", "conflict", etc.
+  createdAt: Date;
+}
+
 export interface Status {
   id: string;
   name: string;
@@ -125,6 +133,8 @@ export interface AppSettings {
   defaultResumeName: string;
   statuses: Status[];
   theme: 'light' | 'dark';
+  additionalContext: string; // Free-form text about the user beyond their resume
+  savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
 }
 
 export const DEFAULT_STATUSES: Status[] = [
@@ -144,4 +154,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultResumeName: '',
   statuses: DEFAULT_STATUSES,
   theme: 'light',
+  additionalContext: '',
+  savedStories: [],
 };

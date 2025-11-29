@@ -11,7 +11,7 @@ import {
   Trash2,
   Bot,
 } from 'lucide-react';
-import { Modal, Button, Input } from '../ui';
+import { Modal, Button, Input, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { testApiKey, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
@@ -34,6 +34,7 @@ export function SettingsModal() {
   const [customModel, setCustomModel] = useState('');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [isUploading, setIsUploading] = useState(false);
+  const [additionalContextInput, setAdditionalContextInput] = useState(settings.additionalContext || '');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +140,11 @@ export function SettingsModal() {
 
   const handleThemeToggle = () => {
     updateSettings({ theme: settings.theme === 'light' ? 'dark' : 'light' });
+  };
+
+  const handleDeleteStory = async (storyId: string) => {
+    const updatedStories = (settings.savedStories || []).filter(s => s.id !== storyId);
+    await updateSettings({ savedStories: updatedStories });
   };
 
   return (
@@ -257,6 +263,57 @@ export function SettingsModal() {
           <p className="text-xs text-slate-500 mt-1">
             This resume will be used as the default for resume grading and cover letter generation.
           </p>
+        </section>
+
+        {/* Additional Context Section */}
+        <section>
+          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+            Additional Context
+          </h3>
+          <Textarea
+            value={additionalContextInput}
+            onChange={(e) => setAdditionalContextInput(e.target.value)}
+            onBlur={() => updateSettings({ additionalContext: additionalContextInput })}
+            placeholder="Add context the AI should know about you: key projects, achievements, skills not on your resume, career goals, etc."
+            rows={6}
+            className="text-sm"
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            This context is included when grading resumes, tailoring, and generating cover letters.
+          </p>
+        </section>
+
+        {/* Saved Stories Section */}
+        <section>
+          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+            Saved Stories ({settings.savedStories?.length || 0})
+          </h3>
+          {settings.savedStories?.length > 0 ? (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {settings.savedStories.map((story) => (
+                <div key={story.id} className="p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs">
+                  <div className="flex justify-between items-start gap-2">
+                    <p className="font-medium text-slate-700 dark:text-slate-300 line-clamp-1 flex-1">
+                      {story.question}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteStory(story.id)}
+                      className="text-slate-400 hover:text-danger shrink-0"
+                      title="Delete story"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <p className="text-slate-500 line-clamp-2 mt-1">{story.answer}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">
+              No saved stories yet. Save answers from Prep chats or Resume Tailoring to build your profile.
+            </p>
+          )}
         </section>
 
         {/* Theme Section */}

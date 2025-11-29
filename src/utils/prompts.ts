@@ -198,6 +198,27 @@ Return ONLY valid JSON:
 
 Be helpful and provide clear explanations of the changes you make.`;
 
+export const REWRITE_FOR_MEMORY_PROMPT = `Rewrite this Q&A into a clear, standalone memory that can be used for future resume tailoring and interview prep.
+
+Original question/context: {question}
+
+Original answer/response: {answer}
+
+Return ONLY valid JSON with this exact structure:
+{
+  "question": "Clear, concise topic/title (e.g., 'Leadership experience at startup', 'Handling cross-team conflicts')",
+  "answer": "Clean, factual summary of the experience with specific details, metrics, and outcomes. Written in first person. Remove any conversational filler, AI responses, or back-and-forth. Focus on the candidate's actual experience and achievements."
+}
+
+Guidelines:
+- Extract the core experience or story from the conversation
+- Include specific metrics, outcomes, and details mentioned
+- Write in a reusable format that provides context for any AI reading it later
+- Keep it concise but complete
+- If the original has multiple experiences, focus on the most substantial one
+
+Return ONLY valid JSON.`;
+
 export const CONVERT_RESUME_TO_MARKDOWN_PROMPT = `Convert this resume text to well-structured markdown format.
 
 Resume text (extracted from PDF):

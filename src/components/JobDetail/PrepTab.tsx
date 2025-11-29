@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, AlertCircle } from 'lucide-react';
+import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark } from 'lucide-react';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
-import { chatAboutJob, generateInterviewPrep } from '../../services/ai';
+import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { decodeApiKey, generateId } from '../../utils/helpers';
+import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Job, QAEntry } from '../../types';
+import type { Job, QAEntry, SavedStory } from '../../types';
 
 interface PrepTabProps {
   job: Job;
@@ -92,10 +93,11 @@ function MarkdownContent({ content }: { content: string }) {
 }
 
 export function PrepTab({ job }: PrepTabProps) {
-  const { settings, updateJob } = useAppStore();
+  const { settings, updateJob, updateSettings } = useAppStore();
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingPrep, setIsGeneratingPrep] = useState(false);
+  const [isSavingMemory, setIsSavingMemory] = useState<string | null>(null); // entry.id being saved
   const [error, setError] = useState('');
   const [prepMaterial, setPrepMaterial] = useState('');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
@@ -104,6 +106,27 @@ export function PrepTab({ job }: PrepTabProps) {
 
   const apiKey = decodeApiKey(settings.apiKey);
   const resumeText = job.resumeText || settings.defaultResumeText;
+
+  const handleSaveToMemory = async (entryId: string, question: string, answer: string) => {
+    setIsSavingMemory(entryId);
+    try {
+      const cleaned = await rewriteForMemory(question, answer);
+      const newStory: SavedStory = {
+        id: generateId(),
+        question: cleaned.question,
+        answer: cleaned.answer,
+        createdAt: new Date(),
+      };
+      await updateSettings({
+        savedStories: [...(settings.savedStories || []), newStory],
+      });
+      showToast('Saved to profile', 'success');
+    } catch (err) {
+      showToast('Failed to save', 'error');
+    } finally {
+      setIsSavingMemory(null);
+    }
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -307,6 +330,24 @@ export function PrepTab({ job }: PrepTabProps) {
                       <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
                         <MarkdownContent content={entry.answer} />
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveToMemory(entry.id, entry.question, entry.answer!)}
+                        disabled={isSavingMemory === entry.id}
+                        className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
+                      >
+                        {isSavingMemory === entry.id ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Bookmark className="w-3 h-3" />
+                            Save to Profile
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 )}

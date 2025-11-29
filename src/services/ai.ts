@@ -8,6 +8,7 @@ import {
   REFINE_RESUME_SYSTEM_PROMPT,
   REFINE_COVER_LETTER_PROMPT,
   CONVERT_RESUME_TO_MARKDOWN_PROMPT,
+  REWRITE_FOR_MEMORY_PROMPT,
 } from '../utils/prompts';
 import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
@@ -79,6 +80,25 @@ function extractJSON(text: string): string {
   return text;
 }
 
+// Build additional context from settings (additionalContext + savedStories)
+function getAdditionalContext(): string {
+  const { settings } = useAppStore.getState();
+  const parts: string[] = [];
+
+  if (settings.additionalContext?.trim()) {
+    parts.push(`Additional context about the candidate:\n${settings.additionalContext}`);
+  }
+
+  if (settings.savedStories?.length > 0) {
+    const storiesText = settings.savedStories
+      .map(s => `Q: ${s.question}\nA: ${s.answer}`)
+      .join('\n\n');
+    parts.push(`The candidate has shared these experiences:\n${storiesText}`);
+  }
+
+  return parts.length > 0 ? '\n\n' + parts.join('\n\n') : '';
+}
+
 export async function analyzeJobDescription(
   jdText: string
 ): Promise<{ company: string; title: string; summary: JobSummary }> {
@@ -107,9 +127,10 @@ export async function gradeResume(
   jdText: string,
   resumeText: string
 ): Promise<ResumeAnalysis> {
+  const additionalContext = getAdditionalContext();
   const prompt = RESUME_GRADING_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', resumeText);
+    .replace('{resumeText}', resumeText + additionalContext);
 
   const response = await callClaude([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
@@ -128,9 +149,10 @@ export async function generateCoverLetter(
   jdText: string,
   resumeText: string
 ): Promise<string> {
+  const additionalContext = getAdditionalContext();
   const prompt = COVER_LETTER_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', resumeText);
+    .replace('{resumeText}', resumeText + additionalContext);
 
   return await callClaude([{ role: 'user', content: prompt }]);
 }
@@ -196,9 +218,10 @@ export async function autoTailorResume(
   originalResume: string,
   resumeAnalysis: ResumeAnalysis
 ): Promise<{ tailoredResume: string; changesSummary: string }> {
+  const additionalContext = getAdditionalContext();
   const prompt = AUTO_TAILOR_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', originalResume)
+    .replace('{resumeText}', originalResume + additionalContext)
     .replace('{gaps}', resumeAnalysis.gaps.join(', '))
     .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
 
@@ -221,9 +244,10 @@ export async function refineTailoredResume(
   history: TailoringEntry[],
   userMessage: string
 ): Promise<{ reply: string; updatedResume: string }> {
+  const additionalContext = getAdditionalContext();
   const systemPrompt = REFINE_RESUME_SYSTEM_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{originalResume}', originalResume)
+    .replace('{originalResume}', originalResume + additionalContext)
     .replace('{currentResume}', currentTailoredResume)
     .replace('{gaps}', resumeAnalysis.gaps.join(', '))
     .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
@@ -309,4 +333,23 @@ export async function convertResumeToMarkdown(plainText: string): Promise<string
   }
 
   return markdown.trim();
+}
+
+// Rewrite Q&A into a clean, reusable memory for profile
+export async function rewriteForMemory(
+  originalQuestion: string,
+  originalAnswer: string
+): Promise<{ question: string; answer: string }> {
+  const prompt = REWRITE_FOR_MEMORY_PROMPT
+    .replace('{question}', originalQuestion)
+    .replace('{answer}', originalAnswer);
+
+  const response = await callClaude([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+
+  return {
+    question: parsed.question || originalQuestion,
+    answer: parsed.answer || originalAnswer,
+  };
 }

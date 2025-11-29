@@ -12,15 +12,17 @@ import {
   AlertCircle,
   Printer,
   Save,
+  Bookmark,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import * as Diff from 'diff';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
-import { autoTailorResume, refineTailoredResume, gradeResume } from '../../services/ai';
+import { autoTailorResume, refineTailoredResume, gradeResume, rewriteForMemory } from '../../services/ai';
 import { decodeApiKey, generateId, getGradeColor } from '../../utils/helpers';
-import type { Job, TailoringEntry } from '../../types';
+import { showToast } from '../../stores/toastStore';
+import type { Job, TailoringEntry, SavedStory } from '../../types';
 
 interface ResumeTailoringViewProps {
   job: Job;
@@ -28,13 +30,14 @@ interface ResumeTailoringViewProps {
 }
 
 export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
-  const { settings, updateJob } = useAppStore();
+  const { settings, updateJob, updateSettings } = useAppStore();
   const [isAutoTailoring, setIsAutoTailoring] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [isRegrading, setIsRegrading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isSavingMemory, setIsSavingMemory] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [userMessage, setUserMessage] = useState('');
   const [viewMode, setViewMode] = useState<'tailored' | 'compare' | 'diff'>('tailored');
@@ -58,6 +61,27 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     if (textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+  };
+
+  const handleSaveToMemory = async (entryId: string, question: string, answer: string) => {
+    setIsSavingMemory(entryId);
+    try {
+      const cleaned = await rewriteForMemory(question, answer);
+      const newStory: SavedStory = {
+        id: generateId(),
+        question: cleaned.question,
+        answer: cleaned.answer,
+        createdAt: new Date(),
+      };
+      await updateSettings({
+        savedStories: [...(settings.savedStories || []), newStory],
+      });
+      showToast('Saved to profile', 'success');
+    } catch (err) {
+      showToast('Failed to save', 'error');
+    } finally {
+      setIsSavingMemory(null);
     }
   };
 
@@ -375,38 +399,67 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
               </div>
             ) : (
               <>
-                {history.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                {history.map((entry, index) => {
+                  // Find the user message that preceded this assistant message (for context)
+                  const previousUserMessage = entry.role === 'assistant' && index > 0
+                    ? history.slice(0, index).reverse().find(e => e.role === 'user')?.content
+                    : null;
+
+                  return (
                     <div
-                      className={`max-w-[90%] p-3 rounded-2xl ${
-                        entry.role === 'user'
-                          ? 'bg-primary text-white rounded-br-sm'
-                          : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-sm'
-                      }`}
+                      key={entry.id}
+                      className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="text-sm whitespace-pre-wrap">
-                        {entry.role === 'assistant' ? (
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                              ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                              li: ({ children }) => <li className="mb-1">{children}</li>,
-                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                            }}
+                      <div className={entry.role === 'assistant' ? 'max-w-[90%]' : ''}>
+                        <div
+                          className={`p-3 rounded-2xl ${
+                            entry.role === 'user'
+                              ? 'bg-primary text-white rounded-br-sm max-w-[90%]'
+                              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-sm'
+                          }`}
+                        >
+                          <div className="text-sm whitespace-pre-wrap">
+                            {entry.role === 'assistant' ? (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                  ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                }}
+                              >
+                                {entry.content}
+                              </ReactMarkdown>
+                            ) : (
+                              entry.content
+                            )}
+                          </div>
+                        </div>
+                        {entry.role === 'assistant' && previousUserMessage && (
+                          <button
+                            type="button"
+                            onClick={() => handleSaveToMemory(entry.id, previousUserMessage, entry.content)}
+                            disabled={isSavingMemory === entry.id}
+                            className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
                           >
-                            {entry.content}
-                          </ReactMarkdown>
-                        ) : (
-                          entry.content
+                            {isSavingMemory === entry.id ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Bookmark className="w-3 h-3" />
+                                Save to Profile
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {isRefining && <ThinkingBubble />}
                 <div ref={chatEndRef} />
               </>
