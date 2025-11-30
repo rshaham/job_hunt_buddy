@@ -162,6 +162,8 @@ export async function gradeResume(
     strengths: (parsed.strengths as string[]) || [],
     gaps: (parsed.gaps as string[]) || [],
     suggestions: (parsed.suggestions as string[]) || [],
+    matchedKeywords: (parsed.matchedKeywords as string[]) || [],
+    missingKeywords: (parsed.missingKeywords as string[]) || [],
   };
 }
 
