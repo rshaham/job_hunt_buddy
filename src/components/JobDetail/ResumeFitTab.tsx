@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer, Tag } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer, Tag, HelpCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
@@ -278,7 +278,15 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               {job.resumeAnalysis.grade}
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Match Score</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                Match Score
+                <span className="group relative">
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                    Based on job requirements match
+                  </span>
+                </span>
+              </p>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full w-32">
                   <div

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X } from 'lucide-react';
+import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle } from 'lucide-react';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
@@ -244,7 +244,7 @@ export function PrepTab({ job }: PrepTabProps) {
   return (
     <div className="flex flex-col h-[calc(100vh-180px)]">
       {/* Generate Prep Button */}
-      <div className="flex gap-2 mb-3">
+      <div className="flex gap-2 mb-3 items-center">
         <Button
           variant="secondary"
           size="sm"
@@ -269,6 +269,12 @@ export function PrepTab({ job }: PrepTabProps) {
             Clear Chat
           </Button>
         )}
+        <span className="group relative ml-1">
+          <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+            Ask questions, get coaching, save answers
+          </span>
+        </span>
       </div>
 
       <ConfirmModal

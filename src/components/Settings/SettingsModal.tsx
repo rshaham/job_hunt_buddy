@@ -21,6 +21,7 @@ import {
   Edit3,
   AlertTriangle,
   X,
+  HelpCircle,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea, ConfirmModal } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
@@ -901,8 +902,14 @@ export function SettingsModal() {
 
             {/* Additional Context Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
                 Additional Context
+                <span className="group relative">
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    AI uses this when grading and generating content
+                  </span>
+                </span>
               </h3>
               <Textarea
                 value={additionalContextInput}
@@ -919,8 +926,14 @@ export function SettingsModal() {
 
             {/* Saved Stories Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
                 Saved Stories ({settings.savedStories?.length || 0})
+                <span className="group relative">
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    Answers saved from Prep chats for reuse
+                  </span>
+                </span>
               </h3>
               {settings.savedStories?.length > 0 ? (
                 <div className="space-y-2 max-w-2xl">
