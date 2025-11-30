@@ -6,6 +6,7 @@ import { AddJobModal } from './components/AddJob';
 import { SettingsModal } from './components/Settings';
 import { GettingStartedModal } from './components/GettingStarted';
 import { PrivacyModal } from './components/Privacy';
+import { FeatureGuideModal } from './components/FeatureGuide';
 import { ToastContainer } from './components/ui';
 
 function App() {
@@ -94,6 +95,7 @@ function App() {
       <SettingsModal />
       <GettingStartedModal />
       <PrivacyModal />
+      <FeatureGuideModal />
       <ToastContainer />
     </>
   );
