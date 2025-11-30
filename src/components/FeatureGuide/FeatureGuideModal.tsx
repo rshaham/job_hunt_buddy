@@ -23,6 +23,8 @@ import {
   Mail,
   FolderOpen,
   MapPin,
+  Target,
+  BarChart3,
 } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -423,6 +425,37 @@ export function FeatureGuideModal() {
             <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <MapPin className="w-3.5 h-3.5" />
               <span>Settings → Profile → Context Documents</span>
+            </div>
+          </section>
+
+          {/* Career Coach */}
+          <section className="p-4 bg-lime-50 dark:bg-lime-900/20 rounded-lg border border-lime-200 dark:border-lime-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-5 h-5 text-lime-600 dark:text-lime-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-white">
+                Career Coach
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              Get AI-powered career guidance based on your job search.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex gap-2">
+                <BarChart3 className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Career analysis:</strong> AI analyzes your job applications to identify patterns and opportunities</span>
+              </li>
+              <li className="flex gap-2">
+                <MessageSquare className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Chat:</strong> Discuss career goals, strategy, and get personalized advice</span>
+              </li>
+              <li className="flex gap-2">
+                <Sparkles className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Skill tracking:</strong> Track technical, soft, and domain skills extracted from your experience</span>
+              </li>
+            </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>🎯 button in header</span>
             </div>
           </section>
         </div>

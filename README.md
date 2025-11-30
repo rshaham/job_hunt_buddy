@@ -14,11 +14,25 @@
 
 ## What Can Job Hunt Buddy Do?
 
+### Core Features
+
 - **Kanban Board** - Drag and drop jobs across stages (Interested → Applied → Interviewing → Offer)
 - **JD Analysis** - Paste a job description and AI extracts the key requirements
-- **Resume Grading** - See how well your resume matches the job (A-F grade)
-- **Cover Letters** - AI generates tailored cover letters you can refine
+- **Resume Grading** - See how well your resume matches the job (A-F grade + detailed analysis)
+- **Resume Tailoring** - AI rewrites your resume to match job requirements with diff view
+- **Keyword Matcher** - See which JD keywords appear in your resume vs what's missing
+- **Cover Letters** - AI generates tailored cover letters you can refine through chat
 - **Interview Prep** - Chat with AI to practice interview questions
+
+### Additional Features
+
+- **Career Coach** - AI-powered career guidance with skill tracking and personalized advice
+- **Emails Tab** - Generate professional emails (Thank You, Follow Up, Withdraw, Negotiate)
+- **Interviewer Intel** - Paste interviewer LinkedIn bios to get AI-powered insights
+- **Notes & Contacts** - Track notes, contacts, and timeline events for each job
+- **Saved Stories** - Save great interview answers to reuse across job applications
+- **Context Documents** - Upload PDFs (portfolio, certifications) to enrich AI context
+- **CSV Export** - Export all jobs to spreadsheet format for external tracking
 
 ---
 
@@ -250,6 +264,47 @@ When you first open Job Hunt Buddy, a **Getting Started** wizard will guide you 
 2. Go to the **"Prep"** tab
 3. Ask questions or request practice interview questions
 4. Practice your responses with AI coaching
+5. Click **"Save to Profile"** on great answers to reuse them later
+
+### Tailoring Your Resume
+
+1. Grade your resume first (Resume tab)
+2. Click **"Tailor Resume"** to open the tailoring view
+3. Click **"Auto-Tailor"** for one-click AI optimization
+4. Or chat to make specific changes ("emphasize my Python experience")
+5. Toggle between **Diff** and **Side-by-side** to see what changed
+
+### Sending Professional Emails
+
+1. Go to the **"Emails"** tab in a job's detail view
+2. Choose an email type: Thank You, Follow Up, Withdraw, or Negotiate
+3. Click **"Generate"** to create a draft
+4. Refine through chat if needed
+5. Copy to clipboard when ready
+
+### Tracking Contacts & Timeline
+
+1. Go to the **"Notes"** tab in a job's detail view
+2. Add **Contacts** - recruiters, hiring managers with their info
+3. Add **Timeline Events** - applied date, interviews, offers
+4. Use **Notes** for research, prep notes, or reminders
+5. For contacts, click **"Generate Intel"** to get AI insights from their LinkedIn bio
+
+### Building Your Profile (Settings → Profile)
+
+- **Saved Stories** - Your best interview answers, saved from Prep chats
+- **Additional Context** - Career goals, skills, projects not on your resume
+- **Context Documents** - Upload PDFs (portfolio, certifications) for richer AI context
+
+### Career Coaching (🎯 button in header)
+
+1. Click the **🎯** button in the header to open Career Coach
+2. **Coach Tab** - Get AI analysis of your job search patterns and career advice
+3. **Skills Tab** - View and manage your skills profile:
+   - Technical skills (programming languages, tools, frameworks)
+   - Soft skills (leadership, communication, problem-solving)
+   - Domain skills (industry-specific knowledge)
+4. Use **"Extract from Resume"** to automatically identify skills from your resume
 
 ---
 
@@ -305,10 +360,12 @@ npm run dev
 src/
 ├── components/
 │   ├── Board/          # Kanban board components
-│   ├── JobDetail/      # Job detail view with tabs
+│   ├── JobDetail/      # Job detail tabs (Resume, Cover Letter, Prep, Notes, Emails)
 │   ├── AddJob/         # Add job modal
-│   ├── Settings/       # Settings modal
+│   ├── Settings/       # Settings modal with Profile tab
 │   ├── GettingStarted/ # Onboarding wizard
+│   ├── FeatureGuide/   # Feature documentation modal
+│   ├── Privacy/        # Privacy & Terms modal
 │   └── ui/             # Reusable UI components
 ├── services/
 │   ├── ai.ts           # AI provider integration
@@ -369,4 +426,4 @@ MIT - See [LICENSE](LICENSE) for details.
 
 ---
 
-**Need help?** Click the **?** button in the app header to reopen the Getting Started guide anytime!
+**Need help?** Click the **?** button in the app header for the Getting Started guide, or **📖** for the Feature Guide!
