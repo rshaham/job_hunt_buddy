@@ -20,6 +20,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isTailoringMode, setIsTailoringMode] = useState(false);
+  const [selectedKeyword, setSelectedKeyword] = useState<string | undefined>();
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -154,7 +155,11 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       <div className="h-[calc(100vh-180px)] overflow-hidden">
         <ResumeTailoringView
           job={job}
-          onBack={() => setIsTailoringMode(false)}
+          onBack={() => {
+            setIsTailoringMode(false);
+            setSelectedKeyword(undefined);
+          }}
+          initialKeyword={selectedKeyword}
         />
       </div>
     );
@@ -403,7 +408,10 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                       <button
                         type="button"
                         key={i}
-                        onClick={() => setIsTailoringMode(true)}
+                        onClick={() => {
+                          setSelectedKeyword(keyword);
+                          setIsTailoringMode(true);
+                        }}
                         className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
                       >
                         {keyword}
