@@ -18,6 +18,11 @@ export const updateJobStatusTool: ToolDefinition<UpdateJobStatusInput, UpdateJob
   requiresConfirmation: true,
 
   confirmationMessage(input) {
+    const { jobs } = useAppStore.getState();
+    const job = jobs.find((j) => j.id === input.jobId);
+    if (job) {
+      return `Move "${job.company} - ${job.title}" from ${job.status} to ${input.newStatus}?`;
+    }
     return `Move job to "${input.newStatus}"?`;
   },
 

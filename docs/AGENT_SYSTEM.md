@@ -126,11 +126,18 @@ src/
 
 | Tool | Category | Description | Use Case |
 |------|----------|-------------|----------|
+| `web_research` | READ | Search internet for company, role, or skills info | "Research this company", "What's the tech stack?" |
 | `analyze_career_gaps` | READ | Deep skill gap analysis | "Analyze my career trajectory" |
 | `suggest_learning_path` | READ | Recommend skills to learn | "What should I learn next?" |
 | `add_learning_task` | WRITE | Add learning tasks to jobs | "Add 'Learn TypeScript' to relevant jobs" |
 | `draft_outreach` | READ | Draft networking messages | "Draft a message to recruiter at Meta" |
 | `bulk_update_status` | WRITE | Update multiple jobs at once | "Mark all old applications as Withdrawn" |
+
+**Notes on `web_research` tool:**
+- Could use configurable sources (LinkedIn, Glassdoor, company website, etc.)
+- Should summarize findings and suggest insights
+- Privacy consideration: user controls what sources are queried
+- Could integrate with the Interview Prep flow for research on interviewers
 
 ---
 
@@ -209,7 +216,7 @@ export const allTools: ToolDefinitionBase[] = [
 
 ### Agent Settings
 
-Settings are stored in `AppSettings.agentSettings`:
+Settings can be configured in **Settings → Agent** tab, or programmatically via `AppSettings.agentSettings`:
 
 ```typescript
 interface AgentSettings {
@@ -306,6 +313,49 @@ The agent tried too many tool calls. Simplify your command or increase `maxItera
 
 ### Confirmation dialog not appearing
 Check that `agentSettings.requireConfirmation` is set appropriately.
+
+---
+
+## Future: Agent-First Flows
+
+The long-term vision is to make all AI features accessible through the Command Bar agent, providing a unified conversational interface.
+
+### Current vs Agent-First Comparison
+
+| Current Flow | Current Trigger | Agent Trigger (Future) |
+|--------------|-----------------|------------------------|
+| **JD Analysis** | Click "Analyze with AI" in Add Job modal | "Add a job from this JD: [paste text]" |
+| **Resume Grading** | Click "Grade Resume" in Resume Fit tab | "How does my resume fit the Google job?" |
+| **Resume Tailoring** | Click "Start Tailoring" in Resume Fit tab | "Tailor my resume for the Amazon role" |
+| **Cover Letter** | Click "Generate" in Cover Letter tab | "Generate a cover letter for Meta" |
+| **Interview Prep** | Chat in Prep tab | "Help me prepare for the Netflix interview" |
+| **Add Note** | Click "Add Note" in Notes tab | "Add note to Amazon: Great call today" ✅ |
+| **Add Contact** | Click "Add Contact" in Notes tab | "Add recruiter Jane Doe to the Meta job" ✅ |
+| **Analyze Contact** | Click "Analyze" on contact card | "Research interviewer John Smith at Google" |
+
+### Benefits of Agent-First Approach
+
+- **Natural language interface** - Users describe what they want in plain English
+- **Conversational flow** - Refine and iterate through dialogue
+- **Unified entry point** - One shortcut (Ctrl+K) for all AI features
+- **Contextual suggestions** - Agent can proactively suggest actions based on job state
+- **Multi-step workflows** - Chain multiple actions in one command
+
+### Implementation Phases
+
+| Phase | Focus | Tools |
+|-------|-------|-------|
+| **Phase 1** (Current) | Basic CRUD operations | search_jobs, get_job_details, get_job_stats, update_job_status, add_note, add_contact |
+| **Phase 2** | Generation tools | generate_cover_letter, grade_resume, get_interview_prep, tailor_resume |
+| **Phase 3** | Research tools | web_research, analyze_interviewer, competitor_analysis |
+| **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions |
+
+### Migration Strategy
+
+1. **Additive approach** - Agent tools complement, don't replace, existing UI
+2. **Gradual adoption** - Users discover agent features at their own pace
+3. **Fallback to UI** - Complex flows (file upload, multi-step wizards) remain in dedicated UI
+4. **Context preservation** - Agent remembers conversation context for follow-up commands
 
 ---
 

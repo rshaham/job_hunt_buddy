@@ -30,6 +30,7 @@ import { testApiKey, convertResumeToMarkdown, summarizeDocument } from '../../se
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
 import { PROVIDER_MODELS, type ProviderType, type ContextDocument } from '../../types';
+import { DEFAULT_AGENT_SETTINGS, type ConfirmationLevel } from '../../types/agent';
 import { showToast } from '../../stores/toastStore';
 import { exportJobsAsCSV } from '../../services/db';
 import ReactMarkdown from 'react-markdown';
@@ -407,6 +408,10 @@ export function SettingsModal() {
             <TabsTrigger value="preferences">
               <Settings className="w-4 h-4 mr-1.5 inline" />
               Preferences
+            </TabsTrigger>
+            <TabsTrigger value="agent">
+              <Bot className="w-4 h-4 mr-1.5 inline" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -1086,6 +1091,85 @@ export function SettingsModal() {
               <p className="text-xs text-slate-500 mt-2">
                 Permanently delete all jobs, settings, API keys, and resume data.
               </p>
+            </section>
+          </TabsContent>
+
+          {/* Agent Tab */}
+          <TabsContent value="agent" className="space-y-6">
+            {/* Confirmation Level */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Tool Confirmation
+              </h3>
+              <select
+                aria-label="Select confirmation level"
+                value={settings.agentSettings?.requireConfirmation ?? DEFAULT_AGENT_SETTINGS.requireConfirmation}
+                onChange={(e) => updateSettings({
+                  agentSettings: {
+                    ...settings.agentSettings,
+                    requireConfirmation: e.target.value as ConfirmationLevel,
+                    maxIterations: settings.agentSettings?.maxIterations ?? DEFAULT_AGENT_SETTINGS.maxIterations,
+                  }
+                })}
+                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="all">All Tool Uses - Confirm every action</option>
+                <option value="write-only">Write Operations Only - Confirm changes (default)</option>
+                <option value="destructive-only">Destructive Only - Confirm deletions/status changes</option>
+                <option value="never">Never - Auto-execute all tools</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-2">
+                Control when the Command Bar (Ctrl+K) asks for confirmation before executing tools.
+              </p>
+            </section>
+
+            {/* Max Iterations */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
+                Max Agent Iterations
+                <span className="group relative">
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    How many tool calls the agent can make per request
+                  </span>
+                </span>
+              </h3>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={settings.agentSettings?.maxIterations ?? DEFAULT_AGENT_SETTINGS.maxIterations}
+                onChange={(e) => {
+                  const value = Math.min(20, Math.max(1, parseInt(e.target.value) || DEFAULT_AGENT_SETTINGS.maxIterations));
+                  updateSettings({
+                    agentSettings: {
+                      ...settings.agentSettings,
+                      requireConfirmation: settings.agentSettings?.requireConfirmation ?? DEFAULT_AGENT_SETTINGS.requireConfirmation,
+                      maxIterations: value,
+                    }
+                  });
+                }}
+                className="max-w-[120px]"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Limits how many tool calls the AI can make to complete a request. Higher = more complex tasks possible. Default: 7
+              </p>
+            </section>
+
+            {/* Command Bar Info */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Command Bar
+              </h3>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  Press <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Ctrl+K</kbd> (or <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Cmd+K</kbd> on Mac) to open the Command Bar.
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Use natural language to search jobs, update statuses, add notes, and more.
+                </p>
+              </div>
             </section>
           </TabsContent>
         </Tabs>

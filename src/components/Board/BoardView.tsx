@@ -11,8 +11,9 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
@@ -102,6 +103,19 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
+          <button
+            type="button"
+            onClick={() => useCommandBarStore.getState().open()}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300
+              hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            title="Open AI Agent (Ctrl+K)"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>AI Agent</span>
+            <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 rounded font-mono">
+              Ctrl+K
+            </kbd>
+          </button>
           <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
             <HelpCircle className="w-4 h-4" />
           </Button>

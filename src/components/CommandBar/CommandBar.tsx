@@ -199,7 +199,7 @@ export function CommandBar() {
                 <span className="text-amber-500 text-xl">⚠️</span>
                 <div className="flex-1">
                   <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">
-                    Confirm Action
+                    Confirm: {pendingConfirmation.toolName.replace(/_/g, ' ')}
                   </div>
                   <div className="text-sm text-amber-700 dark:text-amber-300 mb-3">
                     {pendingConfirmation.description}
