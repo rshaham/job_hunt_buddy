@@ -5,6 +5,7 @@ import { useAppStore } from '../../stores/appStore';
 import { OverviewTab } from './OverviewTab';
 import { ResumeFitTab } from './ResumeFitTab';
 import { CoverLetterTab } from './CoverLetterTab';
+import { EmailsTab } from './EmailsTab';
 import { PrepTab } from './PrepTab';
 import { NotesTab } from './NotesTab';
 import type { Job } from '../../types';
@@ -80,6 +81,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="resume">Resume Fit</TabsTrigger>
               <TabsTrigger value="cover">Cover Letter</TabsTrigger>
+              <TabsTrigger value="emails">Emails</TabsTrigger>
               <TabsTrigger value="prep">Prep & Q&A</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
@@ -96,6 +98,10 @@ export function JobDetailView({ job }: JobDetailViewProps) {
 
             <TabsContent value="cover">
               <CoverLetterTab job={job} />
+            </TabsContent>
+
+            <TabsContent value="emails">
+              <EmailsTab job={job} />
             </TabsContent>
 
             <TabsContent value="prep">

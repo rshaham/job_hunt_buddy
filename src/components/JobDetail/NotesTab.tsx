@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import MDEditor from '@uiw/react-md-editor';
 import {
   Plus,
@@ -19,10 +20,15 @@ import {
   Gift,
   RefreshCw,
   ExternalLink,
+  Loader2,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
-import { Button, Input } from '../ui';
+import { Button, Input, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId } from '../../utils/helpers';
+import { analyzeInterviewer } from '../../services/ai';
 import { format } from 'date-fns';
 import type { Job, Contact, Note, TimelineEvent } from '../../types';
 import type { LucideIcon } from 'lucide-react';
@@ -36,6 +42,7 @@ function NoteMarkdown({ content }: { content: string }) {
   return (
     <div className="text-sm text-slate-700 dark:text-slate-300">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         skipHtml
         components={{
           h1: ({ children }) => (
@@ -67,6 +74,22 @@ function NoteMarkdown({ content }: { content: string }) {
             </code>
           ),
           hr: () => <hr className="my-2 border-slate-200 dark:border-slate-700" />,
+          table: ({ children }) => (
+            <table className="min-w-full border-collapse my-2">{children}</table>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-slate-100 dark:bg-slate-700">{children}</thead>
+          ),
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => (
+            <tr className="border-b border-slate-200 dark:border-slate-600">{children}</tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-2 py-1 text-left text-xs font-semibold text-slate-700 dark:text-slate-300">{children}</th>
+          ),
+          td: ({ children }) => (
+            <td className="px-2 py-1 text-xs text-slate-600 dark:text-slate-400">{children}</td>
+          ),
         }}
       >
         {content}
@@ -115,6 +138,13 @@ export function NotesTab({ job }: NotesTabProps) {
   const [contactRole, setContactRole] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactLinkedIn, setContactLinkedIn] = useState('');
+  const [contactLinkedInBio, setContactLinkedInBio] = useState('');
+
+  // Interviewer intel state
+  const [editingBioContactId, setEditingBioContactId] = useState<string | null>(null);
+  const [editingBioText, setEditingBioText] = useState('');
+  const [analyzingContactId, setAnalyzingContactId] = useState<string | null>(null);
+  const [expandedIntelContactId, setExpandedIntelContactId] = useState<string | null>(null);
 
   // Timeline state
   const [showEventForm, setShowEventForm] = useState(false);
@@ -124,6 +154,11 @@ export function NotesTab({ job }: NotesTabProps) {
 
   // Copy state for feedback
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+  const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
 
   // Helper function to copy to clipboard
   const copyToClipboard = async (text: string, email: string) => {
@@ -171,6 +206,7 @@ export function NotesTab({ job }: NotesTabProps) {
       role: contactRole.trim(),
       email: contactEmail.trim() || undefined,
       linkedin: contactLinkedIn.trim() || undefined,
+      linkedInBio: contactLinkedInBio.trim() || undefined,
     };
 
     await updateJob(job.id, { contacts: [...job.contacts, contact] });
@@ -179,6 +215,40 @@ export function NotesTab({ job }: NotesTabProps) {
     setContactRole('');
     setContactEmail('');
     setContactLinkedIn('');
+    setContactLinkedInBio('');
+  };
+
+  // Update contact's LinkedIn bio
+  const handleSaveContactBio = async (contactId: string) => {
+    const updatedContacts = job.contacts.map((c) =>
+      c.id === contactId
+        ? { ...c, linkedInBio: editingBioText.trim() || undefined, interviewerIntel: undefined }
+        : c
+    );
+    await updateJob(job.id, { contacts: updatedContacts });
+    setEditingBioContactId(null);
+    setEditingBioText('');
+  };
+
+  // Analyze interviewer
+  const handleAnalyzeInterviewer = async (contact: Contact) => {
+    if (!contact.linkedInBio) return;
+
+    setAnalyzingContactId(contact.id);
+    try {
+      const resumeText = job.resumeText || settings.defaultResumeText;
+      const intel = await analyzeInterviewer(contact.linkedInBio, job.jdText, resumeText);
+
+      const updatedContacts = job.contacts.map((c) =>
+        c.id === contact.id ? { ...c, interviewerIntel: intel } : c
+      );
+      await updateJob(job.id, { contacts: updatedContacts });
+      setExpandedIntelContactId(contact.id);
+    } catch (error) {
+      console.error('Failed to analyze interviewer:', error);
+    } finally {
+      setAnalyzingContactId(null);
+    }
   };
 
   const handleDeleteContact = async (contactId: string) => {
@@ -326,7 +396,7 @@ export function NotesTab({ job }: NotesTabProps) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteNote(note.id)}
+                            onClick={() => setDeleteNoteId(note.id)}
                             className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                             title="Delete note"
                           >
@@ -385,6 +455,16 @@ export function NotesTab({ job }: NotesTabProps) {
                 value={contactLinkedIn}
                 onChange={(e) => setContactLinkedIn(e.target.value)}
               />
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block">LinkedIn Bio (for AI analysis)</label>
+                <textarea
+                  placeholder="Paste their LinkedIn About section or bio here..."
+                  value={contactLinkedInBio}
+                  onChange={(e) => setContactLinkedInBio(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={3}
+                />
+              </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAddContact} disabled={!contactName.trim()}>
                   Add Contact
@@ -429,7 +509,7 @@ export function NotesTab({ job }: NotesTabProps) {
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleDeleteContact(contact.id)}
+                          onClick={() => setDeleteContactId(contact.id)}
                           className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete contact"
                         >
@@ -470,6 +550,132 @@ export function NotesTab({ job }: NotesTabProps) {
                             <span className="text-blue-600 dark:text-blue-400">LinkedIn</span>
                             <ExternalLink className="w-3 h-3 text-blue-400" />
                           </a>
+                        )}
+                      </div>
+
+                      {/* LinkedIn Bio Section */}
+                      <div className="mt-3 pt-3 border-t border-blue-100 dark:border-blue-800/30">
+                        {editingBioContactId === contact.id ? (
+                          <div className="space-y-2">
+                            <label className="text-xs text-slate-500 block">LinkedIn Bio</label>
+                            <textarea
+                              value={editingBioText}
+                              onChange={(e) => setEditingBioText(e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                              rows={4}
+                              placeholder="Paste their LinkedIn About section..."
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleSaveContactBio(contact.id)}>
+                                <Save className="w-3 h-3 mr-1" />
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setEditingBioContactId(null);
+                                  setEditingBioText('');
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : contact.linkedInBio ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-slate-500">LinkedIn Bio</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingBioContactId(contact.id);
+                                  setEditingBioText(contact.linkedInBio || '');
+                                }}
+                                className="text-xs text-blue-500 hover:text-blue-600"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+                              {contact.linkedInBio}
+                            </p>
+
+                            {/* Analyze Button or Intel Display */}
+                            {!contact.interviewerIntel ? (
+                              <button
+                                type="button"
+                                onClick={() => handleAnalyzeInterviewer(contact)}
+                                disabled={analyzingContactId === contact.id}
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+                              >
+                                {analyzingContactId === contact.id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-3 h-3" />
+                                    Generate Intel
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <div className="space-y-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedIntelContactId(
+                                      expandedIntelContactId === contact.id ? null : contact.id
+                                    )
+                                  }
+                                  className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700"
+                                >
+                                  <Sparkles className="w-3 h-3" />
+                                  Interviewer Intel
+                                  {expandedIntelContactId === contact.id ? (
+                                    <ChevronUp className="w-3 h-3" />
+                                  ) : (
+                                    <ChevronDown className="w-3 h-3" />
+                                  )}
+                                </button>
+
+                                {expandedIntelContactId === contact.id && (
+                                  <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                    <NoteMarkdown content={contact.interviewerIntel} />
+                                    <div className="flex justify-end mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAnalyzeInterviewer(contact)}
+                                        disabled={analyzingContactId === contact.id}
+                                        className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-500"
+                                      >
+                                        {analyzingContactId === contact.id ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          <RefreshCw className="w-3 h-3" />
+                                        )}
+                                        Re-analyze
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingBioContactId(contact.id);
+                              setEditingBioText('');
+                            }}
+                            className="text-xs text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add LinkedIn Bio for AI analysis
+                          </button>
                         )}
                       </div>
                     </div>
@@ -584,7 +790,7 @@ export function NotesTab({ job }: NotesTabProps) {
                               </span>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteEvent(event.id)}
+                                onClick={() => setDeleteEventId(event.id)}
                                 className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Delete event"
                               >
@@ -604,6 +810,52 @@ export function NotesTab({ job }: NotesTabProps) {
           </div>
         </section>
       </div>
+
+      {/* Delete Confirmation Modals */}
+      <ConfirmModal
+        isOpen={deleteNoteId !== null}
+        onClose={() => setDeleteNoteId(null)}
+        onConfirm={() => {
+          if (deleteNoteId) {
+            handleDeleteNote(deleteNoteId);
+            setDeleteNoteId(null);
+          }
+        }}
+        title="Delete Note"
+        message="Delete this note? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={deleteContactId !== null}
+        onClose={() => setDeleteContactId(null)}
+        onConfirm={() => {
+          if (deleteContactId) {
+            handleDeleteContact(deleteContactId);
+            setDeleteContactId(null);
+          }
+        }}
+        title="Delete Contact"
+        message={`Delete ${job.contacts.find(c => c.id === deleteContactId)?.name || 'this contact'}? This cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={deleteEventId !== null}
+        onClose={() => setDeleteEventId(null)}
+        onConfirm={() => {
+          if (deleteEventId) {
+            handleDeleteEvent(deleteEventId);
+            setDeleteEventId(null);
+          }
+        }}
+        title="Delete Event"
+        message="Delete this timeline event? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

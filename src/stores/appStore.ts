@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -33,6 +33,14 @@ interface AppState {
   addStatus: (status: Omit<Status, 'id' | 'order'>) => Promise<void>;
   removeStatus: (id: string) => Promise<void>;
   reorderStatuses: (statuses: Status[]) => Promise<void>;
+
+  // Context document actions
+  addContextDocument: (doc: Omit<ContextDocument, 'id' | 'createdAt'>) => Promise<ContextDocument>;
+  updateContextDocument: (id: string, updates: Partial<ContextDocument>) => Promise<void>;
+  deleteContextDocument: (id: string) => Promise<void>;
+
+  // Saved story actions
+  updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
 
   // UI actions
   openAddJobModal: () => void;
@@ -185,6 +193,42 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   reorderStatuses: async (statuses) => {
     await get().updateSettings({ statuses });
+  },
+
+  // Context document actions
+  addContextDocument: async (docData) => {
+    const { settings } = get();
+    const newDoc: ContextDocument = {
+      ...docData,
+      id: generateId(),
+      createdAt: new Date(),
+    };
+    const newDocuments = [...(settings.contextDocuments || []), newDoc];
+    await get().updateSettings({ contextDocuments: newDocuments });
+    return newDoc;
+  },
+
+  updateContextDocument: async (id, updates) => {
+    const { settings } = get();
+    const newDocuments = (settings.contextDocuments || []).map((doc) =>
+      doc.id === id ? { ...doc, ...updates } : doc
+    );
+    await get().updateSettings({ contextDocuments: newDocuments });
+  },
+
+  deleteContextDocument: async (id) => {
+    const { settings } = get();
+    const newDocuments = (settings.contextDocuments || []).filter((doc) => doc.id !== id);
+    await get().updateSettings({ contextDocuments: newDocuments });
+  },
+
+  // Saved story actions
+  updateSavedStory: async (id, updates) => {
+    const { settings } = get();
+    const newStories = (settings.savedStories || []).map((story) =>
+      story.id === id ? { ...story, ...updates } : story
+    );
+    await get().updateSettings({ savedStories: newStories });
   },
 
   // UI actions

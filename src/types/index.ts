@@ -32,6 +32,12 @@ export interface Job {
   tailoredResumeAnalysis?: ResumeAnalysis;
   tailoringHistory?: TailoringEntry[];
   tailoringSuggestions?: string[]; // AI-generated follow-up questions for tailoring
+
+  // Email drafts
+  emailDraft?: string;
+  emailDraftType?: EmailType;
+  emailDraftCustomType?: string; // User-specified custom email type
+  emailDraftHistory?: EmailDraftEntry[];
 }
 
 export interface JobSummary {
@@ -50,6 +56,8 @@ export interface ResumeAnalysis {
   strengths: string[];
   gaps: string[];
   suggestions: string[];
+  matchedKeywords?: string[];  // Keywords from JD found in resume
+  missingKeywords?: string[];  // Keywords from JD NOT found in resume
 }
 
 export interface Contact {
@@ -59,6 +67,8 @@ export interface Contact {
   email?: string;
   linkedin?: string;
   notes?: string;
+  linkedInBio?: string;       // Raw pasted bio text
+  interviewerIntel?: string;  // AI-generated analysis (markdown)
 }
 
 export interface Note {
@@ -105,12 +115,33 @@ export interface CoverLetterEntry {
   timestamp: Date;
 }
 
+export interface EmailDraftEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  emailSnapshot?: string; // Email state after this message
+  timestamp: Date;
+}
+
+export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
+
 export interface SavedStory {
   id: string;
   question: string;  // The topic/question this story answers
   answer: string;    // The user's experience/story
   category?: string; // Optional: "leadership", "technical", "conflict", etc.
   createdAt: Date;
+}
+
+export interface ContextDocument {
+  id: string;
+  name: string;           // Original filename
+  fullText: string;       // Full extracted text from PDF
+  summary?: string;       // AI-generated summary (if created)
+  wordCount: number;      // Word count of full text
+  summaryWordCount?: number; // Word count of summary
+  createdAt: Date;
+  useSummary: boolean;    // Whether to use summary for AI calls
 }
 
 export interface Status {
@@ -167,6 +198,7 @@ export interface AppSettings {
   theme: 'light' | 'dark';
   additionalContext: string; // Free-form text about the user beyond their resume
   savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
+  contextDocuments: ContextDocument[]; // Uploaded PDF documents for context
 
   // Onboarding
   onboardingCompleted: boolean;
@@ -195,5 +227,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
   additionalContext: '',
   savedStories: [],
+  contextDocuments: [],
   onboardingCompleted: false,
 };
