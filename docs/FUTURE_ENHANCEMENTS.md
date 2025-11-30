@@ -21,7 +21,16 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Generates likely interview questions based on interviewer's expertise
 - User can add more context or search for additional info
 - Avoids legal/TOS issues by not scraping
-- 
+
+### Career Coach
+- AI-powered career analysis across all job applications
+- Skills gap analysis based on JobSummaries and ResumeAnalyses
+- Side project suggestions to fill identified gaps
+- Pattern recognition from application outcomes
+- Works with 1+ jobs, improves with more data
+- Chat interface for follow-up questions
+- Save insights to memories
+
 ## Medium Priority
 
 ### Desktop App (Electron)
@@ -31,11 +40,9 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Considerations: ~150MB bundle size, more complex build/release process, ongoing maintenance
 
 
-### Analytics Dashboard
-- Track applications over time
-- Success rate by company/role type
-- Time-to-response metrics
-- Funnel visualization (Applied -> Offer)
+### Analytics Dashboard *(Superseded by Career Coach)*
+- Basic metrics now covered by Career Coach
+- Consider if additional visualizations needed later
 
 ### Multiple Resume Profiles
 - Different resumes for different job types
