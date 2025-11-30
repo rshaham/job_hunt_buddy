@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, HelpCircle } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
@@ -26,6 +26,7 @@ export function BoardView() {
     selectJob,
     openAddJobModal,
     openSettingsModal,
+    openGettingStartedModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -98,7 +99,10 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
-          <Button variant="ghost" size="sm" onClick={openSettingsModal}>
+          <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
+            <HelpCircle className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={openSettingsModal} title="Settings">
             <Settings className="w-4 h-4" />
           </Button>
         </div>

@@ -19,7 +19,7 @@ import {
   Puzzle,
   Server,
 } from 'lucide-react';
-import { Modal, Button, Input, Textarea } from '../ui';
+import { Modal, Button, Input, Textarea, ConfirmModal } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
 import { useAppStore } from '../../stores/appStore';
 import { testApiKey, convertResumeToMarkdown } from '../../services/ai';
@@ -37,6 +37,7 @@ export function SettingsModal() {
     updateSettings,
     exportData,
     importData,
+    deleteAllData,
   } = useAppStore();
 
   // Provider state
@@ -52,6 +53,7 @@ export function SettingsModal() {
   const [additionalContextInput, setAdditionalContextInput] = useState(settings.additionalContext || '');
   const [showResumePreview, setShowResumePreview] = useState(false);
   const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -207,6 +209,12 @@ export function SettingsModal() {
 
   const toggleStoryExpand = (storyId: string) => {
     setExpandedStoryId(expandedStoryId === storyId ? null : storyId);
+  };
+
+  const handleDeleteAllData = async () => {
+    await deleteAllData();
+    closeSettingsModal();
+    showToast('All data has been deleted', 'success');
   };
 
   return (
@@ -744,9 +752,34 @@ export function SettingsModal() {
                 Export your data as JSON for backup or import from a previous backup.
               </p>
             </section>
+
+            {/* Delete All Data Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Danger Zone
+              </h3>
+              <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
+                <Trash2 className="w-4 h-4 mr-1" />
+                Delete All Data
+              </Button>
+              <p className="text-xs text-slate-500 mt-2">
+                Permanently delete all jobs, settings, API keys, and resume data.
+              </p>
+            </section>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteAllData}
+        title="Delete All Data?"
+        message="This will permanently delete ALL data including jobs, API keys, resume, and settings. This action cannot be undone."
+        confirmText="Delete Everything"
+        variant="danger"
+      />
     </Modal>
   );
 }

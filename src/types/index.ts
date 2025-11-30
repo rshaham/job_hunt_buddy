@@ -167,6 +167,9 @@ export interface AppSettings {
   theme: 'light' | 'dark';
   additionalContext: string; // Free-form text about the user beyond their resume
   savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
+
+  // Onboarding
+  onboardingCompleted: boolean;
 }
 
 export const DEFAULT_STATUSES: Status[] = [
@@ -192,4 +195,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
   additionalContext: '',
   savedStories: [],
+  onboardingCompleted: false,
 };

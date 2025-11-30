@@ -1,0 +1,232 @@
+import { useState } from 'react';
+import { Loader2, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { Button, Input } from '../../ui';
+import { useAppStore } from '../../../stores/appStore';
+import { testApiKey } from '../../../services/ai';
+import { encodeApiKey, decodeApiKey } from '../../../utils/helpers';
+import { PROVIDER_MODELS, type ProviderType } from '../../../types';
+
+interface ApiKeyStepProps {
+  onNext: () => void;
+  onBack: () => void;
+  onApiKeySaved: () => void;
+  apiKeySaved: boolean;
+}
+
+const PROVIDER_INFO: Record<ProviderType, { name: string; placeholder: string; helpUrl: string; helpText: string }> = {
+  anthropic: {
+    name: 'Anthropic (Claude)',
+    placeholder: 'sk-ant-...',
+    helpUrl: 'https://console.anthropic.com/settings/keys',
+    helpText: 'Get your API key from the Anthropic Console',
+  },
+  gemini: {
+    name: 'Google Gemini',
+    placeholder: 'AIza...',
+    helpUrl: 'https://aistudio.google.com/apikey',
+    helpText: 'Get your API key from Google AI Studio (free tier available)',
+  },
+  'openai-compatible': {
+    name: 'Local / Ollama',
+    placeholder: 'Leave empty for local Ollama',
+    helpUrl: 'https://ollama.ai/',
+    helpText: 'Run AI locally with Ollama (no API key needed)',
+  },
+};
+
+export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKeyStepProps) {
+  const { settings, updateSettings } = useAppStore();
+
+  const [activeProvider, setActiveProvider] = useState<ProviderType>(settings.activeProvider || 'anthropic');
+  const providerSettings = settings.providers?.[activeProvider] || { apiKey: '', model: '', baseUrl: '' };
+
+  const [apiKeyInput, setApiKeyInput] = useState(decodeApiKey(providerSettings.apiKey || ''));
+  const [baseUrlInput, setBaseUrlInput] = useState(providerSettings.baseUrl || 'http://localhost:11434/v1');
+  const [modelInput, setModelInput] = useState(providerSettings.model || PROVIDER_MODELS[activeProvider][0]?.id || '');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+
+  const providerInfo = PROVIDER_INFO[activeProvider];
+
+  const handleProviderChange = (provider: ProviderType) => {
+    setActiveProvider(provider);
+    const newProviderSettings = settings.providers?.[provider] || { apiKey: '', model: '', baseUrl: '' };
+    setApiKeyInput(decodeApiKey(newProviderSettings.apiKey || ''));
+    setBaseUrlInput(newProviderSettings.baseUrl || 'http://localhost:11434/v1');
+    setModelInput(newProviderSettings.model || PROVIDER_MODELS[provider][0]?.id || '');
+    setTestStatus('idle');
+  };
+
+  const handleTestAndSave = async () => {
+    // OpenAI-compatible doesn't require API key
+    if (activeProvider !== 'openai-compatible' && !apiKeyInput) return;
+    if (!modelInput) return;
+
+    setTestStatus('testing');
+    const isValid = await testApiKey(activeProvider, {
+      apiKey: apiKeyInput,
+      model: modelInput,
+      baseUrl: activeProvider === 'openai-compatible' ? baseUrlInput : undefined,
+    });
+    setTestStatus(isValid ? 'success' : 'error');
+
+    if (isValid) {
+      const newProviders = {
+        ...settings.providers,
+        [activeProvider]: {
+          apiKey: encodeApiKey(apiKeyInput),
+          model: modelInput,
+          ...(activeProvider === 'openai-compatible' && { baseUrl: baseUrlInput }),
+        },
+      };
+      await updateSettings({ activeProvider, providers: newProviders });
+      onApiKeySaved();
+    }
+  };
+
+  const canProceed = apiKeySaved || testStatus === 'success';
+  const needsApiKey = activeProvider !== 'openai-compatible';
+
+  return (
+    <div>
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+          Set Up AI Features
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          Choose your AI provider to enable job analysis, resume grading, and more.
+        </p>
+      </div>
+
+      <div className="max-w-md mx-auto space-y-4">
+        {/* Provider Selection */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            AI Provider
+          </label>
+          <select
+            aria-label="Select AI provider"
+            value={activeProvider}
+            onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
+            className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="anthropic">Anthropic (Claude) - Recommended</option>
+            <option value="gemini">Google Gemini - Free tier available</option>
+            <option value="openai-compatible">Local / Ollama - No API key needed</option>
+          </select>
+        </div>
+
+        {/* OpenAI-compatible specific fields */}
+        {activeProvider === 'openai-compatible' && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Server URL
+            </label>
+            <Input
+              placeholder="http://localhost:11434/v1"
+              value={baseUrlInput}
+              onChange={(e) => {
+                setBaseUrlInput(e.target.value);
+                setTestStatus('idle');
+              }}
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Default Ollama URL. Make sure Ollama is running.
+            </p>
+          </div>
+        )}
+
+        {/* API Key Input */}
+        {needsApiKey && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              API Key
+            </label>
+            <Input
+              type="password"
+              placeholder={providerInfo.placeholder}
+              value={apiKeyInput}
+              onChange={(e) => {
+                setApiKeyInput(e.target.value);
+                setTestStatus('idle');
+              }}
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              <a
+                href={providerInfo.helpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                {providerInfo.helpText}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+        )}
+
+        {/* Model Selection */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Model
+          </label>
+          <select
+            aria-label="Select model"
+            value={modelInput}
+            onChange={(e) => {
+              setModelInput(e.target.value);
+              setTestStatus('idle');
+            }}
+            className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {PROVIDER_MODELS[activeProvider].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name} - {model.description}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Test & Save Button */}
+        <Button
+          onClick={handleTestAndSave}
+          disabled={
+            (needsApiKey && !apiKeyInput) ||
+            !modelInput ||
+            testStatus === 'testing'
+          }
+          className="w-full"
+        >
+          {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-2 text-green-500" />}
+          {testStatus === 'error' && <XCircle className="w-4 h-4 mr-2 text-red-500" />}
+          {testStatus === 'idle' && 'Test & Save'}
+          {testStatus === 'testing' && 'Testing...'}
+          {testStatus === 'success' && 'Saved!'}
+          {testStatus === 'error' && 'Connection Failed - Try Again'}
+        </Button>
+
+        {testStatus === 'error' && (
+          <p className="text-sm text-red-500 text-center">
+            Could not connect. Please check your API key and try again.
+          </p>
+        )}
+
+        {!canProceed && (
+          <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+            Please save a valid API key to continue.
+          </p>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between mt-8">
+        <Button variant="ghost" onClick={onBack}>
+          Back
+        </Button>
+        <Button onClick={onNext} disabled={!canProceed}>
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}

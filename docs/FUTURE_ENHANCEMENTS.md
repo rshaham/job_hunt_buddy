@@ -4,14 +4,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
-### Multi-Provider AI Support
-- Add provider abstraction layer for multiple AI backends
-- **Providers:** Anthropic (existing), Ollama/Local, OpenAI-Compatible, Google Gemini
-- Provider selector dropdown in Settings with per-provider configuration
-- Auto-migrate existing Anthropic users to new settings format
-- OpenAI-compatible works without API key (for local Ollama)
-- See `docs/plans/multi-provider-ai.md` for full implementation spec
-
 ### Calendar Integration
 - Sync interviews to Google Calendar / Outlook
 - Set reminders for follow-ups
@@ -24,6 +16,12 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Customizable with job context
 
 ## Medium Priority
+
+### Desktop App (Electron)
+- Package as standalone .exe (Windows) / .dmg (Mac) / .AppImage (Linux)
+- No terminal or npm required for end users
+- Could support auto-updates
+- Considerations: ~150MB bundle size, more complex build/release process, ongoing maintenance
 
 ### Interviewer Profile Analysis
 - User pastes interviewer's LinkedIn profile info (manually copied)
@@ -84,6 +82,9 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] Multi-Provider AI Support (Anthropic, Google Gemini, Ollama/OpenAI-compatible)
+- [x] Getting Started Wizard (in-app onboarding with auto-trigger + help button)
+- [x] Delete All Data option in Settings
 - [x] Browser Extension (one-click JD capture from LinkedIn, Indeed, Greenhouse, Lever)
 - [x] Cover Letter Chat (iterative refinement with AI)
 - [x] More Responsive AI Chat (optimistic UI + ThinkingBubble animation)

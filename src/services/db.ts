@@ -188,3 +188,11 @@ export async function importData(data: unknown): Promise<void> {
     await saveSettings(importedSettings as AppSettings);
   });
 }
+
+// Delete all data (for reset/testing)
+export async function deleteAllData(): Promise<void> {
+  await db.transaction('rw', db.jobs, db.settings, async () => {
+    await db.jobs.clear();
+    await db.settings.clear();
+  });
+}

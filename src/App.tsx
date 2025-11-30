@@ -4,10 +4,11 @@ import { BoardView } from './components/Board';
 import { JobDetailView } from './components/JobDetail';
 import { AddJobModal } from './components/AddJob';
 import { SettingsModal } from './components/Settings';
+import { GettingStartedModal } from './components/GettingStarted';
 import { ToastContainer } from './components/ui';
 
 function App() {
-  const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal } = useAppStore();
+  const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
 
   useEffect(() => {
     loadData();
@@ -56,6 +57,21 @@ function App() {
     }
   }, [isLoading, openAddJobModal]);
 
+  // Auto-show Getting Started modal for first-time users
+  useEffect(() => {
+    if (isLoading) return;
+
+    const activeProviderKey = settings.providers?.[settings.activeProvider]?.apiKey;
+    const shouldShowOnboarding =
+      !settings.onboardingCompleted &&
+      !activeProviderKey &&
+      jobs.length === 0;
+
+    if (shouldShowOnboarding) {
+      openGettingStartedModal();
+    }
+  }, [isLoading, settings, jobs.length, openGettingStartedModal]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900">
@@ -75,6 +91,7 @@ function App() {
       {selectedJob && <JobDetailView job={selectedJob} />}
       <AddJobModal />
       <SettingsModal />
+      <GettingStartedModal />
       <ToastContainer />
     </>
   );

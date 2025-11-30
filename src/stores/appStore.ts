@@ -16,6 +16,7 @@ interface AppState {
   // UI State
   isAddJobModalOpen: boolean;
   isSettingsModalOpen: boolean;
+  isGettingStartedModalOpen: boolean;
 
   // Actions
   loadData: () => Promise<void>;
@@ -36,6 +37,11 @@ interface AppState {
   closeAddJobModal: () => void;
   openSettingsModal: () => void;
   closeSettingsModal: () => void;
+  openGettingStartedModal: () => void;
+  closeGettingStartedModal: () => void;
+
+  // Data management
+  deleteAllData: () => Promise<void>;
 
   // Export/Import
   exportData: () => Promise<string>;
@@ -50,6 +56,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   isAddJobModalOpen: false,
   isSettingsModalOpen: false,
+  isGettingStartedModalOpen: false,
 
   // Load initial data
   loadData: async () => {
@@ -177,6 +184,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeAddJobModal: () => set({ isAddJobModalOpen: false }),
   openSettingsModal: () => set({ isSettingsModalOpen: true }),
   closeSettingsModal: () => set({ isSettingsModalOpen: false }),
+  openGettingStartedModal: () => set({ isGettingStartedModalOpen: true }),
+  closeGettingStartedModal: () => set({ isGettingStartedModalOpen: false }),
+
+  // Data management
+  deleteAllData: async () => {
+    await db.deleteAllData();
+    set({ jobs: [], settings: DEFAULT_SETTINGS, selectedJobId: null });
+  },
 
   // Export/Import
   exportData: async () => {

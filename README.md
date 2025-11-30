@@ -3,78 +3,286 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5-purple.svg)](https://vitejs.dev/)
 
-A locally-run React application to help you track job applications with AI-powered features for job description analysis, resume grading, cover letter generation, and interview preparation.
+**Your AI-powered job search companion.** Track applications, get your resume graded, generate tailored cover letters, and prepare for interviews - all in one place. Your data stays on your computer, private and secure.
 
-## Features
+---
 
-### AI-Powered Analysis
+## What Can Job Hunt Buddy Do?
 
-- **JD Analysis**: Automatically extract company, title, requirements, skills, and salary from job descriptions
-- **Resume Fit Grading**: Get a letter grade (A-F) showing how well your resume matches job requirements
-- **Interactive Resume Tailoring**: AI tailors your resume to match job requirements with:
-  - Split-pane chat interface for refinements
-  - Side-by-side comparison view (original vs tailored)
-  - Diff view showing exact changes
-  - Manual editing mode for direct touch-ups
-  - Auto-regrade after tailoring
-- **Cover Letter Generation**: AI generates tailored cover letters with iterative chat refinement
-- **Interview Prep & Q&A**: Chat with AI about the job, get likely interview questions, and practice responses
-- **Model Selection**: Choose between different Claude models (Sonnet, Opus, Haiku)
+- **Kanban Board** - Drag and drop jobs across stages (Interested → Applied → Interviewing → Offer)
+- **JD Analysis** - Paste a job description and AI extracts the key requirements
+- **Resume Grading** - See how well your resume matches the job (A-F grade)
+- **Cover Letters** - AI generates tailored cover letters you can refine
+- **Interview Prep** - Chat with AI to practice interview questions
 
-### Organization & Tracking
+---
 
-- **Kanban Board**: Drag-and-drop jobs across customizable status columns
-- **Contacts & Notes**: Track recruiters, hiring managers, and important notes for each application
-- **Timeline Tracking**: Log events like phone screens, interviews, and offers
-- **Additional Context**: Add personal context and save successful interview stories that AI uses across all jobs
+## Quick Start Guide
 
-### Data & Privacy
+This guide will walk you through setting up Job Hunt Buddy, even if you've never used a terminal before!
 
-- **PDF Resume Import**: Upload PDF resumes with automatic text extraction and markdown conversion
-- **Local Storage**: All data stored locally in your browser using IndexedDB
-- **Export/Import**: Backup and restore your data as JSON
-- **Dark Mode**: Toggle between light and dark themes
+### What You'll Need
 
-## Getting Started
+- A computer (Windows, Mac, or Linux)
+- About 15-20 minutes for first-time setup
+- An API key from Anthropic, Google, or a local AI setup (we'll help you get one!)
 
-### Prerequisites
+---
 
-- Node.js 18+
-- npm or yarn
-- A Claude API key from [Anthropic](https://console.anthropic.com/)
+### Step 1: Open the Terminal
 
-### Installation
+The **terminal** (also called Command Prompt or PowerShell on Windows) is a text-based way to give your computer instructions. Think of it like texting commands to your computer instead of clicking buttons.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/rshaham/job_hunt_buddy.git
-   cd job_hunt_buddy
-   ```
+<details>
+<summary><strong>Windows Instructions</strong></summary>
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+1. Press the **Windows key** on your keyboard
+2. Type **"PowerShell"** or **"Command Prompt"**
+3. Click on the app that appears
+4. You'll see a window with text - this is your terminal!
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+**What you'll see:** A window with text like `C:\Users\YourName>` - this is normal! It's waiting for you to type a command.
 
-4. Open [http://localhost:5173](http://localhost:5173) in your browser
+</details>
 
-5. Click the Settings icon (gear) and add your Claude API key
+<details>
+<summary><strong>Mac Instructions</strong></summary>
+
+1. Press **Command + Space** to open Spotlight
+2. Type **"Terminal"**
+3. Press **Enter**
+4. You'll see a window with text - this is your terminal!
+
+**What you'll see:** Something like `yourname@MacBook ~ %` - this is your terminal waiting for commands.
+
+</details>
+
+<details>
+<summary><strong>Linux Instructions</strong></summary>
+
+1. Press **Ctrl + Alt + T** (works on most Linux distributions)
+   - Or search for "Terminal" in your applications menu
+2. You'll see a window with text
+
+**What you'll see:** A prompt like `username@computer:~$`
+
+</details>
+
+---
+
+### Step 2: Install Node.js
+
+**Node.js** is a program that lets your computer run JavaScript applications like Job Hunt Buddy. Think of it as installing a "translator" that helps your computer understand the app.
+
+1. Go to [https://nodejs.org/](https://nodejs.org/)
+2. Click the big green button that says **"LTS"** (Long Term Support - the stable version)
+3. Run the downloaded file and follow the installation wizard
+4. Accept all the default options - they work great!
+
+**Verify it worked:**
+
+1. Open a **NEW** terminal window (important: open a new one after installing!)
+2. Type: `node --version`
+3. Press **Enter**
+4. You should see a version number like `v20.10.0`
+
+> [!TIP]
+> If you see an error like "command not found", try closing and reopening the terminal, or restart your computer.
+
+---
+
+### Step 3: Download Job Hunt Buddy
+
+**Option A: Download as ZIP (Easiest)**
+
+1. Go to [https://github.com/rshaham/job_hunt_buddy](https://github.com/rshaham/job_hunt_buddy)
+2. Click the green **"Code"** button
+3. Click **"Download ZIP"**
+4. Find the downloaded file (usually in your Downloads folder)
+5. **Extract the ZIP:**
+   - **Windows:** Right-click and select "Extract All"
+   - **Mac:** Double-click the ZIP file
+6. Remember where you extracted it - you'll need this location!
+
+**Option B: Using Git (If you have it installed)**
+
+```bash
+git clone https://github.com/rshaham/job_hunt_buddy.git
+```
+
+---
+
+### Step 4: Navigate to the Folder
+
+You need to tell the terminal where Job Hunt Buddy is located.
+
+1. In your terminal, type `cd ` (that's "cd" followed by a space)
+2. Then type the path to your Job Hunt Buddy folder
+
+**Examples:**
+
+```bash
+# Windows example:
+cd C:\Users\YourName\Downloads\job_hunt_buddy-main
+
+# Mac/Linux example:
+cd ~/Downloads/job_hunt_buddy-main
+```
+
+> [!TIP]
+> **Drag and drop trick:** On many systems, you can type `cd ` and then drag the folder from your file explorer into the terminal window - it will automatically fill in the path!
+
+**How to know it worked:** The text before your cursor should change to show you're in the job_hunt_buddy folder.
+
+---
+
+### Step 5: Install Dependencies
+
+Job Hunt Buddy uses building blocks created by other developers (called "packages"). This command downloads all of them.
+
+In your terminal, type:
+
+```bash
+npm install
+```
+
+Then press **Enter**.
+
+**What you'll see:**
+
+- Lots of text scrolling by - this is normal!
+- It might take 1-2 minutes
+- You might see some "warnings" - these are usually fine to ignore
+- Wait until you see your terminal prompt again
+
+> [!WARNING]
+> If you see `npm: command not found`, go back to Step 2 and make sure Node.js is installed, then open a NEW terminal window.
+
+---
+
+### Step 6: Start the App
+
+In your terminal, type:
+
+```bash
+npm run dev
+```
+
+**What you'll see:**
+
+- Some text about "VITE" starting up
+- A line that says something like: `Local: http://localhost:5173`
+- The terminal will stay running - **don't close it!**
+
+Now open your web browser and go to:
+
+```
+http://localhost:5173
+```
+
+**You should see Job Hunt Buddy!** The app is running on your own computer.
+
+> [!IMPORTANT]
+> Keep the terminal window open while using the app. To stop the app later, press **Ctrl+C** in the terminal.
+
+---
+
+### Step 7: Set Up Your AI Provider
+
+When you first open Job Hunt Buddy, a **Getting Started** wizard will guide you through setup. You'll need an API key to use AI features.
+
+**Anthropic (Claude) - Recommended:**
+
+1. Go to [console.anthropic.com](https://console.anthropic.com/)
+2. Create an account
+3. Go to API Keys
+4. Create a new key and copy it
+
+**Google Gemini - Free tier available:**
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Sign in with your Google account
+3. Create an API key and copy it
+
+**Local AI (Ollama) - No API key needed:**
+
+1. Install [Ollama](https://ollama.ai/)
+2. Run `ollama run llama3.2` to download a model
+3. Select "Local / Ollama" in Job Hunt Buddy
+
+> [!NOTE]
+> Using AI features costs a small amount per use (usually pennies). Anthropic and Google give new accounts some free credits to start.
+
+---
+
+## Using Job Hunt Buddy
 
 ### Adding Your First Job
 
-1. Click "Add Job" in the header
+1. Click **"Add Job"** in the top right
 2. Paste the job posting URL (optional) and the full job description text
-3. Click "Analyze with AI" to automatically extract job details
-4. Review and save the job to your board
+3. Click **"Analyze with AI"** to automatically extract job details
+4. Review the AI-extracted information
+5. Click **"Save"** to add it to your board
 
-## Tech Stack
+### Getting Your Resume Graded
+
+1. Click on a job card to open the detail view
+2. Go to the **"Resume Fit"** tab
+3. Upload your resume (PDF) or use your default resume
+4. See your grade (A-F) and suggestions for improvement
+
+### Generating a Cover Letter
+
+1. Open a job's detail view
+2. Go to the **"Cover Letter"** tab
+3. Click **"Generate Cover Letter"**
+4. Refine it by chatting with the AI
+
+### Interview Prep
+
+1. Open a job's detail view
+2. Go to the **"Prep"** tab
+3. Ask questions or request practice interview questions
+4. Practice your responses with AI coaching
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `npm: command not found` | Node.js not installed or terminal not restarted. Reinstall Node.js and open a NEW terminal. |
+| `ENOENT: no such file or directory` | You're in the wrong folder. Use `cd` to navigate to the job_hunt_buddy folder. |
+| Page won't load in browser | Make sure the terminal shows `Local: http://localhost:5173` and copy that URL exactly. |
+| API key not working | Make sure you copied the full key. Check for extra spaces at the beginning or end. |
+| `npm install` shows errors | Try deleting the `node_modules` folder and running `npm install` again. |
+| Port 5173 already in use | Another app is using that port. Close other terminals running `npm run dev` or restart your computer. |
+
+### Stopping and Restarting the App
+
+```bash
+# To stop: Press Ctrl+C in the terminal
+
+# To restart: Run this again
+npm run dev
+```
+
+---
+
+## Privacy & Security
+
+- **All data stays on YOUR computer** - stored in your browser's local database
+- **Your API key is stored locally** - never sent anywhere except to your chosen AI provider
+- **No data sent to third parties** - PDF parsing, storage, everything happens locally
+
+---
+
+<details>
+<summary><strong>For Developers</strong></summary>
+
+### Tech Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -84,10 +292,10 @@ A locally-run React application to help you track job applications with AI-power
 | Storage | Dexie.js (IndexedDB) |
 | Drag & Drop | @dnd-kit |
 | PDF Parsing | pdfjs-dist |
-| AI | Claude API (Anthropic) |
+| AI | Claude API / Gemini API / OpenAI-compatible |
 | Icons | Lucide React |
 
-## Project Structure
+### Project Structure
 
 ```
 src/
@@ -96,9 +304,10 @@ src/
 │   ├── JobDetail/      # Job detail view with tabs
 │   ├── AddJob/         # Add job modal
 │   ├── Settings/       # Settings modal
+│   ├── GettingStarted/ # Onboarding wizard
 │   └── ui/             # Reusable UI components
 ├── services/
-│   ├── ai.ts           # Claude API integration
+│   ├── ai.ts           # AI provider integration
 │   ├── db.ts           # IndexedDB operations
 │   └── pdfParser.ts    # PDF text extraction
 ├── stores/
@@ -110,31 +319,7 @@ src/
     └── prompts.ts      # AI prompt templates
 ```
 
-## Configuration
-
-### API Key
-
-Your Claude API key is stored locally in your browser (localStorage) and is never sent to any server except Anthropic's API. To get an API key:
-
-1. Go to [console.anthropic.com](https://console.anthropic.com/)
-2. Create an account or sign in
-3. Navigate to API Keys
-4. Create a new key
-5. Copy and paste it into Job Hunt Buddy's Settings
-
-### Default Resume
-
-Upload a PDF resume in Settings to use as the default for all jobs. You can also upload job-specific resumes that override the default.
-
-## Usage Tips
-
-1. **Paste Full Job Descriptions**: The AI works best with complete job descriptions including requirements, responsibilities, and qualifications
-2. **Keep Your Resume Updated**: Upload your latest resume for accurate fit analysis
-3. **Use the Q&A Feature**: Ask the AI about specific aspects of the job or practice interview responses
-4. **Track Everything**: Add contacts, notes, and timeline events to keep all information in one place
-5. **Export Regularly**: Use the Export feature in Settings to backup your data
-
-## Development
+### Development Commands
 
 ```bash
 # Start dev server
@@ -150,23 +335,22 @@ npm run preview
 npm run lint
 ```
 
-## Privacy
-
-- All data is stored locally in your browser using IndexedDB
-- Your API key is stored locally and only sent to Anthropic's API
-- No data is sent to any third-party servers
-- PDF parsing happens entirely in your browser
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+</details>
+
+---
+
+## License
+
+MIT - See [LICENSE](LICENSE) for details.
+
+---
+
+**Need help?** Click the **?** button in the app header to reopen the Getting Started guide anytime!
