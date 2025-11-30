@@ -74,6 +74,11 @@ export function SettingsModal() {
   // Story editing state
   const [editingStory, setEditingStory] = useState<{ id: string; question: string; answer: string } | null>(null);
 
+  // Delete confirmation state
+  const [deleteStoryId, setDeleteStoryId] = useState<string | null>(null);
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [showClearResumeConfirm, setShowClearResumeConfirm] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const docFileInputRef = useRef<HTMLInputElement>(null);
@@ -699,7 +704,7 @@ export function SettingsModal() {
                       >
                         <Download className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={handleClearResume} title="Remove resume">
+                      <Button variant="ghost" size="sm" onClick={() => setShowClearResumeConfirm(true)} title="Remove resume">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -853,7 +858,7 @@ export function SettingsModal() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteDocument(doc.id)}
+                            onClick={() => setDeleteDocId(doc.id)}
                             title="Remove document"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -952,7 +957,7 @@ export function SettingsModal() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteStory(story.id);
+                            setDeleteStoryId(story.id);
                           }}
                           className="text-slate-400 hover:text-danger p-1"
                           title="Delete story"
@@ -1248,6 +1253,50 @@ export function SettingsModal() {
           </div>
         </div>
       )}
+
+      {/* Additional Delete Confirmation Modals */}
+      <ConfirmModal
+        isOpen={showClearResumeConfirm}
+        onClose={() => setShowClearResumeConfirm(false)}
+        onConfirm={() => {
+          handleClearResume();
+          setShowClearResumeConfirm(false);
+        }}
+        title="Clear Resume"
+        message="Clear your default resume? This cannot be undone."
+        confirmText="Clear"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={deleteStoryId !== null}
+        onClose={() => setDeleteStoryId(null)}
+        onConfirm={() => {
+          if (deleteStoryId) {
+            handleDeleteStory(deleteStoryId);
+            setDeleteStoryId(null);
+          }
+        }}
+        title="Delete Story"
+        message="Delete this saved story? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={deleteDocId !== null}
+        onClose={() => setDeleteDocId(null)}
+        onConfirm={() => {
+          if (deleteDocId) {
+            handleDeleteDocument(deleteDocId);
+            setDeleteDocId(null);
+          }
+        }}
+        title="Remove Document"
+        message={`Remove "${settings.contextDocuments?.find(d => d.id === deleteDocId)?.name || 'this document'}" from context bank? This cannot be undone.`}
+        confirmText="Remove"
+        variant="danger"
+      />
     </Modal>
   );
 }

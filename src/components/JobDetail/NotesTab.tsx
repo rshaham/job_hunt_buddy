@@ -25,7 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { Button, Input } from '../ui';
+import { Button, Input, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId } from '../../utils/helpers';
 import { analyzeInterviewer } from '../../services/ai';
@@ -154,6 +154,11 @@ export function NotesTab({ job }: NotesTabProps) {
 
   // Copy state for feedback
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+  const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
 
   // Helper function to copy to clipboard
   const copyToClipboard = async (text: string, email: string) => {
@@ -391,7 +396,7 @@ export function NotesTab({ job }: NotesTabProps) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteNote(note.id)}
+                            onClick={() => setDeleteNoteId(note.id)}
                             className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                             title="Delete note"
                           >
@@ -504,7 +509,7 @@ export function NotesTab({ job }: NotesTabProps) {
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleDeleteContact(contact.id)}
+                          onClick={() => setDeleteContactId(contact.id)}
                           className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete contact"
                         >
@@ -785,7 +790,7 @@ export function NotesTab({ job }: NotesTabProps) {
                               </span>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteEvent(event.id)}
+                                onClick={() => setDeleteEventId(event.id)}
                                 className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Delete event"
                               >
@@ -805,6 +810,52 @@ export function NotesTab({ job }: NotesTabProps) {
           </div>
         </section>
       </div>
+
+      {/* Delete Confirmation Modals */}
+      <ConfirmModal
+        isOpen={deleteNoteId !== null}
+        onClose={() => setDeleteNoteId(null)}
+        onConfirm={() => {
+          if (deleteNoteId) {
+            handleDeleteNote(deleteNoteId);
+            setDeleteNoteId(null);
+          }
+        }}
+        title="Delete Note"
+        message="Delete this note? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={deleteContactId !== null}
+        onClose={() => setDeleteContactId(null)}
+        onConfirm={() => {
+          if (deleteContactId) {
+            handleDeleteContact(deleteContactId);
+            setDeleteContactId(null);
+          }
+        }}
+        title="Delete Contact"
+        message={`Delete ${job.contacts.find(c => c.id === deleteContactId)?.name || 'this contact'}? This cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={deleteEventId !== null}
+        onClose={() => setDeleteEventId(null)}
+        onConfirm={() => {
+          if (deleteEventId) {
+            handleDeleteEvent(deleteEventId);
+            setDeleteEventId(null);
+          }
+        }}
+        title="Delete Event"
+        message="Delete this timeline event? This cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
