@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
@@ -27,6 +27,8 @@ export function BoardView() {
     openAddJobModal,
     openSettingsModal,
     openGettingStartedModal,
+    openPrivacyModal,
+    openFeatureGuideModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -102,6 +104,12 @@ export function BoardView() {
           <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
             <HelpCircle className="w-4 h-4" />
           </Button>
+          <Button variant="ghost" size="sm" onClick={openFeatureGuideModal} title="Feature Guide">
+            <BookOpen className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={openPrivacyModal} title="Privacy & Terms">
+            <Shield className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={openSettingsModal} title="Settings">
             <Settings className="w-4 h-4" />
           </Button>
@@ -112,7 +120,7 @@ export function BoardView() {
       <div className="flex-1 overflow-x-auto p-6">
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={pointerWithin}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >

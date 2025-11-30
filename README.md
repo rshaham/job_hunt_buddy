@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
+[![Try It Live](https://img.shields.io/badge/Try_It_Live-jobhuntbuddy.ai-green.svg)](https://www.jobhuntbuddy.ai)
 
 **Your AI-powered job search companion.** Track applications, get your resume graded, generate tailored cover letters, and prepare for interviews - all in one place. Your data stays on your computer, private and secure.
 

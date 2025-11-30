@@ -16,10 +16,13 @@ export function Column({ status, jobs, onJobClick }: ColumnProps) {
   });
 
   return (
-    <div className="flex flex-col w-64 min-w-[256px] flex-shrink-0">
+    <div ref={setNodeRef} className="flex flex-col w-64 min-w-[256px] flex-shrink-0">
       {/* Column Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2 rounded-t-lg"
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-t-lg',
+          isOver && 'ring-2 ring-primary/30'
+        )}
         style={{ backgroundColor: `${status.color}15` }}
       >
         <div
@@ -36,7 +39,6 @@ export function Column({ status, jobs, onJobClick }: ColumnProps) {
 
       {/* Column Content */}
       <div
-        ref={setNodeRef}
         className={cn(
           'flex-1 p-2 space-y-2 bg-slate-50 dark:bg-slate-900/50 rounded-b-lg border border-t-0 border-slate-200 dark:border-slate-700 min-h-[200px] overflow-y-auto',
           isOver && 'bg-primary/5 border-primary/30'

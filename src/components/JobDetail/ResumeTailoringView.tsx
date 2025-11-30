@@ -15,6 +15,7 @@ import {
   Bookmark,
   Pencil,
   X,
+  HelpCircle,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -30,9 +31,10 @@ import type { Job, TailoringEntry, SavedStory } from '../../types';
 interface ResumeTailoringViewProps {
   job: Job;
   onBack: () => void;
+  initialKeyword?: string;
 }
 
-export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
+export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailoringViewProps) {
   const { settings, updateJob, updateSettings } = useAppStore();
   const [isAutoTailoring, setIsAutoTailoring] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
@@ -68,6 +70,21 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
       setIsEditing(false);
     }
   }, [job.tailoredResume]);
+
+  // Auto-populate input if initialKeyword is provided
+  useEffect(() => {
+    if (initialKeyword && !userMessage) {
+      setUserMessage(`How can I address the missing skill: "${initialKeyword}"?`);
+    }
+  }, [initialKeyword]);
+
+  // Get missing keywords from the most recent analysis
+  const missingKeywords = job.tailoredResumeAnalysis?.missingKeywords ||
+                          job.resumeAnalysis?.missingKeywords || [];
+
+  const handleKeywordClick = (keyword: string) => {
+    setUserMessage(`How can I address the missing skill: "${keyword}"?`);
+  };
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -351,10 +368,18 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Analysis
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Analysis
+          </Button>
+          <span className="group relative">
+            <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              Auto-tailor or chat to customize
+            </span>
+          </span>
+        </div>
 
         <div className="flex items-center gap-2">
           {/* Grade comparison */}
@@ -451,6 +476,27 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
           <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Refine Your Resume</h3>
           </div>
+
+          {/* Missing Keywords */}
+          {missingKeywords.length > 0 && (
+            <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/10">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                Missing keywords - click to ask AI for help:
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {missingKeywords.map((keyword, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleKeywordClick(keyword)}
+                    className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                  >
+                    {keyword}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">

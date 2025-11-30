@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -17,6 +17,8 @@ interface AppState {
   isAddJobModalOpen: boolean;
   isSettingsModalOpen: boolean;
   isGettingStartedModalOpen: boolean;
+  isPrivacyModalOpen: boolean;
+  isFeatureGuideModalOpen: boolean;
 
   // Actions
   loadData: () => Promise<void>;
@@ -32,6 +34,14 @@ interface AppState {
   removeStatus: (id: string) => Promise<void>;
   reorderStatuses: (statuses: Status[]) => Promise<void>;
 
+  // Context document actions
+  addContextDocument: (doc: Omit<ContextDocument, 'id' | 'createdAt'>) => Promise<ContextDocument>;
+  updateContextDocument: (id: string, updates: Partial<ContextDocument>) => Promise<void>;
+  deleteContextDocument: (id: string) => Promise<void>;
+
+  // Saved story actions
+  updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
+
   // UI actions
   openAddJobModal: () => void;
   closeAddJobModal: () => void;
@@ -39,6 +49,10 @@ interface AppState {
   closeSettingsModal: () => void;
   openGettingStartedModal: () => void;
   closeGettingStartedModal: () => void;
+  openPrivacyModal: () => void;
+  closePrivacyModal: () => void;
+  openFeatureGuideModal: () => void;
+  closeFeatureGuideModal: () => void;
 
   // Data management
   deleteAllData: () => Promise<void>;
@@ -57,6 +71,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAddJobModalOpen: false,
   isSettingsModalOpen: false,
   isGettingStartedModalOpen: false,
+  isPrivacyModalOpen: false,
+  isFeatureGuideModalOpen: false,
 
   // Load initial data
   loadData: async () => {
@@ -179,6 +195,42 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().updateSettings({ statuses });
   },
 
+  // Context document actions
+  addContextDocument: async (docData) => {
+    const { settings } = get();
+    const newDoc: ContextDocument = {
+      ...docData,
+      id: generateId(),
+      createdAt: new Date(),
+    };
+    const newDocuments = [...(settings.contextDocuments || []), newDoc];
+    await get().updateSettings({ contextDocuments: newDocuments });
+    return newDoc;
+  },
+
+  updateContextDocument: async (id, updates) => {
+    const { settings } = get();
+    const newDocuments = (settings.contextDocuments || []).map((doc) =>
+      doc.id === id ? { ...doc, ...updates } : doc
+    );
+    await get().updateSettings({ contextDocuments: newDocuments });
+  },
+
+  deleteContextDocument: async (id) => {
+    const { settings } = get();
+    const newDocuments = (settings.contextDocuments || []).filter((doc) => doc.id !== id);
+    await get().updateSettings({ contextDocuments: newDocuments });
+  },
+
+  // Saved story actions
+  updateSavedStory: async (id, updates) => {
+    const { settings } = get();
+    const newStories = (settings.savedStories || []).map((story) =>
+      story.id === id ? { ...story, ...updates } : story
+    );
+    await get().updateSettings({ savedStories: newStories });
+  },
+
   // UI actions
   openAddJobModal: () => set({ isAddJobModalOpen: true }),
   closeAddJobModal: () => set({ isAddJobModalOpen: false }),
@@ -186,6 +238,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeSettingsModal: () => set({ isSettingsModalOpen: false }),
   openGettingStartedModal: () => set({ isGettingStartedModalOpen: true }),
   closeGettingStartedModal: () => set({ isGettingStartedModalOpen: false }),
+  openPrivacyModal: () => set({ isPrivacyModalOpen: true }),
+  closePrivacyModal: () => set({ isPrivacyModalOpen: false }),
+  openFeatureGuideModal: () => set({ isFeatureGuideModalOpen: true }),
+  closeFeatureGuideModal: () => set({ isFeatureGuideModalOpen: false }),
 
   // Data management
   deleteAllData: async () => {

@@ -15,6 +15,13 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Withdrawal/acceptance templates
 - Customizable with job context
 
+### Interviewer Profile Analysis
+- User pastes interviewer's LinkedIn profile info (manually copied)
+- AI analyzes their background, experience, and interests
+- Generates likely interview questions based on interviewer's expertise
+- User can add more context or search for additional info
+- Avoids legal/TOS issues by not scraping
+- 
 ## Medium Priority
 
 ### Desktop App (Electron)
@@ -23,12 +30,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Could support auto-updates
 - Considerations: ~150MB bundle size, more complex build/release process, ongoing maintenance
 
-### Interviewer Profile Analysis
-- User pastes interviewer's LinkedIn profile info (manually copied)
-- AI analyzes their background, experience, and interests
-- Generates likely interview questions based on interviewer's expertise
-- User can add more context or search for additional info
-- Avoids legal/TOS issues by not scraping
 
 ### Analytics Dashboard
 - Track applications over time
@@ -111,7 +112,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - [ ] Improve error handling and user feedback
 - [ ] Add loading skeletons for better UX
 - [ ] Optimize bundle size
-- [ ] Add PWA support for offline access
+- [x] Add PWA support for offline access
 - [ ] Consider server component for API key security
 
 ## Contributing

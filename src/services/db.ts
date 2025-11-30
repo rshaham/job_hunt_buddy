@@ -166,6 +166,21 @@ export async function exportData(): Promise<{ jobs: Job[]; settings: Omit<AppSet
   return { jobs, settings: settingsWithoutApiKey as Omit<AppSettings, 'apiKey'> };
 }
 
+export async function exportJobsAsCSV(): Promise<string> {
+  const jobs = await getAllJobs();
+  const headers = ['Company', 'Title', 'Status', 'Date Added', 'Match %', 'Grade', 'JD Link'];
+  const rows = jobs.map(job => [
+    job.company,
+    job.title,
+    job.status,
+    job.dateAdded instanceof Date ? job.dateAdded.toISOString().split('T')[0] : String(job.dateAdded).split('T')[0],
+    job.resumeAnalysis?.matchPercentage ?? '',
+    job.resumeAnalysis?.grade ?? '',
+    job.jdLink,
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+  return [headers.join(','), ...rows].join('\n');
+}
+
 export async function importData(data: unknown): Promise<void> {
   // Validate imported data against schema
   const parseResult = ImportDataSchema.safeParse(data);

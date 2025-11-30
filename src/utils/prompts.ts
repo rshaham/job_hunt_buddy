@@ -30,8 +30,12 @@ Return ONLY valid JSON with this exact structure:
   "matchPercentage": number from 0 to 100,
   "strengths": ["strength 1 - specific match between resume and JD", "strength 2", ...],
   "gaps": ["gap 1 - requirement not clearly met", "gap 2", ...],
-  "suggestions": ["actionable suggestion 1", "actionable suggestion 2", ...]
+  "suggestions": ["actionable suggestion 1", "actionable suggestion 2", ...],
+  "matchedKeywords": ["keyword/skill from JD that IS in resume", ...],
+  "missingKeywords": ["important keyword/skill from JD that is NOT in resume", ...]
 }
+
+For keywords: Extract specific skills, technologies, qualifications, and requirements from the JD. Check which ones appear (or have equivalents) in the resume.
 
 Be specific and reference actual content from both documents. Focus on skills, experience, and qualifications.`;
 
@@ -239,3 +243,84 @@ Rules:
 - Keep contact information near the top after the name
 
 Return ONLY the markdown-formatted resume. No explanations, no code blocks, no extra text.`;
+
+export const INTERVIEWER_ANALYSIS_PROMPT = `Analyze this interviewer's profile to help the candidate prepare for their interview.
+
+LinkedIn Bio / About Section:
+{linkedInBio}
+
+Job Context:
+{jdText}
+
+Candidate Resume:
+{resumeText}
+
+Provide a concise "cheat sheet" for the candidate:
+
+1. **Communication Style**: What communication style might they prefer? (formal/casual, technical/business, direct/storytelling, metrics-focused, etc.)
+
+2. **What They Value**: Based on their background, what do they likely care about? (innovation, metrics, teamwork, technical depth, business impact, etc.)
+
+3. **Talking Points**: 3-4 specific things the candidate should mention that would resonate with this interviewer based on their background.
+
+4. **Questions to Ask Them**: 2-3 personalized questions the candidate could ask, based on the interviewer's experience.
+
+5. **Common Ground**: Any potential shared interests, experiences, or connections with the candidate.
+
+Be concise and actionable. Focus on insights that will help the candidate build rapport and communicate effectively.`;
+
+export const EMAIL_DRAFT_PROMPT = `Write a professional {emailType} email for this job application.
+
+Job: {title} at {company}
+Job Description Summary: {shortDescription}
+
+Candidate Background:
+{resumeText}
+
+Additional Context from User:
+{additionalContext}
+
+Email Type Guidelines:
+- Thank You: Express gratitude for the interview, reinforce interest in the role, mention a specific discussion point or something you learned
+- Follow Up: Polite status check, reaffirm interest, offer to provide additional information
+- Withdraw: Professional and brief, express appreciation for their time, leave the door open for future opportunities
+- Negotiate Offer: Professional, specific about what you're requesting, justify with market data or your experience/value
+
+IMPORTANT:
+- Write ONLY the email body (no subject line)
+- Do NOT include placeholders like [Your Name] or [Date] - just write the letter body
+- Keep it concise (2-3 paragraphs max)
+- Be professional but personable
+- Only reference experiences actually in the resume - don't fabricate
+
+Write the email now:`;
+
+export const REFINE_EMAIL_PROMPT = `You are helping refine a job application email.
+
+Job: {title} at {company}
+Email Type: {emailType}
+
+Current Email:
+{currentEmail}
+
+Help the user refine their email based on their requests. Common refinements include:
+- Adjusting tone (more formal, more casual, more direct, warmer)
+- Changing length (shorter, more concise, expanded)
+- Cultural adaptation (e.g., Israeli direct style, British formal style, American friendly style)
+- Emphasizing different points
+- Improving specific paragraphs or sentences
+- Making it more confident or humble
+
+CRITICAL RULES:
+- Keep the email professional and appropriate
+- Maintain truthfulness - don't add claims not supported by the candidate's background
+- Preserve the user's voice while improving clarity
+- Each response should include both a conversational reply AND the updated email
+
+Return ONLY valid JSON:
+{
+  "reply": "Your conversational response explaining the changes",
+  "updatedEmail": "The full updated email"
+}
+
+Be helpful and provide clear explanations of the changes you make.`;

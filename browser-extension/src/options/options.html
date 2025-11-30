@@ -151,6 +151,24 @@
       font-family: monospace;
       font-size: 11px;
     }
+
+    .quick-select {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .quick-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+
+    .quick-btn:hover {
+      background: #e2e8f0;
+    }
   </style>
 </head>
 <body>
@@ -162,8 +180,12 @@
 
     <div class="field">
       <label for="appUrl">App URL</label>
-      <input type="url" id="appUrl" placeholder="http://localhost:5173">
+      <input type="url" id="appUrl" placeholder="https://www.jobhuntbuddy.ai">
       <small>The URL where Job Hunt Buddy is running</small>
+      <div class="quick-select">
+        <button type="button" class="quick-btn" data-url="https://www.jobhuntbuddy.ai">Production</button>
+        <button type="button" class="quick-btn" data-url="http://localhost:5173">Localhost</button>
+      </div>
     </div>
 
     <div class="actions">
@@ -184,7 +206,8 @@
         Click the extension icon to capture the job and send it to Job Hunt Buddy.
       </p>
       <p style="margin-top: 8px;">
-        Default URL: <code>http://localhost:5173</code>
+        <strong>Production:</strong> <code>https://www.jobhuntbuddy.ai</code><br>
+        <strong>Local dev:</strong> <code>http://localhost:5173</code>
       </p>
     </div>
   </div>

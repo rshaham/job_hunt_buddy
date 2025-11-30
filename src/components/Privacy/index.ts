@@ -1,0 +1,1 @@
+export { PrivacyModal } from './PrivacyModal';
