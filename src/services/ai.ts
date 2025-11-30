@@ -1,3 +1,4 @@
+import { jsonrepair } from 'jsonrepair';
 import {
   JD_ANALYSIS_PROMPT,
   RESUME_GRADING_PROMPT,
@@ -64,12 +65,22 @@ async function callAI(
 }
 
 function extractJSON(text: string): string {
-  // Try to find JSON in the response
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    return jsonMatch[0];
+  let input = text;
+
+  // Strip markdown code fences if present
+  const codeBlockMatch = input.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    input = codeBlockMatch[1];
   }
-  return text;
+
+  // Try to find JSON object in the response
+  const jsonMatch = input.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('Model did not return JSON. Try again or use a more capable model (Claude, GPT-4, or Gemini).');
+  }
+
+  // Use jsonrepair to fix malformed JSON from AI models
+  return jsonrepair(jsonMatch[0]);
 }
 
 // Build additional context from settings (additionalContext + savedStories)
