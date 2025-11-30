@@ -18,7 +18,7 @@ import {
   CAREER_COACH_ANALYSIS_PROMPT,
   CAREER_COACH_CHAT_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -528,7 +528,10 @@ export async function refineEmail(
 // Career Coach functions
 
 // Extract user skills from resume, additional context, and context documents
-export async function extractUserSkills(): Promise<UserSkillProfile> {
+// Supports merge behavior: preserves manual skills and merges with AI-extracted ones
+export async function extractUserSkills(
+  existingSkills?: SkillEntry[]
+): Promise<UserSkillProfile> {
   const { settings } = useAppStore.getState();
 
   const resumeText = settings.defaultResumeText || '';
@@ -552,27 +555,38 @@ export async function extractUserSkills(): Promise<UserSkillProfile> {
   try {
     parsed = JSON.parse(jsonStr);
   } catch {
-    // If parsing fails, return empty profile
+    // If parsing fails, keep existing skills or return empty profile
     return {
-      skills: [],
-      extractedFrom: [],
+      skills: existingSkills || [],
       lastExtractedAt: new Date(),
     };
   }
 
-  // Build extractedFrom list based on what sources had content
-  const extractedFrom: string[] = [];
-  if (resumeText) extractedFrom.push('resume');
-  if (additionalContext) extractedFrom.push('additionalContext');
-  if (settings.contextDocuments?.length) {
-    settings.contextDocuments.forEach(doc => {
-      extractedFrom.push(`contextDoc:${doc.name}`);
-    });
-  }
+  // Parse AI-extracted skills
+  const aiSkills = ((parsed.skills as Array<{ skill: string; category: string; source: string }>) || [])
+    .map(s => ({
+      skill: s.skill,
+      category: (s.category as SkillEntry['category']) || 'technical',
+      source: s.source || 'resume',
+      addedAt: new Date(),
+    }));
+
+  // Merge logic:
+  // 1. Keep all "manual" sourced skills from existingSkills
+  // 2. Add AI-extracted skills that don't already exist
+  // 3. Preserve category if skill already exists (don't override manual categorization)
+
+  const manualSkills = (existingSkills || []).filter(s => s.source === 'manual');
+  const existingSkillNames = new Set((existingSkills || []).map(s => s.skill.toLowerCase()));
+
+  // Only add AI skills that don't already exist
+  const newAiSkills = aiSkills.filter(s => !existingSkillNames.has(s.skill.toLowerCase()));
+
+  // Combine: manual skills first, then new AI skills
+  const mergedSkills = [...manualSkills, ...newAiSkills];
 
   return {
-    skills: (parsed.skills as string[]) || [],
-    extractedFrom,
+    skills: mergedSkills,
     lastExtractedAt: new Date(),
   };
 }
@@ -725,7 +739,7 @@ Add some jobs to your board first - paste job descriptions, and I'll analyze the
   }
 
   const userSkills = skillProfile?.skills?.length
-    ? `Current skills: ${skillProfile.skills.join(', ')}`
+    ? `Current skills: ${skillProfile.skills.map(s => s.skill).join(', ')}`
     : 'No skill profile extracted yet. Click "Re-analyze Skills" to extract skills from your resume and context.';
 
   const timeWindow = includeAllJobs ? 'all time' : 'last 6 months';
@@ -749,7 +763,7 @@ export async function chatAboutCareer(
   const { aggregatedData } = buildCareerCoachContext(jobs, includeAllJobs);
 
   const userSkills = skillProfile?.skills?.length
-    ? `Current skills: ${skillProfile.skills.join(', ')}`
+    ? `Current skills: ${skillProfile.skills.map(s => s.skill).join(', ')}`
     : 'No skill profile available';
 
   // Build history string

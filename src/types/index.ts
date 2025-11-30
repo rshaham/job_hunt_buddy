@@ -133,10 +133,20 @@ export interface CareerCoachEntry {
   timestamp: Date;
 }
 
+// Skill categories for grouping
+export type SkillCategory = 'technical' | 'soft' | 'domain';
+
+// Individual skill entry with metadata
+export interface SkillEntry {
+  skill: string;
+  category: SkillCategory;
+  source: string; // "resume" | "additionalContext" | "contextDoc:filename" | "manual"
+  addedAt: Date;
+}
+
 export interface UserSkillProfile {
-  skills: string[];           // AI-extracted skills from resume/context
-  extractedFrom: string[];    // Sources: "resume", "additionalContext", "contextDoc:filename"
-  lastExtractedAt: Date;
+  skills: SkillEntry[];        // Categorized skills with sources
+  lastExtractedAt?: Date;
 }
 
 export interface CareerCoachState {

@@ -338,22 +338,31 @@ Additional Context:
 Context Documents:
 {contextDocuments}
 
-Extract skills from all sources. Return ONLY valid JSON:
+Extract skills from all sources with their categories and sources. Return ONLY valid JSON:
 {
-  "skills": ["skill1", "skill2", ...],
-  "sources": {
-    "resume": ["skills found in resume"],
-    "additionalContext": ["skills found in additional context"],
-    "contextDocuments": ["skills found in uploaded documents"]
-  }
+  "skills": [
+    { "skill": "Python", "category": "technical", "source": "resume" },
+    { "skill": "Leadership", "category": "soft", "source": "additionalContext" },
+    { "skill": "Machine Learning", "category": "domain", "source": "contextDoc:filename.pdf" }
+  ]
 }
 
+Categories:
+- technical: Programming languages, frameworks, tools, technologies, databases, cloud services, DevOps tools
+- soft: Communication, leadership, teamwork, problem-solving, mentoring, project management, agile methodologies
+- domain: Industry knowledge, certifications, specialized methodologies, business domains (e.g., fintech, healthcare)
+
+Source values:
+- "resume" - found in resume text
+- "additionalContext" - found in additional context
+- "contextDoc:filename" - found in a specific context document (use actual filename)
+
 Guidelines:
-- Include technical skills (programming languages, frameworks, tools)
-- Include soft skills (leadership, communication, project management)
-- Include domain expertise (industry knowledge, methodologies)
+- Include ALL relevant skills from each source
 - Normalize similar skills (e.g., "JS" and "JavaScript" → "JavaScript")
-- Be comprehensive but avoid duplicates`;
+- Be comprehensive but avoid duplicates
+- Classify each skill into exactly one category
+- If a skill appears in multiple sources, use the first source where it appears`;
 
 export const CAREER_COACH_SYSTEM_PROMPT = `You are a supportive and insightful career coach. You help job seekers understand their strengths, identify skill gaps, and plan their professional development.
 

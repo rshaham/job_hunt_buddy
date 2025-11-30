@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -64,6 +64,9 @@ interface AppState {
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
   clearCareerCoachHistory: () => void;
   updateSkillProfile: (profile: UserSkillProfile) => void;
+  addSkill: (skill: string, category: SkillCategory) => void;
+  removeSkill: (skillName: string) => void;
+  updateSkillCategory: (skillName: string, category: SkillCategory) => void;
 
   // Data management
   deleteAllData: () => Promise<void>;
@@ -290,6 +293,65 @@ export const useAppStore = create<AppState>((set, get) => ({
         skillProfile: profile,
       },
     }));
+  },
+
+  addSkill: (skill, category) => {
+    set((state) => {
+      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
+      // Check for duplicates (case-insensitive)
+      if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
+        return state; // Don't add duplicate
+      }
+      const newSkill: SkillEntry = {
+        skill,
+        category,
+        source: 'manual',
+        addedAt: new Date(),
+      };
+      return {
+        careerCoachState: {
+          ...state.careerCoachState,
+          skillProfile: {
+            skills: [...existingSkills, newSkill],
+            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
+          },
+        },
+      };
+    });
+  },
+
+  removeSkill: (skillName) => {
+    set((state) => {
+      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
+      return {
+        careerCoachState: {
+          ...state.careerCoachState,
+          skillProfile: {
+            skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
+            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
+          },
+        },
+      };
+    });
+  },
+
+  updateSkillCategory: (skillName, category) => {
+    set((state) => {
+      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
+      return {
+        careerCoachState: {
+          ...state.careerCoachState,
+          skillProfile: {
+            skills: existingSkills.map(s =>
+              s.skill.toLowerCase() === skillName.toLowerCase()
+                ? { ...s, category }
+                : s
+            ),
+            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
+          },
+        },
+      };
+    });
   },
 
   // Data management
