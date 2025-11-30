@@ -1,3 +1,9 @@
+import type { AgentSettings } from './agent';
+
+// Re-export agent types for convenience
+export type { AgentSettings, ToolCategory, ToolResult, ToolDefinition, ToolDefinitionBase, AgentStatus, AgentExecutionState, ConfirmationRequest, ConfirmationLevel } from './agent';
+export { DEFAULT_AGENT_SETTINGS } from './agent';
+
 // Core Job entity
 export interface Job {
   id: string;
@@ -229,6 +235,9 @@ export interface AppSettings {
   additionalContext: string; // Free-form text about the user beyond their resume
   savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
   contextDocuments: ContextDocument[]; // Uploaded PDF documents for context
+
+  // Agent settings
+  agentSettings?: AgentSettings;
 
   // Onboarding
   onboardingCompleted: boolean;

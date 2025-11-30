@@ -90,6 +90,10 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## Completed
 
+- [x] **Agent System & Command Bar** (Ctrl+K) - Natural language commands with tool execution
+  - ReAct agent loop with configurable confirmation for write operations
+  - Tools: search_jobs, get_job_details, get_job_stats, update_job_status, add_note, add_contact
+  - See [AGENT_SYSTEM.md](./AGENT_SYSTEM.md) for full documentation
 - [x] Multi-Provider AI Support (Anthropic, Google Gemini, Ollama/OpenAI-compatible)
 - [x] Getting Started Wizard (in-app onboarding with auto-trigger + help button)
 - [x] Delete All Data option in Settings
