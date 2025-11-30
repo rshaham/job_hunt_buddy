@@ -39,6 +39,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
         // Exclude large logo.png from precache, let browser cache it normally
         globIgnores: ['**/logo.png'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.anthropic\.com\/.*/i,
