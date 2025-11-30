@@ -6,6 +6,9 @@
 
 **Your AI-powered job search companion.** Track applications, get your resume graded, generate tailored cover letters, and prepare for interviews - all in one place. Your data stays on your computer, private and secure.
 
+> [!IMPORTANT]
+> By using this tool, you agree to use it ethically and responsibly. See [Disclaimer](#disclaimer) below.
+
 ---
 
 ## What Can Job Hunt Buddy Do?
@@ -344,6 +347,18 @@ npm run lint
 5. Open a Pull Request
 
 </details>
+
+---
+
+## Disclaimer
+
+Job Hunt Buddy is provided **free and open source** as a service to the job-seeking community. By using this tool, you agree to:
+
+- **Use it ethically and responsibly** — Be honest in your applications. AI-generated content should be reviewed and personalized before sending. Don't misrepresent your qualifications or spam employers.
+- **Accept it as-is** — We make no guarantees about effectiveness, accuracy, or job search outcomes. This tool is meant to assist, not replace, your own judgment.
+- **Respect the spirit of the project** — This is built to help people, not to game hiring systems or deceive employers.
+
+We do not endorse any specific actions you take using this tool. Your job search decisions and how you represent yourself to employers are your responsibility.
 
 ---
 
