@@ -111,7 +111,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - [ ] Improve error handling and user feedback
 - [ ] Add loading skeletons for better UX
 - [ ] Optimize bundle size
-- [ ] Add PWA support for offline access
+- [x] Add PWA support for offline access
 - [ ] Consider server component for API key security
 
 ## Contributing

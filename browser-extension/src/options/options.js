@@ -1,4 +1,6 @@
-const DEFAULT_URL = 'http://localhost:5173';
+const PRODUCTION_URL = 'https://www.jobhuntbuddy.ai';
+const LOCALHOST_URL = 'http://localhost:5173';
+const DEFAULT_URL = PRODUCTION_URL;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const appUrlInput = document.getElementById('appUrl');
@@ -39,5 +41,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter') {
       saveBtn.click();
     }
+  });
+
+  // Quick-select buttons
+  document.querySelectorAll('.quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      appUrlInput.value = btn.dataset.url;
+      saveBtn.click();
+    });
   });
 });
