@@ -32,6 +32,12 @@ export interface Job {
   tailoredResumeAnalysis?: ResumeAnalysis;
   tailoringHistory?: TailoringEntry[];
   tailoringSuggestions?: string[]; // AI-generated follow-up questions for tailoring
+
+  // Email drafts
+  emailDraft?: string;
+  emailDraftType?: EmailType;
+  emailDraftCustomType?: string; // User-specified custom email type
+  emailDraftHistory?: EmailDraftEntry[];
 }
 
 export interface JobSummary {
@@ -50,6 +56,8 @@ export interface ResumeAnalysis {
   strengths: string[];
   gaps: string[];
   suggestions: string[];
+  matchedKeywords?: string[];  // Keywords from JD found in resume
+  missingKeywords?: string[];  // Keywords from JD NOT found in resume
 }
 
 export interface Contact {
@@ -59,6 +67,8 @@ export interface Contact {
   email?: string;
   linkedin?: string;
   notes?: string;
+  linkedInBio?: string;       // Raw pasted bio text
+  interviewerIntel?: string;  // AI-generated analysis (markdown)
 }
 
 export interface Note {
@@ -104,6 +114,16 @@ export interface CoverLetterEntry {
   letterSnapshot?: string; // Cover letter state after this message
   timestamp: Date;
 }
+
+export interface EmailDraftEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  emailSnapshot?: string; // Email state after this message
+  timestamp: Date;
+}
+
+export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
 
 export interface SavedStory {
   id: string;

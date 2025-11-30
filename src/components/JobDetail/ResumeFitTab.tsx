@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer, Tag } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
@@ -356,6 +356,64 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               ))}
             </ul>
           </div>
+
+          {/* Keywords */}
+          {(job.resumeAnalysis.matchedKeywords?.length || job.resumeAnalysis.missingKeywords?.length) && (
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
+                <Tag className="w-4 h-4 text-primary" />
+                Keywords
+                {job.resumeAnalysis.matchedKeywords && job.resumeAnalysis.missingKeywords && (
+                  <span className="ml-2 text-xs font-normal text-slate-500">
+                    ({job.resumeAnalysis.matchedKeywords.length} of {job.resumeAnalysis.matchedKeywords.length + job.resumeAnalysis.missingKeywords.length} matched)
+                  </span>
+                )}
+              </h4>
+
+              {/* Matched Keywords */}
+              {job.resumeAnalysis.matchedKeywords && job.resumeAnalysis.matchedKeywords.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                    Matched
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {job.resumeAnalysis.matchedKeywords.map((keyword, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      >
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing Keywords */}
+              {job.resumeAnalysis.missingKeywords && job.resumeAnalysis.missingKeywords.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+                    <XCircle className="w-3 h-3 text-red-500" />
+                    Missing
+                    <span className="text-slate-400 dark:text-slate-500">- click to address in Resume Tailoring</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {job.resumeAnalysis.missingKeywords.map((keyword, i) => (
+                      <button
+                        type="button"
+                        key={i}
+                        onClick={() => setIsTailoringMode(true)}
+                        className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                      >
+                        {keyword}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

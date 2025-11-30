@@ -27,6 +27,7 @@ import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
 import { PROVIDER_MODELS, type ProviderType } from '../../types';
 import { showToast } from '../../stores/toastStore';
+import { exportJobsAsCSV } from '../../services/db';
 import ReactMarkdown from 'react-markdown';
 
 export function SettingsModal() {
@@ -175,6 +176,18 @@ export function SettingsModal() {
     a.download = `job-hunt-buddy-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportCSV = async () => {
+    const csv = await exportJobsAsCSV();
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `job-hunt-buddy-jobs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Jobs exported to CSV', 'success');
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -728,10 +741,14 @@ export function SettingsModal() {
               <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
                 Data Backup
               </h3>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button variant="secondary" onClick={handleExport}>
                   <Download className="w-4 h-4 mr-1" />
-                  Export Data
+                  Export JSON
+                </Button>
+                <Button variant="secondary" onClick={handleExportCSV}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Export CSV
                 </Button>
                 <div>
                   <input
@@ -749,7 +766,7 @@ export function SettingsModal() {
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-2">
-                Export your data as JSON for backup or import from a previous backup.
+                Export as JSON for full backup or CSV for spreadsheets.
               </p>
             </section>
 

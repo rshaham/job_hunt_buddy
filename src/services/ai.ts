@@ -10,8 +10,11 @@ import {
   REFINE_COVER_LETTER_PROMPT,
   CONVERT_RESUME_TO_MARKDOWN_PROMPT,
   REWRITE_FOR_MEMORY_PROMPT,
+  INTERVIEWER_ANALYSIS_PROMPT,
+  EMAIL_DRAFT_PROMPT,
+  REFINE_EMAIL_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, ProviderType, ProviderSettings } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -387,4 +390,102 @@ export async function rewriteForMemory(
     question: (parsed.question as string) || originalQuestion,
     answer: (parsed.answer as string) || originalAnswer,
   };
+}
+
+// Analyze interviewer profile for interview prep
+export async function analyzeInterviewer(
+  linkedInBio: string,
+  jdText: string,
+  resumeText: string
+): Promise<string> {
+  const prompt = INTERVIEWER_ANALYSIS_PROMPT
+    .replace('{linkedInBio}', linkedInBio)
+    .replace('{jdText}', jdText)
+    .replace('{resumeText}', resumeText);
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
+// Generate email draft
+export async function generateEmailDraft(
+  job: { title: string; company: string; summary: { shortDescription: string } | null },
+  resumeText: string,
+  emailType: EmailType,
+  additionalContext: string,
+  customType?: string
+): Promise<string> {
+  const emailTypeLabels: Record<EmailType, string> = {
+    'thank-you': 'Thank You',
+    'follow-up': 'Follow Up',
+    'withdraw': 'Withdraw Application',
+    'negotiate': 'Negotiate Offer',
+    'custom': customType || 'Custom',
+  };
+
+  const prompt = EMAIL_DRAFT_PROMPT
+    .replace('{emailType}', emailTypeLabels[emailType])
+    .replace('{title}', job.title)
+    .replace('{company}', job.company)
+    .replace('{shortDescription}', job.summary?.shortDescription || 'No summary available')
+    .replace('{resumeText}', resumeText)
+    .replace('{additionalContext}', additionalContext || 'None provided');
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
+// Refine email with chat
+export async function refineEmail(
+  job: { title: string; company: string },
+  emailType: EmailType,
+  currentEmail: string,
+  history: EmailDraftEntry[],
+  userMessage: string,
+  customType?: string
+): Promise<{ reply: string; updatedEmail: string }> {
+  const emailTypeLabels: Record<EmailType, string> = {
+    'thank-you': 'Thank You',
+    'follow-up': 'Follow Up',
+    'withdraw': 'Withdraw Application',
+    'negotiate': 'Negotiate Offer',
+    'custom': customType || 'Custom',
+  };
+
+  const systemPrompt = REFINE_EMAIL_PROMPT
+    .replace('{title}', job.title)
+    .replace('{company}', job.company)
+    .replace('{emailType}', emailTypeLabels[emailType])
+    .replace('{currentEmail}', currentEmail);
+
+  const messages: AIMessage[] = [
+    { role: 'user', content: systemPrompt },
+    { role: 'assistant', content: 'I understand. I\'ll help you refine this email. What changes would you like to make?' },
+  ];
+
+  // Add conversation history
+  for (const entry of history) {
+    messages.push({
+      role: entry.role,
+      content: entry.content,
+    });
+  }
+
+  // Add new user message
+  messages.push({ role: 'user', content: userMessage });
+
+  const response = await callAI(messages);
+
+  try {
+    const repaired = jsonrepair(response);
+    const parsed = JSON.parse(repaired);
+    return {
+      reply: parsed.reply || 'I\'ve updated the email.',
+      updatedEmail: parsed.updatedEmail || currentEmail,
+    };
+  } catch {
+    // If parsing fails, treat the whole response as the reply
+    return {
+      reply: response,
+      updatedEmail: currentEmail,
+    };
+  }
 }

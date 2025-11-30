@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark } from 'lucide-react';
+import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X } from 'lucide-react';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
@@ -102,6 +102,12 @@ export function PrepTab({ job }: PrepTabProps) {
   const [error, setError] = useState('');
   const [prepMaterial, setPrepMaterial] = useState('');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [selectedInterviewerId, setSelectedInterviewerId] = useState<string | null>(null);
+  const [showInterviewerDropdown, setShowInterviewerDropdown] = useState(false);
+
+  // Get contacts with interviewer intel
+  const contactsWithIntel = job.contacts.filter((c) => c.interviewerIntel);
+  const selectedInterviewer = contactsWithIntel.find((c) => c.id === selectedInterviewerId);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -274,6 +280,89 @@ export function PrepTab({ job }: PrepTabProps) {
         confirmText="Clear"
         variant="warning"
       />
+
+      {/* Interviewer Selector */}
+      {contactsWithIntel.length > 0 && (
+        <div className="mb-3">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowInterviewerDropdown(!showInterviewerDropdown)}
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm hover:border-blue-300 transition-colors w-full sm:w-auto"
+            >
+              <Users className="w-4 h-4 text-blue-500" />
+              <span className="text-slate-600 dark:text-slate-400">
+                {selectedInterviewer
+                  ? `Preparing for: ${selectedInterviewer.name}`
+                  : 'Select interviewer...'}
+              </span>
+              <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
+            </button>
+
+            {showInterviewerDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10 min-w-[200px]">
+                {contactsWithIntel.map((contact) => (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedInterviewerId(contact.id);
+                      setShowInterviewerDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                      selectedInterviewerId === contact.id
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                        : 'text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <span className="font-medium">{contact.name}</span>
+                    {contact.role && (
+                      <span className="text-slate-400 ml-1">• {contact.role}</span>
+                    )}
+                  </button>
+                ))}
+                {selectedInterviewerId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedInterviewerId(null);
+                      setShowInterviewerDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700"
+                  >
+                    Clear selection
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Intel Summary */}
+          {selectedInterviewer && (
+            <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/30">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                    Intel: {selectedInterviewer.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInterviewerId(null)}
+                  className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded"
+                  title="Clear interviewer selection"
+                >
+                  <X className="w-3.5 h-3.5 text-blue-400" />
+                </button>
+              </div>
+              <div className="text-xs text-slate-600 dark:text-slate-400 max-h-32 overflow-y-auto">
+                <MarkdownContent content={selectedInterviewer.interviewerIntel!} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Prep Material */}
       {prepMaterial && (
