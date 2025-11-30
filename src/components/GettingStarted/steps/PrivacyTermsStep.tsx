@@ -70,7 +70,7 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
       </label>
 
       <div className="space-y-3">
-        <Button onClick={onNext} size="lg" className="w-full sm:w-auto">
+        <Button onClick={onNext} size="lg" className="w-full sm:w-auto" disabled={!acknowledged}>
           Continue
         </Button>
         <p className="text-xs text-slate-500 dark:text-slate-400">
