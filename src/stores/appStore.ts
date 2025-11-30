@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -19,6 +19,10 @@ interface AppState {
   isGettingStartedModalOpen: boolean;
   isPrivacyModalOpen: boolean;
   isFeatureGuideModalOpen: boolean;
+  isCareerCoachModalOpen: boolean;
+
+  // Career Coach State
+  careerCoachState: CareerCoachState;
 
   // Actions
   loadData: () => Promise<void>;
@@ -53,6 +57,13 @@ interface AppState {
   closePrivacyModal: () => void;
   openFeatureGuideModal: () => void;
   closeFeatureGuideModal: () => void;
+  openCareerCoachModal: () => void;
+  closeCareerCoachModal: () => void;
+
+  // Career Coach actions
+  addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
+  clearCareerCoachHistory: () => void;
+  updateSkillProfile: (profile: UserSkillProfile) => void;
 
   // Data management
   deleteAllData: () => Promise<void>;
@@ -73,6 +84,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isGettingStartedModalOpen: false,
   isPrivacyModalOpen: false,
   isFeatureGuideModalOpen: false,
+  isCareerCoachModalOpen: false,
+  careerCoachState: { history: [] },
 
   // Load initial data
   loadData: async () => {
@@ -242,6 +255,42 @@ export const useAppStore = create<AppState>((set, get) => ({
   closePrivacyModal: () => set({ isPrivacyModalOpen: false }),
   openFeatureGuideModal: () => set({ isFeatureGuideModalOpen: true }),
   closeFeatureGuideModal: () => set({ isFeatureGuideModalOpen: false }),
+  openCareerCoachModal: () => set({ isCareerCoachModalOpen: true }),
+  closeCareerCoachModal: () => set({ isCareerCoachModalOpen: false }),
+
+  // Career Coach actions
+  addCareerCoachEntry: (entry) => {
+    const newEntry: CareerCoachEntry = {
+      ...entry,
+      id: generateId(),
+      timestamp: new Date(),
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        history: [...state.careerCoachState.history, newEntry],
+      },
+    }));
+  },
+
+  clearCareerCoachHistory: () => {
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        history: [],
+        lastAnalyzedAt: undefined,
+      },
+    }));
+  },
+
+  updateSkillProfile: (profile) => {
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: profile,
+      },
+    }));
+  },
 
   // Data management
   deleteAllData: async () => {

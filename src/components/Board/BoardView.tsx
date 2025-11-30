@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
@@ -29,6 +29,7 @@ export function BoardView() {
     openGettingStartedModal,
     openPrivacyModal,
     openFeatureGuideModal,
+    openCareerCoachModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -106,6 +107,9 @@ export function BoardView() {
           </Button>
           <Button variant="ghost" size="sm" onClick={openFeatureGuideModal} title="Feature Guide">
             <BookOpen className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={openCareerCoachModal} title="Career Coach">
+            <GraduationCap className="w-4 h-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={openPrivacyModal} title="Privacy & Terms">
             <Shield className="w-4 h-4" />

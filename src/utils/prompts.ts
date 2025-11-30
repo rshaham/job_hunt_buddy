@@ -324,3 +324,106 @@ Return ONLY valid JSON:
 }
 
 Be helpful and provide clear explanations of the changes you make.`;
+
+// Career Coach prompts
+
+export const SKILL_EXTRACTION_PROMPT = `Analyze the following content and extract all professional skills, technologies, and competencies.
+
+Resume:
+{resumeText}
+
+Additional Context:
+{additionalContext}
+
+Context Documents:
+{contextDocuments}
+
+Extract skills from all sources. Return ONLY valid JSON:
+{
+  "skills": ["skill1", "skill2", ...],
+  "sources": {
+    "resume": ["skills found in resume"],
+    "additionalContext": ["skills found in additional context"],
+    "contextDocuments": ["skills found in uploaded documents"]
+  }
+}
+
+Guidelines:
+- Include technical skills (programming languages, frameworks, tools)
+- Include soft skills (leadership, communication, project management)
+- Include domain expertise (industry knowledge, methodologies)
+- Normalize similar skills (e.g., "JS" and "JavaScript" → "JavaScript")
+- Be comprehensive but avoid duplicates`;
+
+export const CAREER_COACH_SYSTEM_PROMPT = `You are a supportive and insightful career coach. You help job seekers understand their strengths, identify skill gaps, and plan their professional development.
+
+Your coaching style:
+- Honest but encouraging - give real feedback, not just validation
+- Data-driven - base insights on the actual job data and resume provided
+- Actionable - every insight should lead to something the user can do
+- Strategic - help users see patterns and make informed decisions
+
+When suggesting skill development:
+- Provide learning path hints (e.g., "To develop X, consider exploring Y concepts, building Z type of projects")
+- Suggest concrete side project ideas that would demonstrate the skill
+- Focus on skills that appear frequently across their target jobs
+
+When analyzing patterns:
+- Note which job types/levels they're targeting
+- Identify work style preferences (remote/hybrid/onsite patterns)
+- Highlight requirements vs nice-to-haves they're missing`;
+
+export const CAREER_COACH_ANALYSIS_PROMPT = `Analyze this job seeker's application history and provide comprehensive career coaching.
+
+User's Skills (extracted from resume and context):
+{userSkills}
+
+Job Application Data (last {timeWindow}):
+{aggregatedJobData}
+
+This includes:
+- JobSummaries: skills demanded, requirements, levels, job types
+- ResumeAnalyses: gaps identified, missing keywords, match scores
+- Application statuses: where they are in the pipeline
+
+Provide a comprehensive analysis covering:
+
+## Skills Gap Analysis
+Identify skills that appear frequently in job requirements but are missing from the user's profile. Rank by frequency/importance.
+
+## Strengths
+What skills and experiences does this candidate have that employers are looking for?
+
+## Level & Positioning
+Are they targeting the right level? Any patterns in the roles they're pursuing?
+
+## Work Style Patterns
+What do their applications reveal about preferences (remote/hybrid, company size, industry)?
+
+## Development Recommendations
+For the top 3-5 skill gaps:
+- Why this skill matters (based on job data)
+- Learning path suggestions (concepts to explore, resources types)
+- Side project ideas that would demonstrate this skill
+
+## Quick Wins
+Immediate, actionable things they could do this week to improve their candidacy.
+
+Be specific and reference actual data. If the data is limited (few jobs), acknowledge this and provide what insights you can.`;
+
+export const CAREER_COACH_CHAT_PROMPT = `You are continuing a career coaching conversation.
+
+User's Skills Profile:
+{userSkills}
+
+Job Application Data:
+{aggregatedJobData}
+
+Previous conversation:
+{history}
+
+User's question: {question}
+
+Provide helpful, specific advice based on their actual data. If they ask about something not covered by their data, acknowledge the limitation but provide general guidance.
+
+Keep responses focused and actionable. Reference specific jobs or patterns from their data when relevant.`;

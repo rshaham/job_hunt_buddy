@@ -125,6 +125,26 @@ export interface EmailDraftEntry {
 
 export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
 
+// Career Coach types
+export interface CareerCoachEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export interface UserSkillProfile {
+  skills: string[];           // AI-extracted skills from resume/context
+  extractedFrom: string[];    // Sources: "resume", "additionalContext", "contextDoc:filename"
+  lastExtractedAt: Date;
+}
+
+export interface CareerCoachState {
+  history: CareerCoachEntry[];
+  skillProfile?: UserSkillProfile;
+  lastAnalyzedAt?: Date;
+}
+
 export interface SavedStory {
   id: string;
   question: string;  // The topic/question this story answers
