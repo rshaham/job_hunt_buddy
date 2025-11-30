@@ -18,14 +18,17 @@ import {
   ChevronRight,
   Puzzle,
   Server,
+  Edit3,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea, ConfirmModal } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
 import { useAppStore } from '../../stores/appStore';
-import { testApiKey, convertResumeToMarkdown } from '../../services/ai';
+import { testApiKey, convertResumeToMarkdown, summarizeDocument } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
-import { PROVIDER_MODELS, type ProviderType } from '../../types';
+import { PROVIDER_MODELS, type ProviderType, type ContextDocument } from '../../types';
 import { showToast } from '../../stores/toastStore';
 import { exportJobsAsCSV } from '../../services/db';
 import ReactMarkdown from 'react-markdown';
@@ -39,6 +42,10 @@ export function SettingsModal() {
     exportData,
     importData,
     deleteAllData,
+    addContextDocument,
+    updateContextDocument,
+    deleteContextDocument,
+    updateSavedStory,
   } = useAppStore();
 
   // Provider state
@@ -56,8 +63,19 @@ export function SettingsModal() {
   const [expandedStoryId, setExpandedStoryId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Context documents state
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<ContextDocument | null>(null);
+  const [viewMode, setViewMode] = useState<'full' | 'summary'>('full');
+  const [editingSummary, setEditingSummary] = useState('');
+
+  // Story editing state
+  const [editingStory, setEditingStory] = useState<{ id: string; question: string; answer: string } | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const docFileInputRef = useRef<HTMLInputElement>(null);
 
   const currentModels = PROVIDER_MODELS[activeProvider] || [];
   const isCustomModel = !currentModels.some((m) => m.id === modelInput);
@@ -228,6 +246,131 @@ export function SettingsModal() {
     await deleteAllData();
     closeSettingsModal();
     showToast('All data has been deleted', 'success');
+  };
+
+  // Context document handlers
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingDoc(true);
+    try {
+      const text = await extractTextFromPDF(file);
+      if (!text.trim()) {
+        showToast('PDF appears to be empty or could not be read.', 'error');
+        return;
+      }
+
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      await addContextDocument({
+        name: file.name,
+        fullText: text,
+        wordCount,
+        useSummary: false,
+      });
+
+      // Show warning for large documents
+      if (wordCount > 500) {
+        showToast(`Document added (${wordCount.toLocaleString()} words). Consider summarizing for better AI performance.`, 'warning');
+      } else {
+        showToast('Document added to context bank.', 'success');
+      }
+    } catch (err) {
+      console.error('Failed to parse PDF:', err);
+      showToast('Failed to parse PDF. Please try a different file.', 'error');
+    } finally {
+      setIsUploadingDoc(false);
+      if (docFileInputRef.current) {
+        docFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSummarizeDocument = async (doc: ContextDocument) => {
+    setIsSummarizing(doc.id);
+    try {
+      const summary = await summarizeDocument(doc.fullText, doc.name);
+      const summaryWordCount = summary.split(/\s+/).filter(Boolean).length;
+      await updateContextDocument(doc.id, {
+        summary,
+        summaryWordCount,
+        useSummary: true,
+      });
+      showToast(`Document summarized (${summaryWordCount} words).`, 'success');
+    } catch (err) {
+      console.error('Failed to summarize:', err);
+      showToast('Failed to summarize document. Please try again.', 'error');
+    } finally {
+      setIsSummarizing(null);
+    }
+  };
+
+  const handleToggleUseSummary = async (doc: ContextDocument) => {
+    if (!doc.summary) {
+      showToast('Generate a summary first.', 'error');
+      return;
+    }
+    await updateContextDocument(doc.id, { useSummary: !doc.useSummary });
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    await deleteContextDocument(docId);
+    if (viewingDocument?.id === docId) {
+      setViewingDocument(null);
+    }
+    showToast('Document removed.', 'success');
+  };
+
+  const handleViewDocument = (doc: ContextDocument) => {
+    setViewingDocument(doc);
+    setViewMode(doc.summary ? 'summary' : 'full');
+    setEditingSummary(doc.summary || '');
+  };
+
+  const handleSaveSummaryEdit = async () => {
+    if (!viewingDocument) return;
+    const summaryWordCount = editingSummary.split(/\s+/).filter(Boolean).length;
+    await updateContextDocument(viewingDocument.id, {
+      summary: editingSummary,
+      summaryWordCount,
+    });
+    setViewingDocument({ ...viewingDocument, summary: editingSummary, summaryWordCount });
+    showToast('Summary saved.', 'success');
+  };
+
+  // Calculate total context word count
+  const calculateTotalContextWords = (): number => {
+    let total = 0;
+    if (settings.additionalContext) {
+      total += settings.additionalContext.split(/\s+/).filter(Boolean).length;
+    }
+    for (const doc of settings.contextDocuments || []) {
+      if (doc.useSummary && doc.summary) {
+        total += doc.summaryWordCount || 0;
+      } else {
+        total += doc.wordCount;
+      }
+    }
+    for (const story of settings.savedStories || []) {
+      total += story.question.split(/\s+/).filter(Boolean).length;
+      total += story.answer.split(/\s+/).filter(Boolean).length;
+    }
+    return total;
+  };
+
+  // Story editing handlers
+  const handleEditStory = (story: { id: string; question: string; answer: string }) => {
+    setEditingStory({ ...story });
+  };
+
+  const handleSaveStory = async () => {
+    if (!editingStory) return;
+    await updateSavedStory(editingStory.id, {
+      question: editingStory.question,
+      answer: editingStory.answer,
+    });
+    setEditingStory(null);
+    showToast('Story updated.', 'success');
   };
 
   return (
@@ -619,6 +762,130 @@ export function SettingsModal() {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {/* Total Context Word Count Banner */}
+            <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg max-w-2xl">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Total context being sent to AI:
+                </span>
+                <span className={`text-sm font-medium ${calculateTotalContextWords() > 3000 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                  {calculateTotalContextWords().toLocaleString()} words
+                </span>
+              </div>
+              {calculateTotalContextWords() > 3000 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Large context may slow AI responses. Consider summarizing documents.
+                </p>
+              )}
+            </div>
+
+            {/* Context Documents Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Context Documents ({settings.contextDocuments?.length || 0})
+              </h3>
+
+              {/* Document List */}
+              {settings.contextDocuments?.length > 0 && (
+                <div className="space-y-2 max-w-2xl mb-3">
+                  {settings.contextDocuments.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                    >
+                      <div className="flex items-start gap-3">
+                        <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                            {doc.name}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {doc.wordCount.toLocaleString()} words
+                            {doc.summary && ` • Summary: ${doc.summaryWordCount?.toLocaleString()} words`}
+                          </p>
+                          {doc.summary && (
+                            <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={doc.useSummary}
+                                onChange={() => handleToggleUseSummary(doc)}
+                                className="rounded border-slate-300 text-primary focus:ring-primary"
+                              />
+                              <span className="text-xs text-slate-600 dark:text-slate-400">
+                                Use summary for AI calls
+                              </span>
+                            </label>
+                          )}
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDocument(doc)}
+                            title="View/Edit document"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {!doc.summary && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSummarizeDocument(doc)}
+                              disabled={isSummarizing === doc.id}
+                              title="Summarize with AI"
+                            >
+                              {isSummarizing === doc.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Bot className="w-4 h-4" />
+                              )}
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            title="Remove document"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Button */}
+              <div>
+                <input
+                  ref={docFileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleDocumentUpload}
+                  className="hidden"
+                  aria-label="Upload context document PDF"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => docFileInputRef.current?.click()}
+                  disabled={isUploadingDoc}
+                >
+                  {isUploadingDoc ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4 mr-1" />
+                  )}
+                  {isUploadingDoc ? 'Parsing PDF...' : 'Upload PDF'}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Upload PDFs (portfolios, project docs) to add to your AI context. Documents over 500 words can be summarized.
+              </p>
+            </section>
+
             {/* Additional Context Section */}
             <section>
               <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
@@ -662,6 +929,17 @@ export function SettingsModal() {
                         <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                           {story.question}
                         </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditStory(story);
+                          }}
+                          className="text-slate-400 hover:text-primary p-1"
+                          title="Edit story"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -797,6 +1075,169 @@ export function SettingsModal() {
         confirmText="Delete Everything"
         variant="danger"
       />
+
+      {/* Document View/Edit Modal */}
+      {viewingDocument && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+                {viewingDocument.name}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewingDocument(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Tabs for Full/Summary */}
+            <div className="flex border-b border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setViewMode('full')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewMode === 'full'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                Full Document ({viewingDocument.wordCount.toLocaleString()} words)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('summary');
+                  setEditingSummary(viewingDocument.summary || '');
+                }}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewMode === 'summary'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                Summary {viewingDocument.summary ? `(${viewingDocument.summaryWordCount?.toLocaleString()} words)` : '(not created)'}
+              </button>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {viewMode === 'full' ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
+                  {viewingDocument.fullText}
+                </div>
+              ) : viewingDocument.summary ? (
+                <Textarea
+                  value={editingSummary}
+                  onChange={(e) => setEditingSummary(e.target.value)}
+                  rows={15}
+                  className="text-sm w-full"
+                  placeholder="Edit the summary..."
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <Bot className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                  <p className="text-slate-500 mb-4">No summary yet.</p>
+                  <Button
+                    onClick={() => handleSummarizeDocument(viewingDocument)}
+                    disabled={isSummarizing === viewingDocument.id}
+                  >
+                    {isSummarizing === viewingDocument.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Summarizing...
+                      </>
+                    ) : (
+                      <>
+                        <Bot className="w-4 h-4 mr-1" />
+                        Generate Summary with AI
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {viewMode === 'summary' && viewingDocument.summary && (
+              <div className="flex justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-700">
+                <Button
+                  variant="secondary"
+                  onClick={() => handleSummarizeDocument(viewingDocument)}
+                  disabled={isSummarizing === viewingDocument.id}
+                >
+                  {isSummarizing === viewingDocument.id ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Bot className="w-4 h-4 mr-1" />
+                  )}
+                  Regenerate
+                </Button>
+                <Button onClick={handleSaveSummaryEdit}>
+                  Save Changes
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Story Edit Modal */}
+      {editingStory && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+                Edit Story
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingStory(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Question/Topic
+                </label>
+                <Input
+                  value={editingStory.question}
+                  onChange={(e) => setEditingStory({ ...editingStory, question: e.target.value })}
+                  placeholder="What question does this story answer?"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Your Answer/Story
+                </label>
+                <Textarea
+                  value={editingStory.answer}
+                  onChange={(e) => setEditingStory({ ...editingStory, answer: e.target.value })}
+                  rows={10}
+                  placeholder="Your experience or story..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-700">
+              <Button variant="secondary" onClick={() => setEditingStory(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveStory}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

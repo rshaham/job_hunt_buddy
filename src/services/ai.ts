@@ -86,13 +86,24 @@ function extractJSON(text: string): string {
   return jsonrepair(jsonMatch[0]);
 }
 
-// Build additional context from settings (additionalContext + savedStories)
+// Build additional context from settings (additionalContext + savedStories + contextDocuments)
 function getAdditionalContext(): string {
   const { settings } = useAppStore.getState();
   const parts: string[] = [];
 
   if (settings.additionalContext?.trim()) {
     parts.push(`Additional context about the candidate:\n${settings.additionalContext}`);
+  }
+
+  // Include context documents (use summary if enabled, otherwise full text)
+  if (settings.contextDocuments?.length > 0) {
+    const docsText = settings.contextDocuments
+      .map(doc => {
+        const content = (doc.useSummary && doc.summary) ? doc.summary : doc.fullText;
+        return `[${doc.name}]:\n${content}`;
+      })
+      .join('\n\n');
+    parts.push(`Context documents:\n${docsText}`);
   }
 
   if (settings.savedStories?.length > 0) {
@@ -103,6 +114,24 @@ function getAdditionalContext(): string {
   }
 
   return parts.length > 0 ? '\n\n' + parts.join('\n\n') : '';
+}
+
+// Summarize a document for context bank
+export async function summarizeDocument(documentText: string, documentName: string): Promise<string> {
+  const prompt = `Summarize the following document for use as context in a job application assistant.
+Focus on:
+- Key skills and technologies mentioned
+- Relevant work experience and achievements
+- Unique qualifications or perspectives
+
+Keep the summary concise (under 500 words) while preserving the most relevant information for job applications.
+
+Document name: ${documentName}
+
+Document content:
+${documentText}`;
+
+  return await callAI([{ role: 'user', content: prompt }]);
 }
 
 export async function analyzeJobDescription(

@@ -133,6 +133,17 @@ export interface SavedStory {
   createdAt: Date;
 }
 
+export interface ContextDocument {
+  id: string;
+  name: string;           // Original filename
+  fullText: string;       // Full extracted text from PDF
+  summary?: string;       // AI-generated summary (if created)
+  wordCount: number;      // Word count of full text
+  summaryWordCount?: number; // Word count of summary
+  createdAt: Date;
+  useSummary: boolean;    // Whether to use summary for AI calls
+}
+
 export interface Status {
   id: string;
   name: string;
@@ -187,6 +198,7 @@ export interface AppSettings {
   theme: 'light' | 'dark';
   additionalContext: string; // Free-form text about the user beyond their resume
   savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
+  contextDocuments: ContextDocument[]; // Uploaded PDF documents for context
 
   // Onboarding
   onboardingCompleted: boolean;
@@ -215,5 +227,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
   additionalContext: '',
   savedStories: [],
+  contextDocuments: [],
   onboardingCompleted: false,
 };
