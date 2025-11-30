@@ -15,6 +15,14 @@ import {
   Save,
   Copy,
   Download,
+  Search,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  UserCheck,
+  Mail,
+  FolderOpen,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -251,6 +259,141 @@ export function FeatureGuideModal() {
               <li className="flex gap-2">
                 <Sparkles className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
                 <span><strong>AI provider:</strong> Your API key is only sent to your chosen provider (Anthropic, Google, or Ollama)</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Keyword Matcher */}
+          <section className="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-white">
+                Keyword Matcher
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              See how your resume keywords match the job description.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Matched:</strong> Green badges show keywords from the JD that appear in your resume</span>
+              </li>
+              <li className="flex gap-2">
+                <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Missing:</strong> Red badges highlight keywords you should consider adding</span>
+              </li>
+              <li className="flex gap-2">
+                <ArrowRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Quick action:</strong> Click any missing keyword to jump to Resume Tailoring</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* CSV Export */}
+          <section className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-white">
+                CSV Export
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              Export your job data to a spreadsheet format.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex gap-2">
+                <Download className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <span><strong>One-click export:</strong> Download all jobs as a CSV file</span>
+              </li>
+              <li className="flex gap-2">
+                <FileText className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Includes:</strong> Company, Title, Status, Date, Match %, Grade, JD Link</span>
+              </li>
+              <li className="flex gap-2">
+                <Users className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Access:</strong> Settings → Data Backup → Export CSV</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Interviewer Intel */}
+          <section className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+            <div className="flex items-center gap-2 mb-3">
+              <UserCheck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-white">
+                Interviewer Intel
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              Get AI-powered insights about your interviewers.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex gap-2">
+                <Users className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                <span><strong>LinkedIn bio:</strong> Paste an interviewer's bio to get personalized insights</span>
+              </li>
+              <li className="flex gap-2">
+                <MessageSquare className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Get insights:</strong> Communication style, what they value, talking points</span>
+              </li>
+              <li className="flex gap-2">
+                <Sparkles className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Access:</strong> Notes tab → Contacts → Generate Intel</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Emails Tab */}
+          <section className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Mail className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-white">
+                Emails Tab
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              Generate professional job search emails with AI.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex gap-2">
+                <Mail className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Email types:</strong> Thank You, Follow Up, Withdraw, Negotiate</span>
+              </li>
+              <li className="flex gap-2">
+                <MessageSquare className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Refine:</strong> Chat with AI to adjust tone, length, or content</span>
+              </li>
+              <li className="flex gap-2">
+                <Copy className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Access:</strong> Job detail → Emails tab</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Context Documents */}
+          <section className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
+            <div className="flex items-center gap-2 mb-3">
+              <FolderOpen className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <h3 className="font-semibold text-slate-900 dark:text-white">
+                Context Documents
+              </h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              Upload PDFs to give AI more context about you.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex gap-2">
+                <FileText className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Upload:</strong> Portfolio, project docs, certifications, recommendations</span>
+              </li>
+              <li className="flex gap-2">
+                <Sparkles className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Auto-summarize:</strong> AI condenses large docs to save context window</span>
+              </li>
+              <li className="flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
+                <span><strong>Access:</strong> Settings → Profile → Context Documents</span>
               </li>
             </ul>
           </section>
