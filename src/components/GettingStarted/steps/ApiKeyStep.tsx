@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button, Input } from '../../ui';
 import { useAppStore } from '../../../stores/appStore';
 import { testApiKey } from '../../../services/ai';
@@ -18,13 +18,13 @@ const PROVIDER_INFO: Record<ProviderType, { name: string; placeholder: string; h
     name: 'Anthropic (Claude)',
     placeholder: 'sk-ant-...',
     helpUrl: 'https://console.anthropic.com/settings/keys',
-    helpText: 'Get your API key from the Anthropic Console',
+    helpText: 'New accounts get $5 free credit - no card required',
   },
   gemini: {
     name: 'Google Gemini',
     placeholder: 'AIza...',
     helpUrl: 'https://aistudio.google.com/apikey',
-    helpText: 'Get your API key from Google AI Studio (free tier available)',
+    helpText: 'Free tier available - perfect for trying it out',
   },
   'openai-compatible': {
     name: 'Local / Ollama',
@@ -44,6 +44,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
   const [baseUrlInput, setBaseUrlInput] = useState(providerSettings.baseUrl || 'http://localhost:11434/v1');
   const [modelInput, setModelInput] = useState(providerSettings.model || PROVIDER_MODELS[activeProvider][0]?.id || '');
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [showGeminiGuide, setShowGeminiGuide] = useState(false);
 
   const providerInfo = PROVIDER_INFO[activeProvider];
 
@@ -93,7 +94,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
           Set Up AI Features
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          Choose your AI provider to enable job analysis, resume grading, and more.
+          This app is open source and free. You just need an API key from your preferred provider.
         </p>
       </div>
 
@@ -109,8 +110,8 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
             onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
             className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="anthropic">Anthropic (Claude) - Recommended</option>
-            <option value="gemini">Google Gemini - Free tier available</option>
+            <option value="anthropic">Anthropic (Claude) - Recommended · $5 free credit</option>
+            <option value="gemini">Google Gemini - Free tier · Great for trying it out</option>
             <option value="openai-compatible">Local / Ollama - No API key needed</option>
           </select>
         </div>
@@ -161,6 +162,43 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
                 <ExternalLink className="w-3 h-3" />
               </a>
             </p>
+          </div>
+        )}
+
+        {/* Gemini Setup Guide */}
+        {activeProvider === 'gemini' && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowGeminiGuide(!showGeminiGuide)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+            >
+              <span>How to get your free API key (2 min)</span>
+              {showGeminiGuide ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+            {showGeminiGuide && (
+              <div className="px-4 pb-4 space-y-3">
+                <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
+                  <li>Click the button below to open Google AI Studio</li>
+                  <li>Sign in with your Google account</li>
+                  <li>Click "Get API Key" → "Create API key in new project"</li>
+                  <li>Copy the key and paste it above</li>
+                </ol>
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Open Google AI Studio
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+            )}
           </div>
         )}
 
