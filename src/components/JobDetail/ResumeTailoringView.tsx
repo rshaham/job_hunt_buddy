@@ -15,6 +15,7 @@ import {
   Bookmark,
   Pencil,
   X,
+  HelpCircle,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -351,10 +352,18 @@ export function ResumeTailoringView({ job, onBack }: ResumeTailoringViewProps) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Analysis
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Analysis
+          </Button>
+          <span className="group relative">
+            <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              Auto-tailor or chat to customize
+            </span>
+          </span>
+        </div>
 
         <div className="flex items-center gap-2">
           {/* Grade comparison */}
