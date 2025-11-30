@@ -22,7 +22,7 @@ import {
   UserCheck,
   Mail,
   FolderOpen,
-  AlertTriangle,
+  MapPin,
 } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -63,11 +63,11 @@ export function FeatureGuideModal() {
                 <RefreshCw className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
                 <span><strong>Reuse across jobs:</strong> Your saved stories are available when preparing for any job</span>
               </li>
-              <li className="flex gap-2">
-                <UserCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Access:</strong> Settings → Profile → Saved Stories</span>
-              </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Settings → Profile → Saved Stories</span>
+            </div>
           </section>
 
           {/* Additional Context */}
@@ -90,11 +90,11 @@ export function FeatureGuideModal() {
                 <FileEdit className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                 <span><strong>How it's used:</strong> AI includes this when grading resumes, tailoring content, and generating cover letters</span>
               </li>
-              <li className="flex gap-2">
-                <UserCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Access:</strong> Settings → Profile → Additional Context</span>
-              </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Settings → Profile → Additional Context</span>
+            </div>
           </section>
 
           {/* Resume Tailoring */}
@@ -126,6 +126,10 @@ export function FeatureGuideModal() {
                 <span><strong>Save:</strong> Keep the tailored version as your resume for this specific job</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Resume tab → Tailor Resume</span>
+            </div>
           </section>
 
           {/* Interview Prep */}
@@ -153,6 +157,10 @@ export function FeatureGuideModal() {
                 <span><strong>Save answers:</strong> Great responses can be saved to your profile for future use</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Prep tab</span>
+            </div>
           </section>
 
           {/* Resume Fit / Grading */}
@@ -180,6 +188,10 @@ export function FeatureGuideModal() {
                 <span><strong>Per-job resumes:</strong> Upload a different resume for each job, or use your default</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Resume tab</span>
+            </div>
           </section>
 
           {/* Cover Letter */}
@@ -207,6 +219,10 @@ export function FeatureGuideModal() {
                 <span><strong>Export:</strong> Copy to clipboard or download when you're happy with it</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Cover Letter tab</span>
+            </div>
           </section>
 
           {/* Notes, Contacts & Timeline */}
@@ -234,6 +250,10 @@ export function FeatureGuideModal() {
                 <span><strong>Timeline:</strong> Track key dates (applied, phone screen, interviews, offer)</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Notes tab</span>
+            </div>
           </section>
 
           {/* Data & Privacy */}
@@ -261,6 +281,10 @@ export function FeatureGuideModal() {
                 <span><strong>AI provider:</strong> Your API key is only sent to your chosen provider (Anthropic, Google, or Ollama)</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Settings → Data Backup</span>
+            </div>
           </section>
 
           {/* Keyword Matcher */}
@@ -288,6 +312,10 @@ export function FeatureGuideModal() {
                 <span><strong>Quick action:</strong> Click any missing keyword to jump to Resume Tailoring</span>
               </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Resume tab (after grading)</span>
+            </div>
           </section>
 
           {/* CSV Export */}
@@ -310,11 +338,11 @@ export function FeatureGuideModal() {
                 <FileText className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                 <span><strong>Includes:</strong> Company, Title, Status, Date, Match %, Grade, JD Link</span>
               </li>
-              <li className="flex gap-2">
-                <Users className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Access:</strong> Settings → Data Backup → Export CSV</span>
-              </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Settings → Data Backup → Export CSV</span>
+            </div>
           </section>
 
           {/* Interviewer Intel */}
@@ -337,11 +365,11 @@ export function FeatureGuideModal() {
                 <MessageSquare className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
                 <span><strong>Get insights:</strong> Communication style, what they value, talking points</span>
               </li>
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Access:</strong> Notes tab → Contacts → Generate Intel</span>
-              </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Notes tab → Contacts → Generate Intel</span>
+            </div>
           </section>
 
           {/* Emails Tab */}
@@ -364,11 +392,11 @@ export function FeatureGuideModal() {
                 <MessageSquare className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
                 <span><strong>Refine:</strong> Chat with AI to adjust tone, length, or content</span>
               </li>
-              <li className="flex gap-2">
-                <Copy className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Access:</strong> Job detail → Emails tab</span>
-              </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Job detail → Emails tab</span>
+            </div>
           </section>
 
           {/* Context Documents */}
@@ -391,11 +419,11 @@ export function FeatureGuideModal() {
                 <Sparkles className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
                 <span><strong>Auto-summarize:</strong> AI condenses large docs to save context window</span>
               </li>
-              <li className="flex gap-2">
-                <AlertTriangle className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Access:</strong> Settings → Profile → Context Documents</span>
-              </li>
             </ul>
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Settings → Profile → Context Documents</span>
+            </div>
           </section>
         </div>
       </div>
