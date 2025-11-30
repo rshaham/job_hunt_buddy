@@ -32,6 +32,7 @@ import { PROVIDER_MODELS, type ProviderType, type ContextDocument } from '../../
 import { showToast } from '../../stores/toastStore';
 import { exportJobsAsCSV } from '../../services/db';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function SettingsModal() {
   const {
@@ -296,6 +297,13 @@ export function SettingsModal() {
         summaryWordCount,
         useSummary: true,
       });
+
+      // Update local viewing state if this is the document being viewed
+      if (viewingDocument?.id === doc.id) {
+        setViewingDocument({ ...doc, summary, summaryWordCount, useSummary: true });
+        setEditingSummary(summary);
+      }
+
       showToast(`Document summarized (${summaryWordCount} words).`, 'success');
     } catch (err) {
       console.error('Failed to summarize:', err);
@@ -1126,8 +1134,10 @@ export function SettingsModal() {
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-4">
               {viewMode === 'full' ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
-                  {viewingDocument.fullText}
+                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-slate-700 dark:text-slate-300">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>
+                    {viewingDocument.fullText}
+                  </ReactMarkdown>
                 </div>
               ) : viewingDocument.summary ? (
                 <Textarea

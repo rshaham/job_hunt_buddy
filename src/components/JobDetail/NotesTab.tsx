@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import MDEditor from '@uiw/react-md-editor';
 import {
   Plus,
@@ -41,6 +42,7 @@ function NoteMarkdown({ content }: { content: string }) {
   return (
     <div className="text-sm text-slate-700 dark:text-slate-300">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         skipHtml
         components={{
           h1: ({ children }) => (
@@ -72,6 +74,22 @@ function NoteMarkdown({ content }: { content: string }) {
             </code>
           ),
           hr: () => <hr className="my-2 border-slate-200 dark:border-slate-700" />,
+          table: ({ children }) => (
+            <table className="min-w-full border-collapse my-2">{children}</table>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-slate-100 dark:bg-slate-700">{children}</thead>
+          ),
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => (
+            <tr className="border-b border-slate-200 dark:border-slate-600">{children}</tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-2 py-1 text-left text-xs font-semibold text-slate-700 dark:text-slate-300">{children}</th>
+          ),
+          td: ({ children }) => (
+            <td className="px-2 py-1 text-xs text-slate-600 dark:text-slate-400">{children}</td>
+          ),
         }}
       >
         {content}
