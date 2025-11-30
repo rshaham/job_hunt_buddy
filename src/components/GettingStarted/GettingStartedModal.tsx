@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
+import { PrivacyTermsStep } from './steps/PrivacyTermsStep';
 import { WelcomeStep } from './steps/WelcomeStep';
 import { ApiKeyStep } from './steps/ApiKeyStep';
 import { ResumeStep } from './steps/ResumeStep';
 import { FirstJobStep } from './steps/FirstJobStep';
 
 const STEPS = [
+  { id: 'privacy', title: 'Privacy' },
   { id: 'welcome', title: 'Welcome' },
   { id: 'api-key', title: 'API Key' },
   { id: 'resume', title: 'Resume' },
@@ -93,25 +95,28 @@ export function GettingStartedModal() {
         {/* Step Content */}
         <div className="min-h-[300px]">
           {currentStep === 0 && (
-            <WelcomeStep onNext={() => setCurrentStep(1)} />
+            <PrivacyTermsStep onNext={() => setCurrentStep(1)} />
           )}
           {currentStep === 1 && (
+            <WelcomeStep onNext={() => setCurrentStep(2)} />
+          )}
+          {currentStep === 2 && (
             <ApiKeyStep
-              onNext={() => setCurrentStep(2)}
-              onBack={() => setCurrentStep(0)}
+              onNext={() => setCurrentStep(3)}
+              onBack={() => setCurrentStep(1)}
               onApiKeySaved={handleApiKeySaved}
               apiKeySaved={apiKeySaved}
             />
           )}
-          {currentStep === 2 && (
+          {currentStep === 3 && (
             <ResumeStep
-              onNext={() => setCurrentStep(3)}
-              onBack={() => setCurrentStep(1)}
+              onNext={() => setCurrentStep(4)}
+              onBack={() => setCurrentStep(2)}
             />
           )}
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <FirstJobStep
-              onBack={() => setCurrentStep(2)}
+              onBack={() => setCurrentStep(3)}
               onComplete={handleComplete}
               onAddJob={handleAddJob}
             />

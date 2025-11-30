@@ -17,6 +17,7 @@ interface AppState {
   isAddJobModalOpen: boolean;
   isSettingsModalOpen: boolean;
   isGettingStartedModalOpen: boolean;
+  isPrivacyModalOpen: boolean;
 
   // Actions
   loadData: () => Promise<void>;
@@ -39,6 +40,8 @@ interface AppState {
   closeSettingsModal: () => void;
   openGettingStartedModal: () => void;
   closeGettingStartedModal: () => void;
+  openPrivacyModal: () => void;
+  closePrivacyModal: () => void;
 
   // Data management
   deleteAllData: () => Promise<void>;
@@ -57,6 +60,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAddJobModalOpen: false,
   isSettingsModalOpen: false,
   isGettingStartedModalOpen: false,
+  isPrivacyModalOpen: false,
 
   // Load initial data
   loadData: async () => {
@@ -186,6 +190,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeSettingsModal: () => set({ isSettingsModalOpen: false }),
   openGettingStartedModal: () => set({ isGettingStartedModalOpen: true }),
   closeGettingStartedModal: () => set({ isGettingStartedModalOpen: false }),
+  openPrivacyModal: () => set({ isPrivacyModalOpen: true }),
+  closePrivacyModal: () => set({ isPrivacyModalOpen: false }),
 
   // Data management
   deleteAllData: async () => {
