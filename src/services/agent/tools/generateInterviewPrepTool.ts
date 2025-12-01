@@ -55,7 +55,8 @@ export const generateInterviewPrepTool: ToolDefinition<GenerateInterviewPrepInpu
     }
 
     try {
-      const prepContent = await generateInterviewPrep(job.jdText, resumeText);
+      // Pass job for smart context retrieval (semantic search for relevant experiences)
+      const prepContent = await generateInterviewPrep(job.jdText, resumeText, job);
 
       // Save as prep material
       const newPrepMaterial = {

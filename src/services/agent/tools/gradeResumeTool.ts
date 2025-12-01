@@ -55,7 +55,8 @@ export const gradeResumeTool: ToolDefinition<GradeResumeInput, GradeResumeResult
     }
 
     try {
-      const analysis = await gradeResume(job.jdText, resumeText);
+      // Pass job for smart context retrieval (semantic search for relevant experiences)
+      const analysis = await gradeResume(job.jdText, resumeText, job);
 
       // Save to job
       await updateJob(input.jobId, {

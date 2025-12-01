@@ -5,10 +5,11 @@ import { z } from 'zod';
 // ============================================
 
 export const searchJobsSchema = z.object({
-  query: z.string().optional().describe('Search text to match against company name or job title'),
+  query: z.string().optional().describe('Search text to match against company name or job title. With semantic search enabled, can use natural language like "backend roles at startups"'),
   status: z.string().optional().describe('Filter by job status (e.g., "Applied", "Interviewing")'),
   company: z.string().optional().describe('Filter by company name (partial match)'),
   limit: z.number().default(10).describe('Maximum number of results to return'),
+  useSemanticSearch: z.boolean().default(false).describe('Use semantic search to find jobs by meaning rather than exact text match. Enable for natural language queries like "remote engineering roles" or "jobs with leadership opportunities"'),
 });
 
 export const getJobDetailsSchema = z.object({

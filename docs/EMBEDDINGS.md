@@ -54,7 +54,8 @@ src/
 │   │   ├── embeddingService.ts # Worker communication & text extraction
 │   │   ├── embeddingStore.ts   # Zustand store for UI state
 │   │   └── vectorStore.ts      # In-memory cache & similarity search
-│   ├── contextRetrieval.ts   # Semantic context retrieval for AI prompts
+│   ├── contextRetrieval.ts      # Basic semantic context retrieval
+│   ├── smartContextRetrieval.ts # Multi-query context for AI features
 │   └── db.ts                 # IndexedDB schema (v2 with embeddings table)
 ├── components/
 │   └── EmbeddingStatus.tsx   # UI component for status display
@@ -120,6 +121,67 @@ import { buildRelevantContext } from './services/contextRetrieval';
 // Get relevant context for an AI prompt
 const context = await buildRelevantContext('Tell me about your AWS experience');
 // Returns formatted markdown with relevant stories, Q&A, and documents
+```
+
+### Smart Context Retrieval (Multi-Query)
+
+For AI features that need more targeted context, use the smart context retrieval system:
+
+```typescript
+import { getSmartContext, buildSmartContext } from './services/smartContextRetrieval';
+
+// Simple usage - just get the formatted context string
+const context = await getSmartContext({
+  job: currentJob,
+  feature: 'coverLetter',
+  maxStories: 5,
+  maxDocuments: 3,
+});
+
+// Full usage - get context with metadata
+const result = await buildSmartContext({
+  job: currentJob,
+  feature: 'resumeTailoring',
+  resumeAnalysis: analysis, // For tailoring - extracts queries from gaps
+  maxStories: 8,
+  threshold: 0.35,
+});
+
+// result includes:
+// - context: formatted string for AI prompt
+// - stories: retrieved SavedStory[]
+// - documents: retrieved ContextDocument[]
+// - usedSemanticSearch: boolean
+// - queriesUsed: debug info about queries executed
+```
+
+#### Feature Types
+
+The smart retrieval extracts different queries based on feature type:
+
+| Feature | Query Sources | Focus |
+|---------|--------------|-------|
+| `coverLetter` | Requirements, skills, role | Find experiences to highlight |
+| `resumeGrading` | Requirements, skills | Find context for accurate grading |
+| `resumeTailoring` | Gaps, missing keywords, suggestions | Find experiences to address weaknesses |
+| `interviewPrep` | Role, requirements, skills | Find relevant interview examples |
+| `refinement` | User message, requirements | Find context for follow-up requests |
+
+### Agent Tool: Semantic Job Search
+
+The agent can use semantic search to find jobs by meaning:
+
+```typescript
+// Agent tool usage (via search_jobs tool)
+{
+  tool: 'search_jobs',
+  input: {
+    query: 'remote engineering roles with leadership opportunities',
+    useSemanticSearch: true,
+    limit: 10
+  }
+}
+// Returns jobs ranked by semantic similarity with scores
 ```
 
 ### React UI State
