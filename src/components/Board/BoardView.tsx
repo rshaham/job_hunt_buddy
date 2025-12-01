@@ -117,6 +117,15 @@ export function BoardView() {
               Ctrl+K
             </kbd>
           </button>
+          {/* Active AI Model Indicator */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 dark:text-slate-400
+              bg-slate-100 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600"
+            title={`Active AI: ${settings.providers[settings.activeProvider]?.model || 'Not configured'}`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="font-medium">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
+          </div>
           <EmbeddingStatus />
           <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
             <HelpCircle className="w-4 h-4" />
