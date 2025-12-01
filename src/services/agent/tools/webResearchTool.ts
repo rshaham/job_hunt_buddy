@@ -1,5 +1,11 @@
 import { useAppStore } from '../../../stores/appStore';
 import { researchCompany } from '../../ai';
+import {
+  isWebSearchAvailable,
+  searchTopics,
+  formatSearchResultsForAI,
+  WebSearchError,
+} from '../../webSearch';
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import type { PrepMaterial } from '../../../types';
 import { webResearchSchema, type WebResearchInput } from './schemas';
@@ -11,11 +17,12 @@ interface WebResearchResult {
   topics: string;
   researchPreview: string;
   savedAsPrepMaterial: boolean;
+  webSearchUsed: boolean;
 }
 
 export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult> = {
   name: 'web_research',
-  description: 'Research a company or role based on the job description. Analyzes the JD to extract insights about company culture, tech stack, growth, and more. Saves findings as prep material.',
+  description: 'Research a company or role using web search and job description analysis. Searches the web for company info, reviews, tech stack, and more. Saves findings as prep material. Requires VITE_TAVILY_API_KEY to be configured.',
   category: 'write',
   inputSchema: webResearchSchema,
   requiresConfirmation: true,
@@ -23,10 +30,13 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
   confirmationMessage(input) {
     const { jobs } = useAppStore.getState();
     const job = jobs.find((j) => j.id === input.jobId);
+    const webAvailable = isWebSearchAvailable();
+    const searchNote = webAvailable ? ' (includes web search)' : ' (JD analysis only - no web search API key)';
+
     if (job) {
-      return `Research "${input.topics}" for "${job.company}"? This will use AI credits.`;
+      return `Research "${input.topics}" for "${job.company}"?${searchNote} This will use AI credits.`;
     }
-    return `Research "${input.topics}"? This will use AI credits.`;
+    return `Research "${input.topics}"?${searchNote} This will use AI credits.`;
   },
 
   async execute(input): Promise<ToolResult<WebResearchResult>> {
@@ -50,19 +60,47 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
     // Get resume text (job-specific or default) for context
     const resumeText = job.resumeText || settings.defaultResumeText;
 
+    // Check if web search is available and perform search
+    let webSearchResults: string | undefined;
+    let webSearchUsed = false;
+
+    if (isWebSearchAvailable()) {
+      try {
+        const results = await searchTopics(job.company, input.topics);
+        if (results.length > 0) {
+          webSearchResults = formatSearchResultsForAI(results);
+          webSearchUsed = true;
+        }
+      } catch (error) {
+        if (error instanceof WebSearchError) {
+          return {
+            success: false,
+            error: `Web search failed: ${error.message}`,
+          };
+        }
+        throw error;
+      }
+    } else {
+      return {
+        success: false,
+        error: 'Web search is not configured. Add VITE_TAVILY_API_KEY to your .env file to enable web research.',
+      };
+    }
+
     try {
       const research = await researchCompany(
         job.company,
         job.title,
         job.jdText,
         input.topics,
-        resumeText
+        resumeText,
+        webSearchResults
       );
 
       // Save as prep material
       const prepMaterial: PrepMaterial = {
         id: Date.now().toString(),
-        title: `Research: ${input.topics}`,
+        title: `Research: ${input.topics}${webSearchUsed ? ' (with web search)' : ''}`,
         content: research,
         type: 'research',
       };
@@ -84,6 +122,7 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
           topics: input.topics,
           researchPreview: preview,
           savedAsPrepMaterial: true,
+          webSearchUsed,
         },
       };
     } catch (error) {

@@ -786,22 +786,29 @@ export async function researchCompany(
   title: string,
   jdText: string,
   topics: string,
-  resumeText?: string
+  resumeText?: string,
+  webSearchResults?: string
 ): Promise<string> {
   const additionalContext = getAdditionalContext();
 
+  const webSearchSection = webSearchResults
+    ? `\n**Web Search Results:**\n${webSearchResults}\n`
+    : '';
+
   const prompt = `You are a career research assistant helping a job seeker prepare for their application to ${company} for the ${title} role.
 
-Based on the job description and any available information, research and provide insights on the following topics: ${topics}
+Based on the job description${webSearchResults ? ', web search results,' : ''} and any available information, research and provide insights on the following topics: ${topics}
 
 **Job Description:**
 ${jdText}
-
+${webSearchSection}
 ${resumeText ? `**Candidate's Resume:**\n${resumeText}` : ''}
 ${additionalContext}
 
 **Instructions:**
-- Extract and analyze information from the job description
+${webSearchResults ? `- Synthesize information from both the job description AND web search results
+- Cite sources when referencing specific information from web searches
+- Prioritize recent and relevant information` : `- Extract and analyze information from the job description`}
 - Make informed inferences about the company based on:
   - How they describe themselves in the JD
   - The requirements and qualifications they prioritize
@@ -822,18 +829,23 @@ export async function analyzeCompanyAsEmployer(
   title: string,
   jdText: string,
   focusAreas?: string,
-  resumeText?: string
+  resumeText?: string,
+  webSearchResults?: string
 ): Promise<string> {
   const additionalContext = getAdditionalContext();
 
   const defaultFocus = 'company overview, culture indicators, growth signals, role expectations, potential concerns';
   const focus = focusAreas || defaultFocus;
 
+  const webSearchSection = webSearchResults
+    ? `\n**Web Search Results (Company Reviews, News, etc.):**\n${webSearchResults}\n`
+    : '';
+
   const prompt = `You are a career advisor helping a job seeker evaluate ${company} as a potential employer for the ${title} position.
 
 **Job Description:**
 ${jdText}
-
+${webSearchSection}
 ${resumeText ? `**Candidate's Resume:**\n${resumeText}` : ''}
 ${additionalContext}
 
@@ -842,12 +854,13 @@ ${additionalContext}
 **Provide a comprehensive analysis including:**
 
 ## Company Overview
-- What can be inferred about the company from the JD?
+- What can be inferred about the company from the JD${webSearchResults ? ' and web search results' : ''}?
 - Industry and apparent market position
 - Company size/stage indicators (startup, growth, enterprise)
+${webSearchResults ? '- Recent news or developments' : ''}
 
 ## Culture & Work Environment
-- Culture signals from the job posting
+- Culture signals from the job posting${webSearchResults ? ' and employee reviews' : ''}
 - Work style expectations (collaborative, autonomous, etc.)
 - Red flags or green flags
 
@@ -863,6 +876,8 @@ ${additionalContext}
 
 ## Fit Assessment
 ${resumeText ? '- How well the candidate aligns with what they\'re seeking\n- Areas where the candidate could emphasize strengths\n- Potential concerns to address proactively' : '- General advice for candidates pursuing this role'}
+
+${webSearchResults ? '**Note:** When citing specific information from web searches, mention the source.' : ''}
 
 Be analytical and honest. Help the candidate understand both the opportunity and the challenges.`;
 

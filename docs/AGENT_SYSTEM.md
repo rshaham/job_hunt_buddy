@@ -140,10 +140,43 @@ src/
 | `generate_interview_prep` | Generate interview prep materials | Yes (uses credits) | "Help me prepare for Google interview" |
 | `analyze_contact` | Analyze a contact's LinkedIn profile for interview prep | Yes (uses credits) | "Research interviewer John Smith at Google" |
 | `analyze_career` | Get career analysis based on job applications | Yes (uses credits) | "Analyze my career trajectory" |
-| `web_research` | Research company/role based on job description | Yes (uses credits) | "Research the tech stack at Amazon" |
-| `company_analysis` | Analyze company as a potential employer | Yes (uses credits) | "Analyze Google as an employer" |
+| `web_research` | Research company/role using real web search (Tavily) | Yes (uses credits) | "Research the tech stack at Amazon" |
+| `company_analysis` | Analyze company as employer using web search | Yes (uses credits) | "Analyze Google as an employer" |
 
 > 🤖 These tools trigger actual AI API calls and will consume credits. They require confirmation.
+>
+> 🌐 `web_research` and `company_analysis` require `VITE_TAVILY_API_KEY` in `.env` for web search functionality.
+
+---
+
+## Web Search Configuration
+
+The `web_research` and `company_analysis` tools use the Tavily API for real web search.
+
+### Setup
+
+1. Get a free API key from [Tavily](https://tavily.com) (1000 searches/month free)
+2. Add to your `.env` file:
+
+   ```bash
+   VITE_TAVILY_API_KEY=your_api_key_here
+   ```
+
+3. Restart the dev server
+
+### How It Works
+
+- **web_research**: Searches for company info based on user-specified topics
+- **company_analysis**: Searches for company reviews, culture info, and interview experiences
+
+Both tools:
+
+- Use targeted domain hints (Glassdoor, LinkedIn, levels.fyi, etc.)
+- Combine web search results with job description analysis
+- Save research as prep materials for the job
+- Require confirmation before executing (uses AI credits)
+
+If the API key is not configured, these tools will return an error prompting the user to add the key.
 
 ---
 
@@ -157,13 +190,6 @@ src/
 | `add_learning_task` | WRITE | Add learning tasks to jobs | "Add 'Learn TypeScript' to relevant jobs" |
 | `draft_outreach` | READ | Draft networking messages | "Draft a message to recruiter at Meta" |
 | `bulk_update_status` | WRITE | Update multiple jobs at once | "Mark all old applications as Withdrawn" |
-| `live_web_search` | READ | Actually search the internet (requires API) | "Search for recent news about this company" |
-
-**Notes on future `live_web_search` tool:**
-
-- Would require external API integration (Perplexity, SerpAPI, Brave Search, etc.)
-- Current `web_research` tool analyzes existing JD data without live search
-- Privacy consideration: user controls what sources are queried
 
 ---
 
