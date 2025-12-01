@@ -125,6 +125,36 @@ export interface EmailDraftEntry {
 
 export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
 
+// Career Coach types
+export interface CareerCoachEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+// Skill categories for grouping
+export type SkillCategory = 'technical' | 'soft' | 'domain';
+
+// Individual skill entry with metadata
+export interface SkillEntry {
+  skill: string;
+  category: SkillCategory;
+  source: string; // "resume" | "additionalContext" | "contextDoc:filename" | "manual"
+  addedAt: Date;
+}
+
+export interface UserSkillProfile {
+  skills: SkillEntry[];        // Categorized skills with sources
+  lastExtractedAt?: Date;
+}
+
+export interface CareerCoachState {
+  history: CareerCoachEntry[];
+  skillProfile?: UserSkillProfile;
+  lastAnalyzedAt?: Date;
+}
+
 export interface SavedStory {
   id: string;
   question: string;  // The topic/question this story answers

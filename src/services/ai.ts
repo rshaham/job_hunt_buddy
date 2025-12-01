@@ -13,8 +13,12 @@ import {
   INTERVIEWER_ANALYSIS_PROMPT,
   EMAIL_DRAFT_PROMPT,
   REFINE_EMAIL_PROMPT,
+  SKILL_EXTRACTION_PROMPT,
+  CAREER_COACH_SYSTEM_PROMPT,
+  CAREER_COACH_ANALYSIS_PROMPT,
+  CAREER_COACH_CHAT_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -519,4 +523,259 @@ export async function refineEmail(
       updatedEmail: currentEmail,
     };
   }
+}
+
+// Career Coach functions
+
+// Extract user skills from resume, additional context, and context documents
+// Supports merge behavior: preserves manual skills and merges with AI-extracted ones
+export async function extractUserSkills(
+  existingSkills?: SkillEntry[]
+): Promise<UserSkillProfile> {
+  const { settings } = useAppStore.getState();
+
+  const resumeText = settings.defaultResumeText || '';
+  const additionalContext = settings.additionalContext || '';
+  const contextDocuments = (settings.contextDocuments || [])
+    .map(doc => {
+      const content = (doc.useSummary && doc.summary) ? doc.summary : doc.fullText;
+      return `[${doc.name}]:\n${content}`;
+    })
+    .join('\n\n');
+
+  const prompt = SKILL_EXTRACTION_PROMPT
+    .replace('{resumeText}', resumeText || 'No resume provided')
+    .replace('{additionalContext}', additionalContext || 'None provided')
+    .replace('{contextDocuments}', contextDocuments || 'None provided');
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    // If parsing fails, keep existing skills or return empty profile
+    return {
+      skills: existingSkills || [],
+      lastExtractedAt: new Date(),
+    };
+  }
+
+  // Parse AI-extracted skills
+  const aiSkills = ((parsed.skills as Array<{ skill: string; category: string; source: string }>) || [])
+    .map(s => ({
+      skill: s.skill,
+      category: (s.category as SkillEntry['category']) || 'technical',
+      source: s.source || 'resume',
+      addedAt: new Date(),
+    }));
+
+  // Merge logic:
+  // 1. Keep all "manual" sourced skills from existingSkills
+  // 2. Add AI-extracted skills that don't already exist
+  // 3. Preserve category if skill already exists (don't override manual categorization)
+
+  const manualSkills = (existingSkills || []).filter(s => s.source === 'manual');
+  const existingSkillNames = new Set((existingSkills || []).map(s => s.skill.toLowerCase()));
+
+  // Only add AI skills that don't already exist
+  const newAiSkills = aiSkills.filter(s => !existingSkillNames.has(s.skill.toLowerCase()));
+
+  // Combine: manual skills first, then new AI skills
+  const mergedSkills = [...manualSkills, ...newAiSkills];
+
+  return {
+    skills: mergedSkills,
+    lastExtractedAt: new Date(),
+  };
+}
+
+// Build aggregated context for career coach analysis
+export function buildCareerCoachContext(
+  jobs: Job[],
+  includeAllJobs: boolean = false
+): { aggregatedData: string; jobCount: number } {
+  // Filter to recent jobs (last 6 months) unless includeAllJobs is true
+  let filteredJobs = jobs;
+  if (!includeAllJobs) {
+    const sixMonthsAgo = Date.now() - (6 * 30 * 24 * 60 * 60 * 1000);
+    filteredJobs = jobs.filter(j => new Date(j.dateAdded).getTime() > sixMonthsAgo);
+  }
+
+  // Exclude Rejected and Withdrawn jobs from positive pattern analysis
+  // but include them for gap analysis
+  const activeJobs = filteredJobs.filter(j =>
+    j.status !== 'Rejected' && j.status !== 'Withdrawn'
+  );
+
+  // Aggregate JobSummaries
+  const summaries = filteredJobs
+    .filter(j => j.summary)
+    .map(j => ({
+      company: j.company,
+      title: j.title,
+      status: j.status,
+      level: j.summary!.level,
+      jobType: j.summary!.jobType,
+      keySkills: j.summary!.keySkills,
+      requirements: j.summary!.requirements.slice(0, 5), // Top 5 requirements
+    }));
+
+  // Aggregate ResumeAnalyses
+  const analyses = filteredJobs
+    .filter(j => j.resumeAnalysis)
+    .map(j => ({
+      company: j.company,
+      grade: j.resumeAnalysis!.grade,
+      matchPercentage: j.resumeAnalysis!.matchPercentage,
+      gaps: j.resumeAnalysis!.gaps,
+      missingKeywords: j.resumeAnalysis!.missingKeywords || [],
+    }));
+
+  // Count skill frequencies across all jobs
+  const skillFrequency: Record<string, number> = {};
+  summaries.forEach(s => {
+    s.keySkills.forEach(skill => {
+      skillFrequency[skill] = (skillFrequency[skill] || 0) + 1;
+    });
+  });
+
+  // Sort skills by frequency
+  const topSkills = Object.entries(skillFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([skill, count]) => `${skill} (${count} jobs)`);
+
+  // Count missing keywords frequency
+  const missingKeywordFrequency: Record<string, number> = {};
+  analyses.forEach(a => {
+    a.missingKeywords.forEach(kw => {
+      missingKeywordFrequency[kw] = (missingKeywordFrequency[kw] || 0) + 1;
+    });
+  });
+
+  const topMissingKeywords = Object.entries(missingKeywordFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([kw, count]) => `${kw} (missing in ${count} analyses)`);
+
+  // Status distribution
+  const statusCounts: Record<string, number> = {};
+  filteredJobs.forEach(j => {
+    statusCounts[j.status] = (statusCounts[j.status] || 0) + 1;
+  });
+
+  // Level distribution
+  const levelCounts: Record<string, number> = {};
+  summaries.forEach(s => {
+    levelCounts[s.level] = (levelCounts[s.level] || 0) + 1;
+  });
+
+  // Job type distribution
+  const jobTypeCounts: Record<string, number> = {};
+  summaries.forEach(s => {
+    jobTypeCounts[s.jobType] = (jobTypeCounts[s.jobType] || 0) + 1;
+  });
+
+  // Average match percentage
+  const matchPercentages = analyses.map(a => a.matchPercentage);
+  const avgMatch = matchPercentages.length > 0
+    ? Math.round(matchPercentages.reduce((a, b) => a + b, 0) / matchPercentages.length)
+    : 0;
+
+  const aggregatedData = `
+## Application Overview
+- Total jobs analyzed: ${filteredJobs.length}
+- Active applications: ${activeJobs.length}
+- Average resume match: ${avgMatch}%
+
+## Status Distribution
+${Object.entries(statusCounts).map(([status, count]) => `- ${status}: ${count}`).join('\n')}
+
+## Level Targeting
+${Object.entries(levelCounts).map(([level, count]) => `- ${level}: ${count}`).join('\n')}
+
+## Work Style Preferences
+${Object.entries(jobTypeCounts).map(([type, count]) => `- ${type}: ${count}`).join('\n')}
+
+## Most In-Demand Skills (across your target jobs)
+${topSkills.map(s => `- ${s}`).join('\n')}
+
+## Most Frequent Skill Gaps (from resume analyses)
+${topMissingKeywords.map(k => `- ${k}`).join('\n')}
+
+## Sample Job Details (most recent 5)
+${summaries.slice(0, 5).map(s => `
+### ${s.title} at ${s.company}
+- Status: ${s.status}
+- Level: ${s.level}
+- Type: ${s.jobType}
+- Key Skills: ${s.keySkills.slice(0, 8).join(', ')}
+`).join('\n')}
+`.trim();
+
+  return { aggregatedData, jobCount: filteredJobs.length };
+}
+
+// Initial career analysis
+export async function analyzeCareer(
+  jobs: Job[],
+  skillProfile: UserSkillProfile | undefined,
+  includeAllJobs: boolean = false
+): Promise<string> {
+  const { aggregatedData, jobCount } = buildCareerCoachContext(jobs, includeAllJobs);
+
+  if (jobCount === 0) {
+    return `I don't have enough job data to provide a meaningful career analysis yet.
+
+Add some jobs to your board first - paste job descriptions, and I'll analyze the requirements to identify patterns and skill gaps.
+
+**Getting started:**
+1. Add jobs you're interested in or have applied to
+2. Upload your resume in Settings
+3. Let the app grade your resume against each job
+4. Come back here for personalized career insights!`;
+  }
+
+  const userSkills = skillProfile?.skills?.length
+    ? `Current skills: ${skillProfile.skills.map(s => s.skill).join(', ')}`
+    : 'No skill profile extracted yet. Click "Re-analyze Skills" to extract skills from your resume and context.';
+
+  const timeWindow = includeAllJobs ? 'all time' : 'last 6 months';
+
+  const prompt = CAREER_COACH_ANALYSIS_PROMPT
+    .replace('{userSkills}', userSkills)
+    .replace('{timeWindow}', timeWindow)
+    .replace('{aggregatedJobData}', aggregatedData);
+
+  return await callAI([{ role: 'user', content: prompt }], CAREER_COACH_SYSTEM_PROMPT);
+}
+
+// Follow-up chat about career
+export async function chatAboutCareer(
+  jobs: Job[],
+  skillProfile: UserSkillProfile | undefined,
+  history: CareerCoachEntry[],
+  question: string,
+  includeAllJobs: boolean = false
+): Promise<string> {
+  const { aggregatedData } = buildCareerCoachContext(jobs, includeAllJobs);
+
+  const userSkills = skillProfile?.skills?.length
+    ? `Current skills: ${skillProfile.skills.map(s => s.skill).join(', ')}`
+    : 'No skill profile available';
+
+  // Build history string
+  const historyStr = history
+    .map(entry => `${entry.role === 'user' ? 'User' : 'Coach'}: ${entry.content}`)
+    .join('\n\n');
+
+  const prompt = CAREER_COACH_CHAT_PROMPT
+    .replace('{userSkills}', userSkills)
+    .replace('{aggregatedJobData}', aggregatedData)
+    .replace('{history}', historyStr || 'No previous conversation')
+    .replace('{question}', question);
+
+  return await callAI([{ role: 'user', content: prompt }], CAREER_COACH_SYSTEM_PROMPT);
 }
