@@ -54,7 +54,8 @@ export const generateCoverLetterTool: ToolDefinition<GenerateCoverLetterInput, G
     }
 
     try {
-      const coverLetter = await generateCoverLetter(job.jdText, resumeText);
+      // Pass job for smart context retrieval (semantic search for relevant experiences)
+      const coverLetter = await generateCoverLetter(job.jdText, resumeText, job);
 
       // Save to job
       await updateJob(input.jobId, {

@@ -23,6 +23,7 @@ import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
 import { buildRelevantContext } from './contextRetrieval';
+import { getSmartContext } from './smartContextRetrieval';
 
 // Get current AI config from store (works outside React components)
 function getAIConfig(): { provider: ProviderType; config: ProviderSettings } {
@@ -172,9 +173,22 @@ export async function analyzeJobDescription(
 
 export async function gradeResume(
   jdText: string,
-  resumeText: string
+  resumeText: string,
+  job?: Job
 ): Promise<ResumeAnalysis> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context if job is provided (searches for relevant experiences)
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'resumeGrading',
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = RESUME_GRADING_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
@@ -203,9 +217,22 @@ export async function gradeResume(
 
 export async function generateCoverLetter(
   jdText: string,
-  resumeText: string
+  resumeText: string,
+  job?: Job
 ): Promise<string> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context if job is provided, otherwise fall back to basic context
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'coverLetter',
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = COVER_LETTER_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
@@ -215,11 +242,25 @@ export async function generateCoverLetter(
 
 export async function generateInterviewPrep(
   jdText: string,
-  resumeText: string
+  resumeText: string,
+  job?: Job
 ): Promise<string> {
+  // Use smart context if job is provided to include relevant experiences
+  let additionalContext = '';
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'interviewPrep',
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = INTERVIEW_PREP_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', resumeText);
+    .replace('{resumeText}', resumeText + additionalContext);
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
@@ -288,9 +329,23 @@ export async function testApiKey(
 export async function autoTailorResume(
   jdText: string,
   originalResume: string,
-  resumeAnalysis: ResumeAnalysis
+  resumeAnalysis: ResumeAnalysis,
+  job?: Job
 ): Promise<{ tailoredResume: string; changesSummary: string; suggestedQuestions: string[] }> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context with gap-focused queries if job is provided
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'resumeTailoring',
+      resumeAnalysis,
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = AUTO_TAILOR_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', originalResume + additionalContext)
@@ -322,9 +377,24 @@ export async function refineTailoredResume(
   currentTailoredResume: string,
   resumeAnalysis: ResumeAnalysis,
   history: TailoringEntry[],
-  userMessage: string
+  userMessage: string,
+  job?: Job
 ): Promise<{ reply: string; updatedResume: string }> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context with user message as query
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'refinement',
+      resumeAnalysis,
+      userMessage,
+      maxStories: 3,
+      maxDocuments: 2,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const systemPrompt = REFINE_RESUME_SYSTEM_PROMPT
     .replace('{jdText}', jdText)
     .replace('{originalResume}', originalResume + additionalContext)
@@ -363,11 +433,24 @@ export async function refineCoverLetter(
   resumeText: string,
   currentLetter: string,
   history: CoverLetterEntry[],
-  userMessage: string
+  userMessage: string,
+  job?: Job
 ): Promise<{ reply: string; updatedLetter: string }> {
+  // Use smart context with user message as query
+  let additionalContext = '';
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'refinement',
+      userMessage,
+      maxStories: 3,
+      maxDocuments: 2,
+    });
+  }
+
   const systemPrompt = REFINE_COVER_LETTER_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', resumeText)
+    .replace('{resumeText}', resumeText + additionalContext)
     .replace('{currentLetter}', currentLetter);
 
   // Build message history
