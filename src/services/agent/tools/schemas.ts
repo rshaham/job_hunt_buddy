@@ -62,6 +62,10 @@ export const addContactSchema = z.object({
   notes: z.string().optional().describe('Additional notes about the contact'),
 });
 
+export const deleteJobSchema = z.object({
+  jobId: z.string().describe('The ID of the job to delete'),
+});
+
 // ============================================
 // Type exports
 // ============================================
@@ -76,3 +80,4 @@ export type UpdateJobStatusInput = z.infer<typeof updateJobStatusSchema>;
 export type AddNoteInput = z.infer<typeof addNoteSchema>;
 export type AddTimelineEventInput = z.infer<typeof addTimelineEventSchema>;
 export type AddContactInput = z.infer<typeof addContactSchema>;
+export type DeleteJobInput = z.infer<typeof deleteJobSchema>;

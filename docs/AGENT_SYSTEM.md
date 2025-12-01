@@ -38,6 +38,8 @@ The agent system transforms Job Hunt Buddy from passive prompting (user asks →
 │  │  - search_jobs      │    │  - update_job_status ⚠️         │ │
 │  │  - get_job_details  │    │  - add_note                     │ │
 │  │  - get_job_stats    │    │  - add_contact                  │ │
+│  │  - list_contacts    │    │  - add_timeline_event           │ │
+│  │  - get_skill_gaps   │    │  - delete_job ⚠️                │ │
 │  └─────────────────────┘    └─────────────────────────────────┘ │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
@@ -66,9 +68,13 @@ src/
 │           ├── searchJobs.ts
 │           ├── getJobDetails.ts
 │           ├── getJobStats.ts
+│           ├── listContacts.ts
+│           ├── getSkillGaps.ts
 │           ├── updateJobStatus.ts
 │           ├── addNote.ts
-│           └── addContact.ts
+│           ├── addContact.ts
+│           ├── addTimelineEvent.ts
+│           └── deleteJob.ts
 ├── stores/
 │   └── commandBarStore.ts    # Command Bar state management
 └── components/
@@ -88,6 +94,8 @@ src/
 | `search_jobs` | Search jobs by company, title, or status | "Show me all jobs at Google" |
 | `get_job_details` | Get full details for a specific job | "Tell me about the Amazon job" |
 | `get_job_stats` | Get aggregate statistics | "How many jobs have I applied to?" |
+| `list_contacts` | List all contacts, optionally filtered by job or company | "Who are my contacts at Amazon?" |
+| `get_skill_gaps` | Analyze missing skills across jobs based on resume analysis | "What skills am I missing?" |
 
 ### WRITE Tools (Confirmation Configurable)
 
@@ -96,6 +104,8 @@ src/
 | `update_job_status` | Move job to new status | Yes (destructive) | "Move Google to Rejected" |
 | `add_note` | Add a note to a job | No (low risk) | "Add a note to Amazon: Follow up next week" |
 | `add_contact` | Add a contact to a job | No (low risk) | "Add recruiter Jane Doe to the Meta job" |
+| `add_timeline_event` | Add an event to job timeline | No (low risk) | "Add phone screen scheduled for Monday to Google" |
+| `delete_job` | Permanently delete a job | Yes (destructive) | "Delete the old Google application" |
 
 ---
 
@@ -105,11 +115,8 @@ src/
 
 | Tool | Category | Description | Use Case |
 |------|----------|-------------|----------|
-| `get_skill_gaps` | READ | Analyze missing skills across jobs | "What skills am I missing?" |
-| `list_contacts` | READ | List all contacts, optionally by job | "Who are my contacts at Amazon?" |
 | `get_resume_analysis` | READ | Get resume fit for a specific job | "How well does my resume fit Meta?" |
-| `add_timeline_event` | WRITE | Add event to job timeline | "Add phone screen scheduled for Monday" |
-| `delete_job` | WRITE | Delete a job (destructive) | "Delete the old Google application" |
+| `list_timeline` | READ | List timeline events for a job | "What's the history of my Google application?" |
 
 ### Medium Priority
 
@@ -275,6 +282,10 @@ Press `Ctrl+K` (or `Cmd+K` on Mac) to open the Command Bar.
 - "Move the Google job to Rejected"
 - "Add a note to Amazon: Great culture, interesting team"
 - "What's the status of my Meta application?"
+- "Who are my contacts at Google?"
+- "What skills am I missing across my applications?"
+- "Add phone screen scheduled for Monday to the Amazon job"
+- "Delete the old Microsoft application"
 
 ### Programmatic Usage
 
@@ -345,7 +356,7 @@ The long-term vision is to make all AI features accessible through the Command B
 
 | Phase | Focus | Tools |
 |-------|-------|-------|
-| **Phase 1** (Current) | Basic CRUD operations | search_jobs, get_job_details, get_job_stats, update_job_status, add_note, add_contact |
+| **Phase 1** (Current) | Basic CRUD operations | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, update_job_status, add_note, add_contact, add_timeline_event, delete_job |
 | **Phase 2** | Generation tools | generate_cover_letter, grade_resume, get_interview_prep, tailor_resume |
 | **Phase 3** | Research tools | web_research, analyze_interviewer, competitor_analysis |
 | **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions |
