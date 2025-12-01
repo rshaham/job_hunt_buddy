@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { z } from 'zod';
-import type { Job, AppSettings } from '../types';
+import type { Job, AppSettings, EmbeddingRecord, EmbeddableEntityType } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 
 // Zod schemas for import validation
@@ -111,13 +111,24 @@ const ImportDataSchema = z.object({
 export class JobHuntDB extends Dexie {
   jobs!: Table<Job, string>;
   settings!: Table<AppSettings, string>;
+  embeddings!: Table<EmbeddingRecord, string>;
 
   constructor() {
     super('JobHuntBuddy');
 
+    // Version 1: Original schema
     this.version(1).stores({
       jobs: 'id, company, title, status, dateAdded, lastUpdated',
       settings: 'id',
+    });
+
+    // Version 2: Add embeddings table for semantic search
+    // Indexes: id (primary), entityType+entityId (compound for lookups),
+    // entityType (for filtering), parentJobId (for job-scoped queries)
+    this.version(2).stores({
+      jobs: 'id, company, title, status, dateAdded, lastUpdated',
+      settings: 'id',
+      embeddings: 'id, [entityType+entityId], entityType, parentJobId, createdAt',
     });
   }
 }
@@ -206,8 +217,138 @@ export async function importData(data: unknown): Promise<void> {
 
 // Delete all data (for reset/testing)
 export async function deleteAllData(): Promise<void> {
-  await db.transaction('rw', db.jobs, db.settings, async () => {
+  await db.transaction('rw', db.jobs, db.settings, db.embeddings, async () => {
     await db.jobs.clear();
     await db.settings.clear();
+    await db.embeddings.clear();
   });
+}
+
+// ============================================================================
+// Embeddings CRUD Operations
+// ============================================================================
+
+/**
+ * Generate a composite ID for an embedding record.
+ * Format: entityType:entityId[:chunkIndex]
+ */
+export function generateEmbeddingId(
+  entityType: EmbeddableEntityType,
+  entityId: string,
+  chunkIndex?: number
+): string {
+  const base = `${entityType}:${entityId}`;
+  return chunkIndex !== undefined ? `${base}:${chunkIndex}` : base;
+}
+
+/**
+ * Get an embedding by its composite ID.
+ */
+export async function getEmbedding(id: string): Promise<EmbeddingRecord | undefined> {
+  return await db.embeddings.get(id);
+}
+
+/**
+ * Get embedding for a specific entity.
+ */
+export async function getEmbeddingByEntity(
+  entityType: EmbeddableEntityType,
+  entityId: string
+): Promise<EmbeddingRecord | undefined> {
+  return await db.embeddings
+    .where('[entityType+entityId]')
+    .equals([entityType, entityId])
+    .first();
+}
+
+/**
+ * Get all embeddings for an entity type.
+ */
+export async function getEmbeddingsByType(
+  entityType: EmbeddableEntityType
+): Promise<EmbeddingRecord[]> {
+  return await db.embeddings.where('entityType').equals(entityType).toArray();
+}
+
+/**
+ * Get all embeddings for a specific job (including job-scoped content like notes, Q&A).
+ */
+export async function getEmbeddingsByJob(jobId: string): Promise<EmbeddingRecord[]> {
+  // Get both the job embedding itself and related content
+  const [jobEmbedding, relatedEmbeddings] = await Promise.all([
+    db.embeddings.get(generateEmbeddingId('job', jobId)),
+    db.embeddings.where('parentJobId').equals(jobId).toArray(),
+  ]);
+
+  const results: EmbeddingRecord[] = [];
+  if (jobEmbedding) results.push(jobEmbedding);
+  results.push(...relatedEmbeddings);
+  return results;
+}
+
+/**
+ * Get all embeddings from the database.
+ */
+export async function getAllEmbeddings(): Promise<EmbeddingRecord[]> {
+  return await db.embeddings.toArray();
+}
+
+/**
+ * Save or update an embedding record.
+ */
+export async function saveEmbedding(record: EmbeddingRecord): Promise<void> {
+  await db.embeddings.put(record);
+}
+
+/**
+ * Save multiple embedding records in a batch.
+ */
+export async function saveEmbeddings(records: EmbeddingRecord[]): Promise<void> {
+  await db.embeddings.bulkPut(records);
+}
+
+/**
+ * Delete an embedding by ID.
+ */
+export async function deleteEmbedding(id: string): Promise<void> {
+  await db.embeddings.delete(id);
+}
+
+/**
+ * Delete all embeddings for a specific entity.
+ */
+export async function deleteEmbeddingsByEntity(
+  entityType: EmbeddableEntityType,
+  entityId: string
+): Promise<void> {
+  await db.embeddings
+    .where('[entityType+entityId]')
+    .equals([entityType, entityId])
+    .delete();
+}
+
+/**
+ * Delete all embeddings for a job and its related content.
+ */
+export async function deleteEmbeddingsByJob(jobId: string): Promise<void> {
+  await db.transaction('rw', db.embeddings, async () => {
+    // Delete job embedding
+    await db.embeddings.delete(generateEmbeddingId('job', jobId));
+    // Delete all related embeddings (notes, Q&A, cover letter)
+    await db.embeddings.where('parentJobId').equals(jobId).delete();
+  });
+}
+
+/**
+ * Clear all embeddings (useful for re-indexing).
+ */
+export async function clearAllEmbeddings(): Promise<void> {
+  await db.embeddings.clear();
+}
+
+/**
+ * Get count of embeddings.
+ */
+export async function getEmbeddingsCount(): Promise<number> {
+  return await db.embeddings.count();
 }

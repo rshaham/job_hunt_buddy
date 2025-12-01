@@ -22,6 +22,7 @@ import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEn
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
+import { buildRelevantContext } from './contextRetrieval';
 
 // Get current AI config from store (works outside React components)
 function getAIConfig(): { provider: ProviderType; config: ProviderSettings } {
@@ -229,9 +230,22 @@ export async function chatAboutJob(
   history: QAEntry[],
   newQuestion: string
 ): Promise<QAEntry> {
-  const systemPrompt = QA_SYSTEM_PROMPT
+  // Get semantically relevant context for the question
+  const relevantContext = await buildRelevantContext(newQuestion, {
+    maxStories: 5,
+    maxQA: 5,
+    maxDocuments: 5,
+  });
+
+  // Build system prompt with relevant context
+  let systemPrompt = QA_SYSTEM_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText);
+
+  // Append relevant context if found
+  if (relevantContext) {
+    systemPrompt += `\n\n---\n\nRelevant context from the candidate's profile:\n${relevantContext}`;
+  }
 
   // Build message history (skip entries with null answers - they're pending)
   const messages: AIMessage[] = [];

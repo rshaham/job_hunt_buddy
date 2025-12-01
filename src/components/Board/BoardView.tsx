@@ -17,6 +17,7 @@ import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
+import { EmbeddingStatus } from '../EmbeddingStatus';
 import type { Job } from '../../types';
 
 export function BoardView() {
@@ -116,6 +117,7 @@ export function BoardView() {
               Ctrl+K
             </kbd>
           </button>
+          <EmbeddingStatus />
           <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
             <HelpCircle className="w-4 h-4" />
           </Button>

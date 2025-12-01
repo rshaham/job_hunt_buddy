@@ -253,6 +253,96 @@ export const DEFAULT_STATUSES: Status[] = [
   { id: '7', name: 'Withdrawn', color: '#9ca3af', order: 6 },
 ];
 
+// ============================================================================
+// Embedding System Types
+// ============================================================================
+
+/**
+ * Types of content that can be embedded for semantic search.
+ * Each type maps to a specific data source in the application.
+ *
+ * To add a new embeddable type:
+ * 1. Add the type here
+ * 2. Add extraction logic in embeddingService.ts extractTextForEmbedding()
+ * 3. Add indexing trigger in appStore for when this content changes
+ */
+export type EmbeddableEntityType =
+  | 'job'           // Job descriptions (job.jdText)
+  | 'story'         // Saved stories (settings.savedStories)
+  | 'qa'            // Q&A history entries (job.qaHistory)
+  | 'note'          // Job notes (job.notes)
+  | 'doc'           // Context documents (settings.contextDocuments)
+  | 'coverLetter';  // Generated cover letters (job.coverLetter)
+
+/**
+ * A stored embedding record in the database.
+ * Used for semantic search and similarity matching.
+ */
+export interface EmbeddingRecord {
+  /** Composite key: entityType:entityId (e.g., "job:abc123") */
+  id: string;
+  /** Type of content this embedding represents */
+  entityType: EmbeddableEntityType;
+  /** ID of the source entity (job ID, story ID, etc.) */
+  entityId: string;
+  /** SHA-256 hash of source text for change detection */
+  textHash: string;
+  /** 384-dimensional embedding vector from all-MiniLM-L6-v2 */
+  embedding: number[];
+  /** For chunked documents, which chunk this is (0-indexed) */
+  chunkIndex?: number;
+  /** Total number of chunks for this entity */
+  chunkTotal?: number;
+  /** Parent job ID for job-related content (qa, note, coverLetter) */
+  parentJobId?: string;
+  /** When this embedding was created */
+  createdAt: Date;
+}
+
+/**
+ * Result from a semantic similarity search.
+ */
+export interface SimilarityResult {
+  /** The embedding record that matched */
+  record: EmbeddingRecord;
+  /** Cosine similarity score (0-1, higher is more similar) */
+  score: number;
+}
+
+/**
+ * Status of the embedding system.
+ */
+export interface EmbeddingStatus {
+  /** Whether the embedding model is loaded and ready */
+  isReady: boolean;
+  /** Whether the model is currently being downloaded/loaded */
+  isLoading: boolean;
+  /** Download/load progress (0-100) */
+  progress: number;
+  /** Current stage of initialization */
+  stage: 'idle' | 'download' | 'load' | 'ready' | 'error';
+  /** Error message if initialization failed */
+  error?: string;
+  /** Number of items currently in the embedding index */
+  indexedCount: number;
+  /** Number of items pending embedding */
+  pendingCount: number;
+}
+
+/**
+ * Options for semantic search queries.
+ */
+export interface SemanticSearchOptions {
+  /** Maximum number of results to return (default: 5) */
+  limit?: number;
+  /** Minimum similarity score threshold (0-1, default: 0.3) */
+  threshold?: number;
+  /** Filter by specific entity types */
+  entityTypes?: EmbeddableEntityType[];
+  /** Filter by specific job ID (for job-scoped searches) */
+  jobId?: string;
+}
+
 export const DEFAULT_SETTINGS: AppSettings = {
   activeProvider: 'anthropic',
   providers: {
