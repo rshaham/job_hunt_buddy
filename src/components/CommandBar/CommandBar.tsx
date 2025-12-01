@@ -89,7 +89,7 @@ export function CommandBar() {
       onClick={close}
     >
       <div
-        className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[80vh]"
+        className="w-[60vw] min-w-[400px] max-w-[1200px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with New Chat button */}
@@ -161,34 +161,56 @@ export function CommandBar() {
           {/* Tool Execution Log (during processing) */}
           {(state === 'processing' || state === 'confirming') && toolCalls.length > 0 && (
             <div className="px-4 pb-4 space-y-2">
-              {toolCalls.map((tool) => (
-                <div
-                  key={tool.id}
-                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
-                >
-                  {tool.status === 'executing' && (
-                    <svg className="animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  )}
-                  {tool.status === 'complete' && (
-                    <span className="text-green-500">✓</span>
-                  )}
-                  {tool.status === 'error' && (
-                    <span className="text-red-500">✗</span>
-                  )}
-                  {tool.status === 'declined' && (
-                    <span className="text-yellow-500">○</span>
-                  )}
-                  {tool.status === 'pending' && (
-                    <span className="text-gray-400">○</span>
-                  )}
-                  <span className="font-mono">
-                    {tool.name.replace(/_/g, ' ')}
-                  </span>
-                </div>
-              ))}
+              {/* Group tool calls by name and show count */}
+              {(() => {
+                const grouped = toolCalls.reduce((acc, tool) => {
+                  if (!acc[tool.name]) {
+                    acc[tool.name] = { count: 0, statuses: [] as string[] };
+                  }
+                  acc[tool.name].count++;
+                  acc[tool.name].statuses.push(tool.status);
+                  return acc;
+                }, {} as Record<string, { count: number; statuses: string[] }>);
+
+                return Object.entries(grouped).map(([name, { count, statuses }]) => {
+                  const hasExecuting = statuses.includes('executing');
+                  const allComplete = statuses.every(s => s === 'complete');
+                  const hasError = statuses.includes('error');
+                  const hasDeclined = statuses.includes('declined');
+
+                  return (
+                    <div
+                      key={name}
+                      className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+                    >
+                      {hasExecuting && (
+                        <svg className="animate-spin h-4 w-4 text-indigo-500" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      )}
+                      {!hasExecuting && allComplete && (
+                        <span className="text-green-500">✓</span>
+                      )}
+                      {!hasExecuting && hasError && (
+                        <span className="text-red-500">✗</span>
+                      )}
+                      {!hasExecuting && !allComplete && !hasError && hasDeclined && (
+                        <span className="text-yellow-500">○</span>
+                      )}
+                      {!hasExecuting && !allComplete && !hasError && !hasDeclined && (
+                        <span className="text-gray-400">○</span>
+                      )}
+                      <span className="font-mono">
+                        {name.replace(/_/g, ' ')}
+                        {count > 1 && (
+                          <span className="ml-1 text-xs text-gray-400">(×{count})</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
 
