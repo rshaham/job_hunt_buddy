@@ -85,6 +85,19 @@ export const deleteNoteSchema = z.object({
   noteId: z.string().describe('The ID of the note to delete'),
 });
 
+// AI Generation Tool Schemas
+export const generateCoverLetterSchema = z.object({
+  jobId: z.string().describe('The ID of the job to generate a cover letter for'),
+});
+
+export const gradeResumeSchema = z.object({
+  jobId: z.string().describe('The ID of the job to grade the resume against'),
+});
+
+export const generateInterviewPrepSchema = z.object({
+  jobId: z.string().describe('The ID of the job to generate interview prep for'),
+});
+
 // ============================================
 // Type exports
 // ============================================
@@ -104,3 +117,6 @@ export type AddContactInput = z.infer<typeof addContactSchema>;
 export type DeleteJobInput = z.infer<typeof deleteJobSchema>;
 export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
 export type DeleteNoteInput = z.infer<typeof deleteNoteSchema>;
+export type GenerateCoverLetterInput = z.infer<typeof generateCoverLetterSchema>;
+export type GradeResumeInput = z.infer<typeof gradeResumeSchema>;
+export type GenerateInterviewPrepInput = z.infer<typeof generateInterviewPrepSchema>;

@@ -13,6 +13,9 @@ export { addTimelineEventTool } from './addTimelineEvent';
 export { deleteJobTool } from './deleteJob';
 export { updateNoteTool } from './updateNote';
 export { deleteNoteTool } from './deleteNote';
+export { generateCoverLetterTool } from './generateCoverLetterTool';
+export { gradeResumeTool } from './gradeResumeTool';
+export { generateInterviewPrepTool } from './generateInterviewPrepTool';
 
 // Schemas
 export * from './schemas';
@@ -32,6 +35,9 @@ import { addTimelineEventTool } from './addTimelineEvent';
 import { deleteJobTool } from './deleteJob';
 import { updateNoteTool } from './updateNote';
 import { deleteNoteTool } from './deleteNote';
+import { generateCoverLetterTool } from './generateCoverLetterTool';
+import { gradeResumeTool } from './gradeResumeTool';
+import { generateInterviewPrepTool } from './generateInterviewPrepTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -54,6 +60,10 @@ export const allTools: ToolDefinitionBase[] = [
   deleteJobTool,
   updateNoteTool,
   deleteNoteTool,
+  // AI Generation tools (write, require confirmation)
+  generateCoverLetterTool,
+  gradeResumeTool,
+  generateInterviewPrepTool,
 ];
 
 /**
@@ -80,4 +90,7 @@ export const writeTools: ToolDefinitionBase[] = [
   deleteJobTool,
   updateNoteTool,
   deleteNoteTool,
+  generateCoverLetterTool,
+  gradeResumeTool,
+  generateInterviewPrepTool,
 ];

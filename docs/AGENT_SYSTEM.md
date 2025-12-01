@@ -42,6 +42,9 @@ The agent system transforms Job Hunt Buddy from passive prompting (user asks →
 │  │  - get_skill_gaps   │    │  - delete_job ⚠️                │ │
 │  │  - get_resume_analysis │ │  - update_note                  │ │
 │  │  - list_timeline    │    │  - delete_note ⚠️               │ │
+│  │                      │    │  - generate_cover_letter 🤖⚠️  │ │
+│  │                      │    │  - grade_resume 🤖⚠️           │ │
+│  │                      │    │  - generate_interview_prep 🤖⚠️│ │
 │  └─────────────────────┘    └─────────────────────────────────┘ │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
@@ -80,7 +83,10 @@ src/
 │           ├── addTimelineEvent.ts
 │           ├── deleteJob.ts
 │           ├── updateNote.ts
-│           └── deleteNote.ts
+│           ├── deleteNote.ts
+│           ├── generateCoverLetterTool.ts
+│           ├── gradeResumeTool.ts
+│           └── generateInterviewPrepTool.ts
 ├── stores/
 │   └── commandBarStore.ts    # Command Bar state management
 └── components/
@@ -117,17 +123,19 @@ src/
 | `update_note` | Edit an existing note | No (low risk) | "Update my note on Amazon" |
 | `delete_note` | Delete a note from a job | Yes (destructive) | "Remove the old note from Google" |
 
+### AI Generation Tools (Triggers API Call)
+
+| Tool | Description | Confirmation | Example Command |
+|------|-------------|--------------|-----------------|
+| `generate_cover_letter` | Generate a cover letter using AI | Yes (uses credits) | "Write a cover letter for Amazon" |
+| `grade_resume` | Grade resume against job requirements | Yes (uses credits) | "Grade my resume for the Meta job" |
+| `generate_interview_prep` | Generate interview prep materials | Yes (uses credits) | "Help me prepare for Google interview" |
+
+> 🤖 These tools trigger actual AI API calls and will consume credits. They require confirmation.
+
 ---
 
 ## Tools Not Yet Implemented
-
-### High Priority (Next Sprint)
-
-| Tool | Category | Description | Use Case |
-|------|----------|-------------|----------|
-| `generate_cover_letter` | READ | Trigger cover letter generation | "Write a cover letter for Amazon" |
-| `grade_resume` | READ | Trigger resume grading | "Grade my resume for the Meta job" |
-| `get_interview_prep` | READ | Generate interview prep materials | "Help me prepare for Google interview" |
 
 ### Future / Career Coach Integration
 
@@ -336,10 +344,10 @@ The long-term vision is to make all AI features accessible through the Command B
 | Current Flow | Current Trigger | Agent Trigger (Future) |
 |--------------|-----------------|------------------------|
 | **JD Analysis** | Click "Analyze with AI" in Add Job modal | "Add a job from this JD: [paste text]" |
-| **Resume Grading** | Click "Grade Resume" in Resume Fit tab | "How does my resume fit the Google job?" |
+| **Resume Grading** | Click "Grade Resume" in Resume Fit tab | "How does my resume fit the Google job?" ✅ |
 | **Resume Tailoring** | Click "Start Tailoring" in Resume Fit tab | "Tailor my resume for the Amazon role" |
-| **Cover Letter** | Click "Generate" in Cover Letter tab | "Generate a cover letter for Meta" |
-| **Interview Prep** | Chat in Prep tab | "Help me prepare for the Netflix interview" |
+| **Cover Letter** | Click "Generate" in Cover Letter tab | "Generate a cover letter for Meta" ✅ |
+| **Interview Prep** | Chat in Prep tab | "Help me prepare for the Netflix interview" ✅ |
 | **Add Note** | Click "Add Note" in Notes tab | "Add note to Amazon: Great call today" ✅ |
 | **Add Contact** | Click "Add Contact" in Notes tab | "Add recruiter Jane Doe to the Meta job" ✅ |
 | **Analyze Contact** | Click "Analyze" on contact card | "Research interviewer John Smith at Google" |
@@ -354,12 +362,12 @@ The long-term vision is to make all AI features accessible through the Command B
 
 ### Implementation Phases
 
-| Phase | Focus | Tools |
-|-------|-------|-------|
-| **Phase 1** (Current) | Basic CRUD + Data Access | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, get_resume_analysis, list_timeline, update_job_status, add_note, add_contact, add_timeline_event, delete_job, update_note, delete_note |
-| **Phase 2** | Generation tools | generate_cover_letter, grade_resume, get_interview_prep, tailor_resume |
-| **Phase 3** | Research tools | web_research, analyze_interviewer, competitor_analysis |
-| **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions |
+| Phase | Focus | Tools | Status |
+|-------|-------|-------|--------|
+| **Phase 1** | Basic CRUD + Data Access | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, get_resume_analysis, list_timeline, update_job_status, add_note, add_contact, add_timeline_event, delete_job, update_note, delete_note | ✅ Complete |
+| **Phase 2** | AI Generation tools | generate_cover_letter, grade_resume, generate_interview_prep | ✅ Complete |
+| **Phase 3** | Research tools | web_research, analyze_interviewer, competitor_analysis | Planned |
+| **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions | Planned |
 
 ### Migration Strategy
 
