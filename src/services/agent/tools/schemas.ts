@@ -107,6 +107,16 @@ export const analyzeCareerSchema = z.object({
   includeAllJobs: z.boolean().default(false).describe('Include all jobs (not just last 6 months)'),
 });
 
+export const webResearchSchema = z.object({
+  jobId: z.string().describe('The ID of the job to research'),
+  topics: z.string().describe('What to research about the company/role (e.g., "company culture", "tech stack", "growth trajectory")'),
+});
+
+export const companyAnalysisSchema = z.object({
+  jobId: z.string().describe('The ID of the job to analyze'),
+  focusAreas: z.string().optional().describe('Specific areas to focus on (e.g., "market position", "competitors", "technology")'),
+});
+
 // ============================================
 // Type exports
 // ============================================
@@ -131,3 +141,5 @@ export type GradeResumeInput = z.infer<typeof gradeResumeSchema>;
 export type GenerateInterviewPrepInput = z.infer<typeof generateInterviewPrepSchema>;
 export type AnalyzeContactInput = z.infer<typeof analyzeContactSchema>;
 export type AnalyzeCareerInput = z.infer<typeof analyzeCareerSchema>;
+export type WebResearchInput = z.infer<typeof webResearchSchema>;
+export type CompanyAnalysisInput = z.infer<typeof companyAnalysisSchema>;

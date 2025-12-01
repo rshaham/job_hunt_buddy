@@ -47,6 +47,8 @@ The agent system transforms Job Hunt Buddy from passive prompting (user asks →
 │  │                      │    │  - generate_interview_prep 🤖⚠️│ │
 │  │                      │    │  - analyze_contact 🤖⚠️        │ │
 │  │                      │    │  - analyze_career 🤖⚠️         │ │
+│  │                      │    │  - web_research 🤖⚠️           │ │
+│  │                      │    │  - company_analysis 🤖⚠️       │ │
 │  └─────────────────────┘    └─────────────────────────────────┘ │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
@@ -90,7 +92,9 @@ src/
 │           ├── gradeResumeTool.ts
 │           ├── generateInterviewPrepTool.ts
 │           ├── analyzeContactTool.ts
-│           └── analyzeCareerTool.ts
+│           ├── analyzeCareerTool.ts
+│           ├── webResearchTool.ts
+│           └── companyAnalysisTool.ts
 ├── stores/
 │   └── commandBarStore.ts    # Command Bar state management
 └── components/
@@ -136,6 +140,8 @@ src/
 | `generate_interview_prep` | Generate interview prep materials | Yes (uses credits) | "Help me prepare for Google interview" |
 | `analyze_contact` | Analyze a contact's LinkedIn profile for interview prep | Yes (uses credits) | "Research interviewer John Smith at Google" |
 | `analyze_career` | Get career analysis based on job applications | Yes (uses credits) | "Analyze my career trajectory" |
+| `web_research` | Research company/role based on job description | Yes (uses credits) | "Research the tech stack at Amazon" |
+| `company_analysis` | Analyze company as a potential employer | Yes (uses credits) | "Analyze Google as an employer" |
 
 > 🤖 These tools trigger actual AI API calls and will consume credits. They require confirmation.
 
@@ -147,18 +153,17 @@ src/
 
 | Tool | Category | Description | Use Case |
 |------|----------|-------------|----------|
-| `web_research` | READ | Search internet for company, role, or skills info | "Research this company", "What's the tech stack?" |
-| `analyze_career_gaps` | READ | Deep skill gap analysis | "Analyze my career trajectory" |
 | `suggest_learning_path` | READ | Recommend skills to learn | "What should I learn next?" |
 | `add_learning_task` | WRITE | Add learning tasks to jobs | "Add 'Learn TypeScript' to relevant jobs" |
 | `draft_outreach` | READ | Draft networking messages | "Draft a message to recruiter at Meta" |
 | `bulk_update_status` | WRITE | Update multiple jobs at once | "Mark all old applications as Withdrawn" |
+| `live_web_search` | READ | Actually search the internet (requires API) | "Search for recent news about this company" |
 
-**Notes on `web_research` tool:**
-- Could use configurable sources (LinkedIn, Glassdoor, company website, etc.)
-- Should summarize findings and suggest insights
+**Notes on future `live_web_search` tool:**
+
+- Would require external API integration (Perplexity, SerpAPI, Brave Search, etc.)
+- Current `web_research` tool analyzes existing JD data without live search
 - Privacy consideration: user controls what sources are queried
-- Could integrate with the Interview Prep flow for research on interviewers
 
 ---
 
@@ -372,7 +377,7 @@ The long-term vision is to make all AI features accessible through the Command B
 |-------|-------|-------|--------|
 | **Phase 1** | Basic CRUD + Data Access | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, get_resume_analysis, list_timeline, update_job_status, add_note, add_contact, add_timeline_event, delete_job, update_note, delete_note | ✅ Complete |
 | **Phase 2** | AI Generation tools | generate_cover_letter, grade_resume, generate_interview_prep, analyze_contact, analyze_career | ✅ Complete |
-| **Phase 3** | Research tools | web_research, competitor_analysis | Planned |
+| **Phase 3** | Research tools | web_research, company_analysis | ✅ Complete |
 | **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions | Planned |
 
 ### Migration Strategy

@@ -779,3 +779,92 @@ export async function chatAboutCareer(
 
   return await callAI([{ role: 'user', content: prompt }], CAREER_COACH_SYSTEM_PROMPT);
 }
+
+// Research a company/role based on available information
+export async function researchCompany(
+  company: string,
+  title: string,
+  jdText: string,
+  topics: string,
+  resumeText?: string
+): Promise<string> {
+  const additionalContext = getAdditionalContext();
+
+  const prompt = `You are a career research assistant helping a job seeker prepare for their application to ${company} for the ${title} role.
+
+Based on the job description and any available information, research and provide insights on the following topics: ${topics}
+
+**Job Description:**
+${jdText}
+
+${resumeText ? `**Candidate's Resume:**\n${resumeText}` : ''}
+${additionalContext}
+
+**Instructions:**
+- Extract and analyze information from the job description
+- Make informed inferences about the company based on:
+  - How they describe themselves in the JD
+  - The requirements and qualifications they prioritize
+  - The language and tone they use
+  - Benefits, perks, and culture signals mentioned
+- Provide actionable insights the candidate can use in their application or interview
+- Be clear about what is stated vs. what is inferred
+- Format the response in clear markdown sections
+
+Focus on: ${topics}`;
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
+// Analyze a company as a potential employer
+export async function analyzeCompanyAsEmployer(
+  company: string,
+  title: string,
+  jdText: string,
+  focusAreas?: string,
+  resumeText?: string
+): Promise<string> {
+  const additionalContext = getAdditionalContext();
+
+  const defaultFocus = 'company overview, culture indicators, growth signals, role expectations, potential concerns';
+  const focus = focusAreas || defaultFocus;
+
+  const prompt = `You are a career advisor helping a job seeker evaluate ${company} as a potential employer for the ${title} position.
+
+**Job Description:**
+${jdText}
+
+${resumeText ? `**Candidate's Resume:**\n${resumeText}` : ''}
+${additionalContext}
+
+**Analysis Focus Areas:** ${focus}
+
+**Provide a comprehensive analysis including:**
+
+## Company Overview
+- What can be inferred about the company from the JD?
+- Industry and apparent market position
+- Company size/stage indicators (startup, growth, enterprise)
+
+## Culture & Work Environment
+- Culture signals from the job posting
+- Work style expectations (collaborative, autonomous, etc.)
+- Red flags or green flags
+
+## Role Analysis
+- What they're really looking for
+- Hidden requirements or expectations
+- Growth potential in this role
+
+## Strategic Insights
+- How competitive this role might be
+- Key differentiators a strong candidate should have
+- Questions to ask in the interview
+
+## Fit Assessment
+${resumeText ? '- How well the candidate aligns with what they\'re seeking\n- Areas where the candidate could emphasize strengths\n- Potential concerns to address proactively' : '- General advice for candidates pursuing this role'}
+
+Be analytical and honest. Help the candidate understand both the opportunity and the challenges.`;
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}

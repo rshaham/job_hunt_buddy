@@ -18,6 +18,8 @@ export { gradeResumeTool } from './gradeResumeTool';
 export { generateInterviewPrepTool } from './generateInterviewPrepTool';
 export { analyzeContactTool } from './analyzeContactTool';
 export { analyzeCareerTool } from './analyzeCareerTool';
+export { webResearchTool } from './webResearchTool';
+export { companyAnalysisTool } from './companyAnalysisTool';
 
 // Schemas
 export * from './schemas';
@@ -42,6 +44,8 @@ import { gradeResumeTool } from './gradeResumeTool';
 import { generateInterviewPrepTool } from './generateInterviewPrepTool';
 import { analyzeContactTool } from './analyzeContactTool';
 import { analyzeCareerTool } from './analyzeCareerTool';
+import { webResearchTool } from './webResearchTool';
+import { companyAnalysisTool } from './companyAnalysisTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -70,6 +74,9 @@ export const allTools: ToolDefinitionBase[] = [
   generateInterviewPrepTool,
   analyzeContactTool,
   analyzeCareerTool,
+  // Research tools
+  webResearchTool,
+  companyAnalysisTool,
 ];
 
 /**
@@ -101,4 +108,6 @@ export const writeTools: ToolDefinitionBase[] = [
   generateInterviewPrepTool,
   analyzeContactTool,
   analyzeCareerTool,
+  webResearchTool,
+  companyAnalysisTool,
 ];
