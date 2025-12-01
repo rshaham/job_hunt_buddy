@@ -807,8 +807,10 @@ ${additionalContext}
 
 **Instructions:**
 ${webSearchResults ? `- Synthesize information from both the job description AND web search results
-- Cite sources when referencing specific information from web searches
-- Prioritize recent and relevant information` : `- Extract and analyze information from the job description`}
+- **IMPORTANT: When citing information from web sources, use inline markdown links like [Source Name](URL) so readers can click to verify**
+- Example: "According to [Glassdoor reviews](https://glassdoor.com/...), employees report..."
+- Prioritize recent and relevant information
+- At the END of your response, include a "## Sources" section listing all web sources you referenced` : `- Extract and analyze information from the job description`}
 - Make informed inferences about the company based on:
   - How they describe themselves in the JD
   - The requirements and qualifications they prioritize
@@ -818,7 +820,9 @@ ${webSearchResults ? `- Synthesize information from both the job description AND
 - Be clear about what is stated vs. what is inferred
 - Format the response in clear markdown sections
 
-Focus on: ${topics}`;
+Focus on: ${topics}
+${webSearchResults ? `
+**Reminder:** Use clickable markdown links [like this](URL) when referencing web sources inline. End with a "## Sources" section listing all sources used.` : ''}`;
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
@@ -876,8 +880,12 @@ ${webSearchResults ? '- Recent news or developments' : ''}
 
 ## Fit Assessment
 ${resumeText ? '- How well the candidate aligns with what they\'re seeking\n- Areas where the candidate could emphasize strengths\n- Potential concerns to address proactively' : '- General advice for candidates pursuing this role'}
+${webSearchResults ? `
+## Sources
+List all web sources you referenced, formatted as clickable markdown links:
+- [Source Title](URL)` : ''}
 
-${webSearchResults ? '**Note:** When citing specific information from web searches, mention the source.' : ''}
+${webSearchResults ? '**IMPORTANT:** When citing information from web sources, use inline markdown links like [Source Name](URL) so readers can click to verify. Example: "According to [Glassdoor](https://glassdoor.com/...), the company has..."' : ''}
 
 Be analytical and honest. Help the candidate understand both the opportunity and the challenges.`;
 

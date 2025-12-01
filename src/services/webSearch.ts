@@ -185,13 +185,27 @@ export async function searchTopics(
 
 /**
  * Format search results for AI consumption
+ * Provides sources in markdown link format so AI can use them inline
  */
 export function formatSearchResultsForAI(results: TavilySearchResult[]): string {
   if (results.length === 0) {
     return 'No web search results available.';
   }
 
-  return results
-    .map((r, i) => `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.content}`)
+  const formattedResults = results
+    .map((r, i) => `### Source ${i + 1}: [${r.title}](${r.url})
+${r.content}`)
     .join('\n\n---\n\n');
+
+  // Add a summary of all sources at the end for easy reference
+  const sourceList = results
+    .map((r, i) => `${i + 1}. [${r.title}](${r.url})`)
+    .join('\n');
+
+  return `${formattedResults}
+
+---
+
+**All Sources:**
+${sourceList}`;
 }
