@@ -4,7 +4,10 @@ import {
   isWebSearchAvailable,
   searchTopics,
   formatSearchResultsForAI,
+  appendSourcesToContent,
+  createPreviewWithSources,
   WebSearchError,
+  type TavilySearchResult,
 } from '../../webSearch';
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import type { PrepMaterial } from '../../../types';
@@ -63,12 +66,13 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
     // Check if web search is available and perform search
     let webSearchResults: string | undefined;
     let webSearchUsed = false;
+    let searchResults: TavilySearchResult[] = [];
 
     if (isWebSearchAvailable()) {
       try {
-        const results = await searchTopics(job.company, input.topics);
-        if (results.length > 0) {
-          webSearchResults = formatSearchResultsForAI(results);
+        searchResults = await searchTopics(job.company, input.topics);
+        if (searchResults.length > 0) {
+          webSearchResults = formatSearchResultsForAI(searchResults);
           webSearchUsed = true;
         }
       } catch (error) {
@@ -97,21 +101,22 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
         webSearchResults
       );
 
+      // Append sources directly to the AI response
+      const finalContent = appendSourcesToContent(research, searchResults);
+
       // Save as prep material
       const prepMaterial: PrepMaterial = {
         id: Date.now().toString(),
         title: `Research: ${input.topics}${webSearchUsed ? ' (with web search)' : ''}`,
-        content: research,
+        content: finalContent,
         type: 'research',
       };
 
       const updatedPrepMaterials = [...(job.prepMaterials || []), prepMaterial];
       await updateJob(input.jobId, { prepMaterials: updatedPrepMaterials });
 
-      // Return preview
-      const preview = research.length > 800
-        ? research.substring(0, 800) + '...'
-        : research;
+      // Return preview - ensure sources section is always included
+      const preview = createPreviewWithSources(finalContent, searchResults);
 
       return {
         success: true,

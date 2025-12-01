@@ -5,7 +5,10 @@ import {
   searchCompanyInfo,
   searchInterviewExperiences,
   formatSearchResultsForAI,
+  appendSourcesToContent,
+  createPreviewWithSources,
   WebSearchError,
+  type TavilySearchResult,
 } from '../../webSearch';
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import type { PrepMaterial } from '../../../types';
@@ -63,6 +66,7 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
     // Check if web search is available and perform searches
     let webSearchResults: string | undefined;
     let webSearchUsed = false;
+    let allSearchResults: TavilySearchResult[] = [];
 
     if (isWebSearchAvailable()) {
       try {
@@ -72,9 +76,9 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
           searchInterviewExperiences(job.company, job.title),
         ]);
 
-        const allResults = [...companyResults, ...interviewResults];
-        if (allResults.length > 0) {
-          webSearchResults = formatSearchResultsForAI(allResults);
+        allSearchResults = [...companyResults, ...interviewResults];
+        if (allSearchResults.length > 0) {
+          webSearchResults = formatSearchResultsForAI(allSearchResults);
           webSearchUsed = true;
         }
       } catch (error) {
@@ -103,21 +107,22 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
         webSearchResults
       );
 
+      // Append sources directly to the AI response
+      const finalContent = appendSourcesToContent(analysis, allSearchResults);
+
       // Save as prep material
       const prepMaterial: PrepMaterial = {
         id: Date.now().toString(),
         title: `Company Analysis: ${job.company}${webSearchUsed ? ' (with web search)' : ''}`,
-        content: analysis,
+        content: finalContent,
         type: 'research',
       };
 
       const updatedPrepMaterials = [...(job.prepMaterials || []), prepMaterial];
       await updateJob(input.jobId, { prepMaterials: updatedPrepMaterials });
 
-      // Return preview
-      const preview = analysis.length > 800
-        ? analysis.substring(0, 800) + '...'
-        : analysis;
+      // Return preview - ensure sources section is always included
+      const preview = createPreviewWithSources(finalContent, allSearchResults);
 
       return {
         success: true,

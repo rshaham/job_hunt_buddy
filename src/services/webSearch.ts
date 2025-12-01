@@ -184,6 +184,51 @@ export async function searchTopics(
 }
 
 /**
+ * Extract just the source links as a formatted list
+ * Used to append sources directly to AI responses
+ */
+export function extractSourceLinks(results: TavilySearchResult[]): string {
+  if (results.length === 0) {
+    return '';
+  }
+  return results
+    .map((r, i) => `${i + 1}. [${r.title}](${r.url})`)
+    .join('\n');
+}
+
+/**
+ * Append a Sources section with clickable links to content
+ * Used to guarantee sources appear in AI responses
+ */
+export function appendSourcesToContent(
+  content: string,
+  results: TavilySearchResult[]
+): string {
+  const sourceLinks = extractSourceLinks(results);
+  return sourceLinks
+    ? `${content}\n\n## Sources\n${sourceLinks}`
+    : content;
+}
+
+/**
+ * Create a preview of content, preserving the sources section
+ * Truncates main content but keeps sources visible
+ */
+export function createPreviewWithSources(
+  content: string,
+  results: TavilySearchResult[],
+  maxLength: number = 1500,
+  truncateAt: number = 800
+): string {
+  if (content.length <= maxLength) {
+    return content;
+  }
+  const sourceLinks = extractSourceLinks(results);
+  const sourcesSection = sourceLinks ? `\n\n## Sources\n${sourceLinks}` : '';
+  return content.substring(0, truncateAt) + '...' + sourcesSection;
+}
+
+/**
  * Format search results for AI consumption
  * Provides sources in markdown link format so AI can use them inline
  */
@@ -197,15 +242,5 @@ export function formatSearchResultsForAI(results: TavilySearchResult[]): string 
 ${r.content}`)
     .join('\n\n---\n\n');
 
-  // Add a summary of all sources at the end for easy reference
-  const sourceList = results
-    .map((r, i) => `${i + 1}. [${r.title}](${r.url})`)
-    .join('\n');
-
-  return `${formattedResults}
-
----
-
-**All Sources:**
-${sourceList}`;
+  return formattedResults;
 }
