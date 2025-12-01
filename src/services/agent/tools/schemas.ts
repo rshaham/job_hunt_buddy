@@ -98,6 +98,15 @@ export const generateInterviewPrepSchema = z.object({
   jobId: z.string().describe('The ID of the job to generate interview prep for'),
 });
 
+export const analyzeContactSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the contact'),
+  contactId: z.string().describe('The ID of the contact to analyze'),
+});
+
+export const analyzeCareerSchema = z.object({
+  includeAllJobs: z.boolean().default(false).describe('Include all jobs (not just last 6 months)'),
+});
+
 // ============================================
 // Type exports
 // ============================================
@@ -120,3 +129,5 @@ export type DeleteNoteInput = z.infer<typeof deleteNoteSchema>;
 export type GenerateCoverLetterInput = z.infer<typeof generateCoverLetterSchema>;
 export type GradeResumeInput = z.infer<typeof gradeResumeSchema>;
 export type GenerateInterviewPrepInput = z.infer<typeof generateInterviewPrepSchema>;
+export type AnalyzeContactInput = z.infer<typeof analyzeContactSchema>;
+export type AnalyzeCareerInput = z.infer<typeof analyzeCareerSchema>;

@@ -16,6 +16,8 @@ export { deleteNoteTool } from './deleteNote';
 export { generateCoverLetterTool } from './generateCoverLetterTool';
 export { gradeResumeTool } from './gradeResumeTool';
 export { generateInterviewPrepTool } from './generateInterviewPrepTool';
+export { analyzeContactTool } from './analyzeContactTool';
+export { analyzeCareerTool } from './analyzeCareerTool';
 
 // Schemas
 export * from './schemas';
@@ -38,6 +40,8 @@ import { deleteNoteTool } from './deleteNote';
 import { generateCoverLetterTool } from './generateCoverLetterTool';
 import { gradeResumeTool } from './gradeResumeTool';
 import { generateInterviewPrepTool } from './generateInterviewPrepTool';
+import { analyzeContactTool } from './analyzeContactTool';
+import { analyzeCareerTool } from './analyzeCareerTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -64,6 +68,8 @@ export const allTools: ToolDefinitionBase[] = [
   generateCoverLetterTool,
   gradeResumeTool,
   generateInterviewPrepTool,
+  analyzeContactTool,
+  analyzeCareerTool,
 ];
 
 /**
@@ -93,4 +99,6 @@ export const writeTools: ToolDefinitionBase[] = [
   generateCoverLetterTool,
   gradeResumeTool,
   generateInterviewPrepTool,
+  analyzeContactTool,
+  analyzeCareerTool,
 ];
