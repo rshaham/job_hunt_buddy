@@ -4,11 +4,15 @@ export { getJobDetailsTool } from './getJobDetails';
 export { getJobStatsTool } from './getJobStats';
 export { listContactsTool } from './listContacts';
 export { getSkillGapsTool } from './getSkillGaps';
+export { getResumeAnalysisTool } from './getResumeAnalysis';
+export { listTimelineTool } from './listTimeline';
 export { updateJobStatusTool } from './updateJobStatus';
 export { addNoteTool } from './addNote';
 export { addContactTool } from './addContact';
 export { addTimelineEventTool } from './addTimelineEvent';
 export { deleteJobTool } from './deleteJob';
+export { updateNoteTool } from './updateNote';
+export { deleteNoteTool } from './deleteNote';
 
 // Schemas
 export * from './schemas';
@@ -19,11 +23,15 @@ import { getJobDetailsTool } from './getJobDetails';
 import { getJobStatsTool } from './getJobStats';
 import { listContactsTool } from './listContacts';
 import { getSkillGapsTool } from './getSkillGaps';
+import { getResumeAnalysisTool } from './getResumeAnalysis';
+import { listTimelineTool } from './listTimeline';
 import { updateJobStatusTool } from './updateJobStatus';
 import { addNoteTool } from './addNote';
 import { addContactTool } from './addContact';
 import { addTimelineEventTool } from './addTimelineEvent';
 import { deleteJobTool } from './deleteJob';
+import { updateNoteTool } from './updateNote';
+import { deleteNoteTool } from './deleteNote';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -36,12 +44,16 @@ export const allTools: ToolDefinitionBase[] = [
   getJobStatsTool,
   listContactsTool,
   getSkillGapsTool,
+  getResumeAnalysisTool,
+  listTimelineTool,
   // WRITE tools
   updateJobStatusTool,
   addNoteTool,
   addContactTool,
   addTimelineEventTool,
   deleteJobTool,
+  updateNoteTool,
+  deleteNoteTool,
 ];
 
 /**
@@ -53,6 +65,8 @@ export const readTools: ToolDefinitionBase[] = [
   getJobStatsTool,
   listContactsTool,
   getSkillGapsTool,
+  getResumeAnalysisTool,
+  listTimelineTool,
 ];
 
 /**
@@ -64,4 +78,6 @@ export const writeTools: ToolDefinitionBase[] = [
   addContactTool,
   addTimelineEventTool,
   deleteJobTool,
+  updateNoteTool,
+  deleteNoteTool,
 ];

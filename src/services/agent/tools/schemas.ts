@@ -32,6 +32,14 @@ export const listContactsSchema = z.object({
   company: z.string().optional().describe('Filter contacts by company name'),
 });
 
+export const getResumeAnalysisSchema = z.object({
+  jobId: z.string().describe('The ID of the job to get resume analysis for'),
+});
+
+export const listTimelineSchema = z.object({
+  jobId: z.string().describe('The ID of the job to get timeline events for'),
+});
+
 // ============================================
 // WRITE Tool Schemas
 // ============================================
@@ -66,6 +74,17 @@ export const deleteJobSchema = z.object({
   jobId: z.string().describe('The ID of the job to delete'),
 });
 
+export const updateNoteSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the note'),
+  noteId: z.string().describe('The ID of the note to update'),
+  content: z.string().describe('The new note content (supports markdown)'),
+});
+
+export const deleteNoteSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the note'),
+  noteId: z.string().describe('The ID of the note to delete'),
+});
+
 // ============================================
 // Type exports
 // ============================================
@@ -76,8 +95,12 @@ export type GetJobByCompanyInput = z.infer<typeof getJobByCompanySchema>;
 export type GetJobStatsInput = z.infer<typeof getJobStatsSchema>;
 export type GetSkillGapsInput = z.infer<typeof getSkillGapsSchema>;
 export type ListContactsInput = z.infer<typeof listContactsSchema>;
+export type GetResumeAnalysisInput = z.infer<typeof getResumeAnalysisSchema>;
+export type ListTimelineInput = z.infer<typeof listTimelineSchema>;
 export type UpdateJobStatusInput = z.infer<typeof updateJobStatusSchema>;
 export type AddNoteInput = z.infer<typeof addNoteSchema>;
 export type AddTimelineEventInput = z.infer<typeof addTimelineEventSchema>;
 export type AddContactInput = z.infer<typeof addContactSchema>;
 export type DeleteJobInput = z.infer<typeof deleteJobSchema>;
+export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
+export type DeleteNoteInput = z.infer<typeof deleteNoteSchema>;

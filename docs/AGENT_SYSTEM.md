@@ -40,6 +40,8 @@ The agent system transforms Job Hunt Buddy from passive prompting (user asks →
 │  │  - get_job_stats    │    │  - add_contact                  │ │
 │  │  - list_contacts    │    │  - add_timeline_event           │ │
 │  │  - get_skill_gaps   │    │  - delete_job ⚠️                │ │
+│  │  - get_resume_analysis │ │  - update_note                  │ │
+│  │  - list_timeline    │    │  - delete_note ⚠️               │ │
 │  └─────────────────────┘    └─────────────────────────────────┘ │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
@@ -70,11 +72,15 @@ src/
 │           ├── getJobStats.ts
 │           ├── listContacts.ts
 │           ├── getSkillGaps.ts
+│           ├── getResumeAnalysis.ts
+│           ├── listTimeline.ts
 │           ├── updateJobStatus.ts
 │           ├── addNote.ts
 │           ├── addContact.ts
 │           ├── addTimelineEvent.ts
-│           └── deleteJob.ts
+│           ├── deleteJob.ts
+│           ├── updateNote.ts
+│           └── deleteNote.ts
 ├── stores/
 │   └── commandBarStore.ts    # Command Bar state management
 └── components/
@@ -96,6 +102,8 @@ src/
 | `get_job_stats` | Get aggregate statistics | "How many jobs have I applied to?" |
 | `list_contacts` | List all contacts, optionally filtered by job or company | "Who are my contacts at Amazon?" |
 | `get_skill_gaps` | Analyze missing skills across jobs based on resume analysis | "What skills am I missing?" |
+| `get_resume_analysis` | Get resume fit grade, match %, strengths, gaps for a job | "How well does my resume fit Meta?" |
+| `list_timeline` | List all timeline events for a job, sorted by date | "What's the history of my Google application?" |
 
 ### WRITE Tools (Confirmation Configurable)
 
@@ -106,6 +114,8 @@ src/
 | `add_contact` | Add a contact to a job | No (low risk) | "Add recruiter Jane Doe to the Meta job" |
 | `add_timeline_event` | Add an event to job timeline | No (low risk) | "Add phone screen scheduled for Monday to Google" |
 | `delete_job` | Permanently delete a job | Yes (destructive) | "Delete the old Google application" |
+| `update_note` | Edit an existing note | No (low risk) | "Update my note on Amazon" |
+| `delete_note` | Delete a note from a job | Yes (destructive) | "Remove the old note from Google" |
 
 ---
 
@@ -115,19 +125,9 @@ src/
 
 | Tool | Category | Description | Use Case |
 |------|----------|-------------|----------|
-| `get_resume_analysis` | READ | Get resume fit for a specific job | "How well does my resume fit Meta?" |
-| `list_timeline` | READ | List timeline events for a job | "What's the history of my Google application?" |
-
-### Medium Priority
-
-| Tool | Category | Description | Use Case |
-|------|----------|-------------|----------|
 | `generate_cover_letter` | READ | Trigger cover letter generation | "Write a cover letter for Amazon" |
 | `grade_resume` | READ | Trigger resume grading | "Grade my resume for the Meta job" |
-| `find_job_by_company` | READ | Find job(s) by company name | "Find all my Meta applications" |
 | `get_interview_prep` | READ | Generate interview prep materials | "Help me prepare for Google interview" |
-| `update_note` | WRITE | Edit an existing note | "Update my note on Amazon" |
-| `delete_note` | WRITE | Delete a note | "Remove the old note from Google" |
 
 ### Future / Career Coach Integration
 
@@ -356,7 +356,7 @@ The long-term vision is to make all AI features accessible through the Command B
 
 | Phase | Focus | Tools |
 |-------|-------|-------|
-| **Phase 1** (Current) | Basic CRUD operations | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, update_job_status, add_note, add_contact, add_timeline_event, delete_job |
+| **Phase 1** (Current) | Basic CRUD + Data Access | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, get_resume_analysis, list_timeline, update_job_status, add_note, add_contact, add_timeline_event, delete_job, update_note, delete_note |
 | **Phase 2** | Generation tools | generate_cover_letter, grade_resume, get_interview_prep, tailor_resume |
 | **Phase 3** | Research tools | web_research, analyze_interviewer, competitor_analysis |
 | **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions |
