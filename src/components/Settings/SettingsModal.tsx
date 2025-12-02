@@ -22,6 +22,8 @@ import {
   AlertTriangle,
   X,
   HelpCircle,
+  Shield,
+  Globe,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea, ConfirmModal } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
@@ -412,6 +414,10 @@ export function SettingsModal() {
             <TabsTrigger value="agent">
               <Bot className="w-4 h-4 mr-1.5 inline" />
               Agent
+            </TabsTrigger>
+            <TabsTrigger value="privacy">
+              <Shield className="w-4 h-4 mr-1.5 inline" />
+              Privacy
             </TabsTrigger>
           </TabsList>
 
@@ -1168,6 +1174,92 @@ export function SettingsModal() {
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   Use natural language to search jobs, update statuses, add notes, and more.
+                </p>
+              </div>
+            </section>
+          </TabsContent>
+
+          {/* Privacy Tab */}
+          <TabsContent value="privacy" className="space-y-6">
+            {/* Privacy Impact Notice */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg max-w-xl">
+              <div className="flex gap-3">
+                <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-blue-800 dark:text-blue-200 text-sm mb-1">
+                    Your Data Stays Local
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    All your jobs, resumes, cover letters, and notes are stored only in your browser.
+                    The optional features below send limited data to third-party services to work.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* External Services Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                External Services
+              </h3>
+              <div className="space-y-3 max-w-xl">
+                {/* Job Search Toggle */}
+                <label className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.externalServicesConsent?.jobSearch ?? false}
+                    onChange={(e) => updateSettings({
+                      externalServicesConsent: {
+                        ...settings.externalServicesConsent,
+                        jobSearch: e.target.checked,
+                        consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
+                      }
+                    })}
+                    className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                      Job Search
+                    </span>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Find job listings via SerApi. <span className="text-amber-600 dark:text-amber-400">Sends:</span> search query, location.
+                    </p>
+                  </div>
+                </label>
+
+                {/* Web Research Toggle */}
+                <label className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.externalServicesConsent?.webResearch ?? false}
+                    onChange={(e) => updateSettings({
+                      externalServicesConsent: {
+                        ...settings.externalServicesConsent,
+                        webResearch: e.target.checked,
+                        consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
+                      }
+                    })}
+                    className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                      Web Research
+                    </span>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Research companies and people via Tavily. <span className="text-amber-600 dark:text-amber-400">Sends:</span> company name, person name, research topic.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* What's NOT sent */}
+              <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg max-w-xl">
+                <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    <strong>Never sent:</strong> your resume, cover letters, notes, contacts, or any personal data.
+                  </span>
                 </p>
               </div>
             </section>

@@ -11,6 +11,9 @@
  * - DAILY_GLOBAL_CAP: Total daily requests across all users (default: 500)
  */
 
+// Load environment variables first (for local development on Windows)
+import './loadEnv.js';
+
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 

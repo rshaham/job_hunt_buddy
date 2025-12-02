@@ -5,6 +5,9 @@
  * Includes rate limiting to prevent abuse.
  */
 
+// Load environment variables first (for local development on Windows)
+import '../_lib/loadEnv.js';
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { checkAllRateLimits } from '../_lib/rateLimit.js';
 

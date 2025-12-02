@@ -1,4 +1,4 @@
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod';
 import type { ToolDefinitionBase, ToolResult, AnthropicToolDef, ToolUseBlock } from '../../types/agent';
 
 /**
@@ -58,23 +58,18 @@ export class ToolRegistry {
    * Convert a single tool to Anthropic format
    */
   private toAnthropicFormat(tool: ToolDefinitionBase): AnthropicToolDef {
-    // Type assertion needed due to Zod v4 type incompatibility with zod-to-json-schema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jsonSchema = zodToJsonSchema(tool.inputSchema as any, {
-      $refStrategy: 'none',
-      target: 'openApi3',
-    });
-
-    // Extract the schema properties, removing the wrapper
-    const schema = jsonSchema as Record<string, unknown>;
+    // Use Zod v4's native JSON Schema conversion
+    const jsonSchema = z.toJSONSchema(tool.inputSchema, {
+      unrepresentable: 'any', // Handle edge cases gracefully
+    }) as Record<string, unknown>;
 
     return {
       name: tool.name,
       description: tool.description,
       input_schema: {
         type: 'object',
-        properties: (schema.properties as Record<string, unknown>) || {},
-        required: schema.required as string[] | undefined,
+        properties: (jsonSchema.properties as Record<string, unknown>) || {},
+        required: (jsonSchema.required as string[]) || [],
       },
     };
   }
