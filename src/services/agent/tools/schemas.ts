@@ -149,6 +149,40 @@ export const bulkUpdateStatusSchema = z.object({
 });
 
 // ============================================
+// Listing Tool Schemas
+// ============================================
+
+export const listLearningTasksSchema = z.object({
+  status: z.enum(['pending', 'in_progress', 'completed', 'all']).default('all').describe('Filter by task status'),
+  priority: z.enum(['high', 'medium', 'low', 'all']).default('all').describe('Filter by priority'),
+  limit: z.number().default(20).describe('Maximum tasks to return'),
+});
+
+export const getFollowUpsSchema = z.object({
+  daysInactive: z.number().default(7).describe('Days since last activity to consider stale'),
+  statuses: z.array(z.string()).optional().describe('Filter to specific statuses (e.g., ["Applied", "Interviewing"])'),
+});
+
+export const listUpcomingEventsSchema = z.object({
+  daysAhead: z.number().default(14).describe('How many days ahead to look'),
+  limit: z.number().default(10).describe('Maximum events to return'),
+});
+
+export const getApplicationSummarySchema = z.object({
+  // No input needed - returns overview of all jobs
+});
+
+export const listAllNotesSchema = z.object({
+  query: z.string().optional().describe('Search text to filter notes'),
+  limit: z.number().default(20).describe('Maximum notes to return'),
+});
+
+export const getStaleJobsSchema = z.object({
+  daysInactive: z.number().default(14).describe('Days without activity to consider stale'),
+  excludeStatuses: z.array(z.string()).optional().describe('Statuses to exclude (e.g., ["Rejected", "Offer"])'),
+});
+
+// ============================================
 // Type exports
 // ============================================
 
@@ -178,3 +212,9 @@ export type SuggestLearningPathInput = z.infer<typeof suggestLearningPathSchema>
 export type AddLearningTaskInput = z.infer<typeof addLearningTaskSchema>;
 export type DraftOutreachInput = z.infer<typeof draftOutreachSchema>;
 export type BulkUpdateStatusInput = z.infer<typeof bulkUpdateStatusSchema>;
+export type ListLearningTasksInput = z.infer<typeof listLearningTasksSchema>;
+export type GetFollowUpsInput = z.infer<typeof getFollowUpsSchema>;
+export type ListUpcomingEventsInput = z.infer<typeof listUpcomingEventsSchema>;
+export type GetApplicationSummaryInput = z.infer<typeof getApplicationSummarySchema>;
+export type ListAllNotesInput = z.infer<typeof listAllNotesSchema>;
+export type GetStaleJobsInput = z.infer<typeof getStaleJobsSchema>;

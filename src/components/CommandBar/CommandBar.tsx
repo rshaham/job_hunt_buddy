@@ -5,9 +5,12 @@ import remarkGfm from 'remark-gfm';
 
 // Suggested commands for quick access
 const SUGGESTED_COMMANDS = [
-  { icon: '🔍', text: 'Show all jobs in Interviewing status', command: 'Show me all jobs that are in Interviewing status' },
-  { icon: '📊', text: 'Get application statistics', command: 'How many jobs have I applied to? Show me the stats.' },
-  { icon: '📝', text: 'Add a note to a job', command: 'Add a note to ' },
+  { icon: '📋', text: 'Get my job search summary', command: 'Give me an overview of my job search' },
+  { icon: '📞', text: 'Which companies should I follow up with?', command: 'Which jobs need follow-up?' },
+  { icon: '📚', text: 'Show my learning tasks', command: 'Show all my learning tasks' },
+  { icon: '📅', text: 'What events are coming up?', command: 'What upcoming events do I have?' },
+  { icon: '🧹', text: 'Find stale applications', command: 'Which jobs are stale and need attention?' },
+  { icon: '🛠️', text: 'What can you help me with?', command: 'What tools do you have? List all available commands.' },
 ];
 
 export function CommandBar() {

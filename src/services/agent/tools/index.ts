@@ -25,6 +25,13 @@ export { suggestLearningPathTool } from './suggestLearningPathTool';
 export { addLearningTaskTool } from './addLearningTaskTool';
 export { draftOutreachTool } from './draftOutreachTool';
 export { bulkUpdateStatusTool } from './bulkUpdateStatusTool';
+// Listing tools
+export { listLearningTasksTool } from './listLearningTasksTool';
+export { getFollowUpsTool } from './getFollowUpsTool';
+export { listUpcomingEventsTool } from './listUpcomingEventsTool';
+export { getApplicationSummaryTool } from './getApplicationSummaryTool';
+export { listAllNotesTool } from './listAllNotesTool';
+export { getStaleJobsTool } from './getStaleJobsTool';
 
 // Schemas
 export * from './schemas';
@@ -55,6 +62,12 @@ import { suggestLearningPathTool } from './suggestLearningPathTool';
 import { addLearningTaskTool } from './addLearningTaskTool';
 import { draftOutreachTool } from './draftOutreachTool';
 import { bulkUpdateStatusTool } from './bulkUpdateStatusTool';
+import { listLearningTasksTool } from './listLearningTasksTool';
+import { getFollowUpsTool } from './getFollowUpsTool';
+import { listUpcomingEventsTool } from './listUpcomingEventsTool';
+import { getApplicationSummaryTool } from './getApplicationSummaryTool';
+import { listAllNotesTool } from './listAllNotesTool';
+import { getStaleJobsTool } from './getStaleJobsTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -91,6 +104,13 @@ export const allTools: ToolDefinitionBase[] = [
   addLearningTaskTool,
   draftOutreachTool,
   bulkUpdateStatusTool,
+  // Listing tools
+  listLearningTasksTool,
+  getFollowUpsTool,
+  listUpcomingEventsTool,
+  getApplicationSummaryTool,
+  listAllNotesTool,
+  getStaleJobsTool,
 ];
 
 /**
@@ -105,6 +125,13 @@ export const readTools: ToolDefinitionBase[] = [
   getResumeAnalysisTool,
   listTimelineTool,
   suggestLearningPathTool,
+  // Listing tools
+  listLearningTasksTool,
+  getFollowUpsTool,
+  listUpcomingEventsTool,
+  getApplicationSummaryTool,
+  listAllNotesTool,
+  getStaleJobsTool,
 ];
 
 /**
