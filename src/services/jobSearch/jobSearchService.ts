@@ -165,6 +165,7 @@ export function transformSearchResultToJob(
     timeline: [importEvent],
     prepMaterials: [],
     qaHistory: [],
+    learningTasks: [],
   };
 }
 
