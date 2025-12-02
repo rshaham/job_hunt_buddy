@@ -84,8 +84,8 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               <TabsTrigger value="cover">Cover Letter</TabsTrigger>
               <TabsTrigger value="emails">Emails</TabsTrigger>
               <TabsTrigger value="prep">Prep & Q&A</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="learning">Learning</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
             </TabsList>
           </div>
 
@@ -110,13 +110,14 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               <PrepTab job={job} />
             </TabsContent>
 
+            <TabsContent value="learning">
+              <LearningTasksTab job={job} />
+            </TabsContent>
+
             <TabsContent value="notes">
               <NotesTab job={job} />
             </TabsContent>
 
-            <TabsContent value="learning">
-              <LearningTasksTab job={job} />
-            </TabsContent>
           </div>
         </Tabs>
       </div>
