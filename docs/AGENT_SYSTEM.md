@@ -34,22 +34,25 @@ The agent system transforms Job Hunt Buddy from passive prompting (user asks →
 ┌──────────────────────────────▼──────────────────────────────────┐
 │                        Tool Registry                             │
 │  ┌─────────────────────┐    ┌─────────────────────────────────┐ │
-│  │    READ Tools       │    │         WRITE Tools             │ │
-│  │  - search_jobs      │    │  - update_job_status ⚠️         │ │
-│  │  - get_job_details  │    │  - add_note                     │ │
-│  │  - get_job_stats    │    │  - add_contact                  │ │
-│  │  - list_contacts    │    │  - add_timeline_event           │ │
-│  │  - get_skill_gaps   │    │  - delete_job ⚠️                │ │
-│  │  - get_resume_analysis │ │  - update_note                  │ │
-│  │  - list_timeline    │    │  - delete_note ⚠️               │ │
-│  │                      │    │  - generate_cover_letter 🤖⚠️  │ │
-│  │                      │    │  - grade_resume 🤖⚠️           │ │
-│  │                      │    │  - generate_interview_prep 🤖⚠️│ │
-│  │                      │    │  - analyze_contact 🤖⚠️        │ │
-│  │                      │    │  - analyze_career 🤖⚠️         │ │
-│  │                      │    │  - web_research 🤖⚠️           │ │
-│  │                      │    │  - company_analysis 🤖⚠️       │ │
-│  └─────────────────────┘    └─────────────────────────────────┘ │
+│  │    READ Tools            │    │        WRITE Tools              │ │
+│  │  - search_jobs           │    │  - update_job_status ⚠️         │ │
+│  │  - get_job_details       │    │  - add_note                     │ │
+│  │  - get_job_stats         │    │  - add_contact                  │ │
+│  │  - list_contacts         │    │  - add_timeline_event           │ │
+│  │  - get_skill_gaps        │    │  - delete_job ⚠️                │ │
+│  │  - get_resume_analysis   │    │  - update_note                  │ │
+│  │  - list_timeline         │    │  - delete_note ⚠️               │ │
+│  │  - suggest_learning_path │    │  - add_learning_task            │ │
+│  │  - list_learning_tasks   │    │  - bulk_update_status ⚠️        │ │
+│  │  - get_follow_ups        │    │  - generate_cover_letter 🤖⚠️   │ │
+│  │  - list_upcoming_events  │    │  - grade_resume 🤖⚠️            │ │
+│  │  - get_application_summary│   │  - generate_interview_prep 🤖⚠️ │ │
+│  │  - list_all_notes        │    │  - analyze_contact 🤖⚠️         │ │
+│  │  - get_stale_jobs        │    │  - analyze_career 🤖⚠️          │ │
+│  │                          │    │  - web_research 🤖⚠️            │ │
+│  │                          │    │  - company_analysis 🤖⚠️        │ │
+│  │                          │    │  - draft_outreach 🤖⚠️          │ │
+│  └──────────────────────────┘    └─────────────────────────────────┘ │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────────┐
@@ -94,7 +97,17 @@ src/
 │           ├── analyzeContactTool.ts
 │           ├── analyzeCareerTool.ts
 │           ├── webResearchTool.ts
-│           └── companyAnalysisTool.ts
+│           ├── companyAnalysisTool.ts
+│           ├── suggestLearningPathTool.ts
+│           ├── addLearningTaskTool.ts
+│           ├── draftOutreachTool.ts
+│           ├── bulkUpdateStatusTool.ts
+│           ├── listLearningTasksTool.ts
+│           ├── getFollowUpsTool.ts
+│           ├── listUpcomingEventsTool.ts
+│           ├── getApplicationSummaryTool.ts
+│           ├── listAllNotesTool.ts
+│           └── getStaleJobsTool.ts
 ├── stores/
 │   └── commandBarStore.ts    # Command Bar state management
 └── components/
@@ -118,6 +131,13 @@ src/
 | `get_skill_gaps` | Analyze missing skills across jobs based on resume analysis | "What skills am I missing?" |
 | `get_resume_analysis` | Get resume fit grade, match %, strengths, gaps for a job | "How well does my resume fit Meta?" |
 | `list_timeline` | List all timeline events for a job, sorted by date | "What's the history of my Google application?" |
+| `suggest_learning_path` | Analyze skill gaps and suggest skills to learn, ranked by frequency | "What should I learn next?" |
+| `list_learning_tasks` | List learning tasks across all jobs with status/priority filters | "Show my learning tasks" |
+| `get_follow_ups` | Find jobs needing follow-up based on inactivity | "Which jobs need follow-up?" |
+| `list_upcoming_events` | List upcoming timeline events (interviews, deadlines) | "What's coming up this week?" |
+| `get_application_summary` | High-level overview of job search with stats and pending tasks | "Give me a summary of my job search" |
+| `list_all_notes` | Search notes across all jobs by text content | "Find my notes about salary" |
+| `get_stale_jobs` | Find jobs with no activity in X days for cleanup | "Which jobs are stale?" |
 
 ### WRITE Tools (Confirmation Configurable)
 
@@ -130,6 +150,8 @@ src/
 | `delete_job` | Permanently delete a job | Yes (destructive) | "Delete the old Google application" |
 | `update_note` | Edit an existing note | No (low risk) | "Update my note on Amazon" |
 | `delete_note` | Delete a note from a job | Yes (destructive) | "Remove the old note from Google" |
+| `add_learning_task` | Add a learning task to a job | No (low risk) | "Add 'Learn TypeScript' to the Google job" |
+| `bulk_update_status` | Update multiple jobs at once | Yes (destructive) | "Mark all old applications as Withdrawn" |
 
 ### AI Generation Tools (Triggers API Call)
 
@@ -142,6 +164,7 @@ src/
 | `analyze_career` | Get career analysis based on job applications | Yes (uses credits) | "Analyze my career trajectory" |
 | `web_research` | Research company/role using real web search (Tavily) | Yes (uses credits) | "Research the tech stack at Amazon" |
 | `company_analysis` | Analyze company as employer using web search | Yes (uses credits) | "Analyze Google as an employer" |
+| `draft_outreach` | Draft networking/outreach messages to recruiters or contacts | Yes (uses credits) | "Draft a follow-up message to the recruiter at Meta" |
 
 > 🤖 These tools trigger actual AI API calls and will consume credits. They require confirmation.
 >
@@ -177,19 +200,6 @@ Both tools:
 - Require confirmation before executing (uses AI credits)
 
 If the API key is not configured, these tools will return an error prompting the user to add the key.
-
----
-
-## Tools Not Yet Implemented
-
-### Future / Career Coach Integration
-
-| Tool | Category | Description | Use Case |
-|------|----------|-------------|----------|
-| `suggest_learning_path` | READ | Recommend skills to learn | "What should I learn next?" |
-| `add_learning_task` | WRITE | Add learning tasks to jobs | "Add 'Learn TypeScript' to relevant jobs" |
-| `draft_outreach` | READ | Draft networking messages | "Draft a message to recruiter at Meta" |
-| `bulk_update_status` | WRITE | Update multiple jobs at once | "Mark all old applications as Withdrawn" |
 
 ---
 
@@ -404,7 +414,7 @@ The long-term vision is to make all AI features accessible through the Command B
 | **Phase 1** | Basic CRUD + Data Access | search_jobs, get_job_details, get_job_stats, list_contacts, get_skill_gaps, get_resume_analysis, list_timeline, update_job_status, add_note, add_contact, add_timeline_event, delete_job, update_note, delete_note | ✅ Complete |
 | **Phase 2** | AI Generation tools | generate_cover_letter, grade_resume, generate_interview_prep, analyze_contact, analyze_career | ✅ Complete |
 | **Phase 3** | Research tools | web_research, company_analysis | ✅ Complete |
-| **Phase 4** | Full conversational coach | Career guidance, learning paths, networking suggestions | Planned |
+| **Phase 4** | Conversational Coach | suggest_learning_path, add_learning_task, draft_outreach, bulk_update_status, list_learning_tasks, get_follow_ups, list_upcoming_events, get_application_summary, list_all_notes, get_stale_jobs | ✅ Complete |
 
 ### Migration Strategy
 
