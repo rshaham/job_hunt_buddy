@@ -98,6 +98,9 @@ export function BoardView() {
           <img src="/logo.png" alt="Job Hunt Buddy" className="w-16 h-16 rounded-xl" />
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
             Job Hunt Buddy
+            <span className="ml-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full align-middle">
+              beta
+            </span>
           </h1>
         </div>
 
