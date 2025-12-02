@@ -119,6 +119,70 @@ export const companyAnalysisSchema = z.object({
 });
 
 // ============================================
+// Phase 4 Tool Schemas
+// ============================================
+
+export const suggestLearningPathSchema = z.object({
+  jobId: z.string().optional().describe('Optionally analyze gaps for a specific job. If not provided, analyzes overall career patterns.'),
+  limit: z.number().default(5).describe('Maximum number of skills to suggest'),
+});
+
+export const addLearningTaskSchema = z.object({
+  jobId: z.string().describe('The ID of the job to add the learning task to'),
+  skill: z.string().describe('The skill to learn'),
+  description: z.string().describe('Description of the learning task'),
+  priority: z.enum(['high', 'medium', 'low']).default('medium').describe('Task priority'),
+  dueDate: z.string().optional().describe('Optional due date (ISO format)'),
+  resourceUrl: z.string().optional().describe('Optional URL to a learning resource'),
+});
+
+export const draftOutreachSchema = z.object({
+  jobId: z.string().describe('The ID of the job for context'),
+  contactId: z.string().optional().describe('The ID of a specific contact to reach out to'),
+  messageType: z.enum(['initial-outreach', 'follow-up', 'thank-you', 'networking']).describe('Type of outreach message'),
+  customPrompt: z.string().optional().describe('Additional instructions for the message'),
+});
+
+export const bulkUpdateStatusSchema = z.object({
+  jobIds: z.array(z.string()).describe('Array of job IDs to update'),
+  newStatus: z.string().describe('The new status to set for all jobs'),
+});
+
+// ============================================
+// Listing Tool Schemas
+// ============================================
+
+export const listLearningTasksSchema = z.object({
+  status: z.enum(['pending', 'in_progress', 'completed', 'all']).default('all').describe('Filter by task status'),
+  priority: z.enum(['high', 'medium', 'low', 'all']).default('all').describe('Filter by priority'),
+  limit: z.number().default(20).describe('Maximum tasks to return'),
+});
+
+export const getFollowUpsSchema = z.object({
+  daysInactive: z.number().default(7).describe('Days since last activity to consider stale'),
+  statuses: z.array(z.string()).optional().describe('Filter to specific statuses (e.g., ["Applied", "Interviewing"])'),
+});
+
+export const listUpcomingEventsSchema = z.object({
+  daysAhead: z.number().default(14).describe('How many days ahead to look'),
+  limit: z.number().default(10).describe('Maximum events to return'),
+});
+
+export const getApplicationSummarySchema = z.object({
+  // No input needed - returns overview of all jobs
+});
+
+export const listAllNotesSchema = z.object({
+  query: z.string().optional().describe('Search text to filter notes'),
+  limit: z.number().default(20).describe('Maximum notes to return'),
+});
+
+export const getStaleJobsSchema = z.object({
+  daysInactive: z.number().default(14).describe('Days without activity to consider stale'),
+  excludeStatuses: z.array(z.string()).optional().describe('Statuses to exclude (e.g., ["Rejected", "Offer"])'),
+});
+
+// ============================================
 // Type exports
 // ============================================
 
@@ -144,3 +208,13 @@ export type AnalyzeContactInput = z.infer<typeof analyzeContactSchema>;
 export type AnalyzeCareerInput = z.infer<typeof analyzeCareerSchema>;
 export type WebResearchInput = z.infer<typeof webResearchSchema>;
 export type CompanyAnalysisInput = z.infer<typeof companyAnalysisSchema>;
+export type SuggestLearningPathInput = z.infer<typeof suggestLearningPathSchema>;
+export type AddLearningTaskInput = z.infer<typeof addLearningTaskSchema>;
+export type DraftOutreachInput = z.infer<typeof draftOutreachSchema>;
+export type BulkUpdateStatusInput = z.infer<typeof bulkUpdateStatusSchema>;
+export type ListLearningTasksInput = z.infer<typeof listLearningTasksSchema>;
+export type GetFollowUpsInput = z.infer<typeof getFollowUpsSchema>;
+export type ListUpcomingEventsInput = z.infer<typeof listUpcomingEventsSchema>;
+export type GetApplicationSummaryInput = z.infer<typeof getApplicationSummarySchema>;
+export type ListAllNotesInput = z.infer<typeof listAllNotesSchema>;
+export type GetStaleJobsInput = z.infer<typeof getStaleJobsSchema>;

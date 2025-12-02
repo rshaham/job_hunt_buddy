@@ -32,6 +32,7 @@ export interface Job {
   timeline: TimelineEvent[];
   prepMaterials: PrepMaterial[];
   qaHistory: QAEntry[];
+  learningTasks: LearningTask[];
 
   // Resume tailoring
   tailoredResume?: string;
@@ -96,6 +97,18 @@ export interface PrepMaterial {
   title: string;
   content: string;
   type: 'question' | 'answer' | 'research' | 'other';
+}
+
+export interface LearningTask {
+  id: string;
+  skill: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'high' | 'medium' | 'low';
+  dueDate?: Date;
+  resourceUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface QAEntry {
