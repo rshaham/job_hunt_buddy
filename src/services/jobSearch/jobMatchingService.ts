@@ -135,14 +135,14 @@ export function invalidateProfileCache(): void {
  * @returns Normalized score (40-95)
  */
 function normalizeScore(cosineSim: number): number {
-  const MIN_SIM = 0.30;  // Below this = 40%
-  const MAX_SIM = 0.65;  // Above this = 95%
+  const COSINE_SIM_FLOOR = 0.30;  // Below this = 40%
+  const COSINE_SIM_CEILING = 0.65;  // Above this = 95%
 
-  if (cosineSim <= MIN_SIM) return 40;
-  if (cosineSim >= MAX_SIM) return 95;
+  if (cosineSim <= COSINE_SIM_FLOOR) return 40;
+  if (cosineSim >= COSINE_SIM_CEILING) return 95;
 
   // Linear interpolation between 40-95%
-  return Math.round(40 + ((cosineSim - MIN_SIM) / (MAX_SIM - MIN_SIM)) * 55);
+  return Math.round(40 + ((cosineSim - COSINE_SIM_FLOOR) / (COSINE_SIM_CEILING - COSINE_SIM_FLOOR)) * 55);
 }
 
 /**
