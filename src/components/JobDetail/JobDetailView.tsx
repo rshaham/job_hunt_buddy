@@ -8,6 +8,7 @@ import { CoverLetterTab } from './CoverLetterTab';
 import { EmailsTab } from './EmailsTab';
 import { PrepTab } from './PrepTab';
 import { NotesTab } from './NotesTab';
+import { LearningTasksTab } from './LearningTasksTab';
 import type { Job } from '../../types';
 
 interface JobDetailViewProps {
@@ -84,6 +85,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               <TabsTrigger value="emails">Emails</TabsTrigger>
               <TabsTrigger value="prep">Prep & Q&A</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="learning">Learning</TabsTrigger>
             </TabsList>
           </div>
 
@@ -110,6 +112,10 @@ export function JobDetailView({ job }: JobDetailViewProps) {
 
             <TabsContent value="notes">
               <NotesTab job={job} />
+            </TabsContent>
+
+            <TabsContent value="learning">
+              <LearningTasksTab job={job} />
             </TabsContent>
           </div>
         </Tabs>

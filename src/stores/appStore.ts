@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -96,6 +96,10 @@ interface AppState {
 
   // Saved story actions
   updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
+
+  // Learning task actions
+  updateLearningTask: (jobId: string, taskId: string, updates: Partial<LearningTask>) => Promise<void>;
+  deleteLearningTask: (jobId: string, taskId: string) => Promise<void>;
 
   // UI actions
   openAddJobModal: () => void;
@@ -359,6 +363,25 @@ export const useAppStore = create<AppState>((set, get) => ({
         triggerStoryEmbedding(story);
       }
     }
+  },
+
+  // Learning task actions
+  updateLearningTask: async (jobId, taskId, updates) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedTasks = (job.learningTasks || []).map((task) =>
+      task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
+    );
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
+  },
+
+  deleteLearningTask: async (jobId, taskId) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedTasks = (job.learningTasks || []).filter((task) => task.id !== taskId);
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
   },
 
   // UI actions
