@@ -2,6 +2,7 @@ import { anthropicProvider } from './anthropic';
 import { openaiCompatibleProvider } from './openai-compatible';
 import { geminiProvider } from './gemini';
 import type { ProviderType, ProviderSettings } from '../../types';
+import type { AIMessageWithTools, AIResponseWithTools, AnthropicToolDef } from '../../types/agent';
 
 export interface AIMessage {
   role: 'user' | 'assistant';
@@ -11,6 +12,15 @@ export interface AIMessage {
 export interface AIProvider {
   call(messages: AIMessage[], systemPrompt?: string, config?: ProviderSettings): Promise<string>;
   testConnection(config: ProviderSettings): Promise<boolean>;
+
+  // Tool calling support (optional - only Anthropic supports this initially)
+  supportsToolCalling?: boolean;
+  callWithTools?(
+    messages: AIMessageWithTools[],
+    tools: AnthropicToolDef[],
+    systemPrompt?: string,
+    config?: ProviderSettings
+  ): Promise<AIResponseWithTools>;
 }
 
 const providers: Record<ProviderType, AIProvider> = {

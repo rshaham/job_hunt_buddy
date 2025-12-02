@@ -61,6 +61,16 @@ function MarkdownContent({ content }: { content: string }) {
           </blockquote>
         ),
         hr: () => <hr className="my-4 border-slate-200 dark:border-slate-700" />,
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary/80 underline"
+          >
+            {children}
+          </a>
+        ),
         table: ({ children }) => (
           <div className="overflow-x-auto my-3">
             <table className="min-w-full border-collapse border border-slate-300 dark:border-slate-600 text-sm">
@@ -207,6 +217,12 @@ export function PrepTab({ job }: PrepTabProps) {
     setIsClearModalOpen(false);
   };
 
+  const handleDeletePrepMaterial = async (materialId: string) => {
+    const updatedMaterials = (job.prepMaterials || []).filter((m) => m.id !== materialId);
+    await updateJob(job.id, { prepMaterials: updatedMaterials });
+    showToast('Research deleted', 'success');
+  };
+
   const handleGeneratePrep = async () => {
     if (!hasAIConfigured) {
       setError('Please configure your AI provider in Settings');
@@ -241,42 +257,11 @@ export function PrepTab({ job }: PrepTabProps) {
     'Help me craft a response about my experience with...',
   ];
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-180px)]">
-      {/* Generate Prep Button */}
-      <div className="flex gap-2 mb-3 items-center">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleGeneratePrep}
-          disabled={isGeneratingPrep || !hasAIConfigured}
-        >
-          {isGeneratingPrep ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4 mr-1" />
-              Generate Interview Prep
-            </>
-          )}
-        </Button>
-        {job.qaHistory.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
-            <Trash2 className="w-4 h-4 mr-1" />
-            Clear Chat
-          </Button>
-        )}
-        <span className="group relative ml-1">
-          <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
-          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-            Ask questions, get coaching, save answers
-          </span>
-        </span>
-      </div>
+  // Check if we have any prep content to show in the right panel
+  const hasPrepContent = prepMaterial || (job.prepMaterials && job.prepMaterials.length > 0) || contactsWithIntel.length > 0;
 
+  return (
+    <div className="flex h-[calc(100vh-180px)] gap-4">
       <ConfirmModal
         isOpen={isClearModalOpen}
         onClose={() => setIsClearModalOpen(false)}
@@ -287,208 +272,309 @@ export function PrepTab({ job }: PrepTabProps) {
         variant="warning"
       />
 
-      {/* Interviewer Selector */}
-      {contactsWithIntel.length > 0 && (
-        <div className="mb-3">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowInterviewerDropdown(!showInterviewerDropdown)}
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm hover:border-blue-300 transition-colors w-full sm:w-auto"
+      {/* Left Panel - Chat */}
+      <div className={`flex flex-col ${hasPrepContent ? 'w-3/5' : 'w-full'} transition-all`}>
+        {/* Chat Header */}
+        <div className="flex gap-2 mb-3 items-center">
+          {!hasPrepContent && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleGeneratePrep}
+              disabled={isGeneratingPrep || !hasAIConfigured}
             >
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-slate-600 dark:text-slate-400">
-                {selectedInterviewer
-                  ? `Preparing for: ${selectedInterviewer.name}`
-                  : 'Select interviewer...'}
-              </span>
-              <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
-            </button>
+              {isGeneratingPrep ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Generate Prep
+                </>
+              )}
+            </Button>
+          )}
+          {job.qaHistory.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear Chat
+            </Button>
+          )}
+          <span className="group relative ml-1">
+            <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              Ask questions, get coaching, save answers
+            </span>
+          </span>
+        </div>
 
-            {showInterviewerDropdown && (
-              <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10 min-w-[200px]">
-                {contactsWithIntel.map((contact) => (
+        {/* Chat History */}
+        <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+          {job.qaHistory.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-4">
+              <p className="text-sm text-slate-500 mb-4">
+                Ask questions about this job, get interview coaching, or practice responses.
+              </p>
+              <div className="space-y-2 w-full max-w-md">
+                <p className="text-xs text-slate-400 uppercase tracking-wide">Suggested questions:</p>
+                {suggestedQuestions.slice(0, 3).map((q, i) => (
                   <button
-                    key={contact.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedInterviewerId(contact.id);
-                      setShowInterviewerDropdown(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                      selectedInterviewerId === contact.id
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                        : 'text-slate-700 dark:text-slate-300'
-                    }`}
+                    key={i}
+                    onClick={() => setQuestion(q)}
+                    className="w-full text-left text-sm p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-colors"
                   >
-                    <span className="font-medium">{contact.name}</span>
-                    {contact.role && (
-                      <span className="text-slate-400 ml-1">• {contact.role}</span>
-                    )}
+                    {q}
                   </button>
                 ))}
-                {selectedInterviewerId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedInterviewerId(null);
-                      setShowInterviewerDropdown(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700"
-                  >
-                    Clear selection
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Intel Summary */}
-          {selectedInterviewer && (
-            <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/30">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                    Intel: {selectedInterviewer.name}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedInterviewerId(null)}
-                  className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded"
-                  title="Clear interviewer selection"
-                >
-                  <X className="w-3.5 h-3.5 text-blue-400" />
-                </button>
-              </div>
-              <div className="text-xs text-slate-600 dark:text-slate-400 max-h-32 overflow-y-auto">
-                <MarkdownContent content={selectedInterviewer.interviewerIntel!} />
               </div>
             </div>
+          ) : (
+            <>
+              {job.qaHistory.map((entry) => (
+                <div key={entry.id} className="space-y-3">
+                  {/* User Question */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%]">
+                      <div className="p-3 bg-primary text-white rounded-2xl rounded-br-sm">
+                        <p className="text-sm">{entry.question}</p>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1 text-right">
+                        {format(new Date(entry.timestamp), 'h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                  {/* AI Answer or Thinking Bubble */}
+                  {entry.answer === null ? (
+                    <ThinkingBubble />
+                  ) : (
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%]">
+                        <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
+                          <MarkdownContent content={entry.answer} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveToMemory(entry.id, entry.question, entry.answer!)}
+                          disabled={isSavingMemory === entry.id}
+                          className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
+                        >
+                          {isSavingMemory === entry.id ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Bookmark className="w-3 h-3" />
+                              Save to Profile
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </>
           )}
         </div>
-      )}
 
-      {/* Prep Material */}
-      {prepMaterial && (
-        <div className="mb-3 p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 max-h-64 overflow-y-auto">
-          <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
-            Interview Prep
-          </h4>
-          <MarkdownContent content={prepMaterial} />
-        </div>
-      )}
-
-      {/* Chat History */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-        {job.qaHistory.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-4">
-            <p className="text-sm text-slate-500 mb-4">
-              Ask questions about this job, get interview coaching, or practice responses.
-            </p>
-            <div className="space-y-2 w-full max-w-md">
-              <p className="text-xs text-slate-400 uppercase tracking-wide">Suggested questions:</p>
-              {suggestedQuestions.slice(0, 3).map((q, i) => (
-                <button
-                  type="button"
-                  key={i}
-                  onClick={() => setQuestion(q)}
-                  className="w-full text-left text-sm p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
-        ) : (
-          <>
-            {job.qaHistory.map((entry) => (
-              <div key={entry.id} className="space-y-3">
-                {/* User Question */}
-                <div className="flex justify-end">
-                  <div className="max-w-[85%]">
-                    <div className="p-3 bg-primary text-white rounded-2xl rounded-br-sm">
-                      <p className="text-sm">{entry.question}</p>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 text-right">
-                      {format(new Date(entry.timestamp), 'h:mm a')}
-                    </p>
-                  </div>
-                </div>
-                {/* AI Answer or Thinking Bubble */}
-                {entry.answer === null ? (
-                  <ThinkingBubble />
-                ) : (
-                  <div className="flex justify-start">
-                    <div className="max-w-[85%]">
-                      <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <MarkdownContent content={entry.answer} />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleSaveToMemory(entry.id, entry.question, entry.answer!)}
-                        disabled={isSavingMemory === entry.id}
-                        className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
-                      >
-                        {isSavingMemory === entry.id ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Bookmark className="w-3 h-3" />
-                            Save to Profile
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </>
         )}
+
+        {/* Chat Input */}
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={question}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              adjustTextareaHeight();
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about the job, interview prep, or get coaching..."
+            rows={1}
+            className="w-full pr-14 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400 min-h-[48px] max-h-[120px]"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={isLoading || !question.trim()}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            title="Send message"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
+      {/* Right Panel - Prep Materials & Research */}
+      <div className={`flex flex-col ${hasPrepContent ? 'w-2/5' : 'w-0 hidden'} transition-all`}>
+        {/* Action Buttons */}
+        <div className="flex gap-2 mb-3 items-center flex-wrap">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleGeneratePrep}
+            disabled={isGeneratingPrep || !hasAIConfigured}
+          >
+            {isGeneratingPrep ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-1" />
+                Generate Prep
+              </>
+            )}
+          </Button>
         </div>
-      )}
 
-      {/* Chat Input - Unified Design */}
-      <div className="relative">
-        <textarea
-          ref={textareaRef}
-          value={question}
-          onChange={(e) => {
-            setQuestion(e.target.value);
-            adjustTextareaHeight();
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask about the job, interview prep, or get coaching..."
-          rows={1}
-          className="w-full pr-14 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400"
-          style={{ minHeight: '48px', maxHeight: '120px' }}
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={isLoading || !question.trim()}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-          title="Send message"
-        >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
+        {/* Scrollable Prep Content */}
+        <div className="flex-1 overflow-y-auto space-y-3 pl-2">
+          {/* Interviewer Selector */}
+          {contactsWithIntel.length > 0 && (
+            <div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowInterviewerDropdown(!showInterviewerDropdown)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm hover:border-blue-300 transition-colors w-full"
+                >
+                  <Users className="w-4 h-4 text-blue-500" />
+                  <span className="text-slate-600 dark:text-slate-400 truncate">
+                    {selectedInterviewer
+                      ? `Preparing for: ${selectedInterviewer.name}`
+                      : 'Select interviewer...'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-slate-400 ml-auto flex-shrink-0" />
+                </button>
+
+                {showInterviewerDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10 w-full">
+                    {contactsWithIntel.map((contact) => (
+                      <button
+                        key={contact.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedInterviewerId(contact.id);
+                          setShowInterviewerDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                          selectedInterviewerId === contact.id
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                            : 'text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="font-medium">{contact.name}</span>
+                        {contact.role && (
+                          <span className="text-slate-400 ml-1">• {contact.role}</span>
+                        )}
+                      </button>
+                    ))}
+                    {selectedInterviewerId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedInterviewerId(null);
+                          setShowInterviewerDropdown(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700"
+                      >
+                        Clear selection
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Intel Summary */}
+              {selectedInterviewer && (
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                        Intel: {selectedInterviewer.name}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedInterviewerId(null)}
+                      className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800/30 rounded"
+                      title="Clear interviewer selection"
+                    >
+                      <X className="w-3.5 h-3.5 text-blue-400" />
+                    </button>
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                    <MarkdownContent content={selectedInterviewer.interviewerIntel!} />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-        </button>
+
+          {/* Generated Interview Prep */}
+          {prepMaterial && (
+            <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20">
+              <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Interview Prep
+              </h4>
+              <MarkdownContent content={prepMaterial} />
+            </div>
+          )}
+
+          {/* Saved Research Materials */}
+          {job.prepMaterials && job.prepMaterials.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <Bookmark className="w-3.5 h-3.5" />
+                Saved Research ({job.prepMaterials.length})
+              </h4>
+              {job.prepMaterials.map((material) => (
+                <div
+                  key={material.id}
+                  className="group p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <details className="flex-1 min-w-0">
+                      <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary truncate">
+                        {material.title}
+                      </summary>
+                      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                        <MarkdownContent content={material.content} />
+                      </div>
+                    </details>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePrepMaterial(material.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-all flex-shrink-0"
+                      title="Delete research"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

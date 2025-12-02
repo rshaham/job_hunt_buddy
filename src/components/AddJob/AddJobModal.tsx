@@ -91,6 +91,7 @@ export function AddJobModal() {
       timeline: [],
       prepMaterials: [],
       qaHistory: [],
+      learningTasks: [],
     };
 
     await addJob(job);

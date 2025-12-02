@@ -22,6 +22,8 @@ import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEn
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
+import { buildRelevantContext } from './contextRetrieval';
+import { getSmartContext } from './smartContextRetrieval';
 
 // Get current AI config from store (works outside React components)
 function getAIConfig(): { provider: ProviderType; config: ProviderSettings } {
@@ -171,9 +173,22 @@ export async function analyzeJobDescription(
 
 export async function gradeResume(
   jdText: string,
-  resumeText: string
+  resumeText: string,
+  job?: Job
 ): Promise<ResumeAnalysis> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context if job is provided (searches for relevant experiences)
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'resumeGrading',
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = RESUME_GRADING_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
@@ -202,9 +217,22 @@ export async function gradeResume(
 
 export async function generateCoverLetter(
   jdText: string,
-  resumeText: string
+  resumeText: string,
+  job?: Job
 ): Promise<string> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context if job is provided, otherwise fall back to basic context
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'coverLetter',
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = COVER_LETTER_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
@@ -214,11 +242,25 @@ export async function generateCoverLetter(
 
 export async function generateInterviewPrep(
   jdText: string,
-  resumeText: string
+  resumeText: string,
+  job?: Job
 ): Promise<string> {
+  // Use smart context if job is provided to include relevant experiences
+  let additionalContext = '';
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'interviewPrep',
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = INTERVIEW_PREP_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', resumeText);
+    .replace('{resumeText}', resumeText + additionalContext);
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
@@ -229,9 +271,22 @@ export async function chatAboutJob(
   history: QAEntry[],
   newQuestion: string
 ): Promise<QAEntry> {
-  const systemPrompt = QA_SYSTEM_PROMPT
+  // Get semantically relevant context for the question
+  const relevantContext = await buildRelevantContext(newQuestion, {
+    maxStories: 5,
+    maxQA: 5,
+    maxDocuments: 5,
+  });
+
+  // Build system prompt with relevant context
+  let systemPrompt = QA_SYSTEM_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText);
+
+  // Append relevant context if found
+  if (relevantContext) {
+    systemPrompt += `\n\n---\n\nRelevant context from the candidate's profile:\n${relevantContext}`;
+  }
 
   // Build message history (skip entries with null answers - they're pending)
   const messages: AIMessage[] = [];
@@ -274,9 +329,23 @@ export async function testApiKey(
 export async function autoTailorResume(
   jdText: string,
   originalResume: string,
-  resumeAnalysis: ResumeAnalysis
+  resumeAnalysis: ResumeAnalysis,
+  job?: Job
 ): Promise<{ tailoredResume: string; changesSummary: string; suggestedQuestions: string[] }> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context with gap-focused queries if job is provided
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'resumeTailoring',
+      resumeAnalysis,
+      maxStories: 5,
+      maxDocuments: 3,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const prompt = AUTO_TAILOR_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', originalResume + additionalContext)
@@ -308,9 +377,24 @@ export async function refineTailoredResume(
   currentTailoredResume: string,
   resumeAnalysis: ResumeAnalysis,
   history: TailoringEntry[],
-  userMessage: string
+  userMessage: string,
+  job?: Job
 ): Promise<{ reply: string; updatedResume: string }> {
-  const additionalContext = getAdditionalContext();
+  // Use smart context with user message as query
+  let additionalContext: string;
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'refinement',
+      resumeAnalysis,
+      userMessage,
+      maxStories: 3,
+      maxDocuments: 2,
+    });
+  } else {
+    additionalContext = getAdditionalContext();
+  }
+
   const systemPrompt = REFINE_RESUME_SYSTEM_PROMPT
     .replace('{jdText}', jdText)
     .replace('{originalResume}', originalResume + additionalContext)
@@ -349,11 +433,24 @@ export async function refineCoverLetter(
   resumeText: string,
   currentLetter: string,
   history: CoverLetterEntry[],
-  userMessage: string
+  userMessage: string,
+  job?: Job
 ): Promise<{ reply: string; updatedLetter: string }> {
+  // Use smart context with user message as query
+  let additionalContext = '';
+  if (job) {
+    additionalContext = await getSmartContext({
+      job,
+      feature: 'refinement',
+      userMessage,
+      maxStories: 3,
+      maxDocuments: 2,
+    });
+  }
+
   const systemPrompt = REFINE_COVER_LETTER_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', resumeText)
+    .replace('{resumeText}', resumeText + additionalContext)
     .replace('{currentLetter}', currentLetter);
 
   // Build message history
@@ -437,6 +534,82 @@ export async function analyzeInterviewer(
     .replace('{linkedInBio}', linkedInBio)
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText);
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
+// Analyze interviewer profile with web search for enhanced intel
+export async function analyzeInterviewerWithWebSearch(
+  contact: { name: string; role?: string; linkedin?: string; linkedInBio?: string },
+  company: string,
+  jdText: string,
+  resumeText: string
+): Promise<string> {
+  // Import web search dynamically to avoid circular dependencies
+  const { searchWeb, formatSearchResultsForAI } = await import('./webSearch');
+
+  // Build search query based on contact info
+  const searchQueries: string[] = [];
+
+  // Primary search: person's name at company
+  searchQueries.push(`"${contact.name}" "${company}"`);
+
+  // If role is available, search for person with role
+  if (contact.role) {
+    searchQueries.push(`"${contact.name}" ${contact.role}`);
+  }
+
+  // Execute search queries in parallel
+  const searchPromises = searchQueries.map((query) =>
+    searchWeb(query, {
+      maxResults: 3,
+      searchDepth: 'basic',
+    }).catch(() => []) // Gracefully handle search failures
+  );
+
+  const searchResultArrays = await Promise.all(searchPromises);
+  const allSearchResults = searchResultArrays.flat();
+
+  // Remove duplicates by URL
+  const uniqueResults = allSearchResults.filter(
+    (result, index, self) => index === self.findIndex((r) => r.url === result.url)
+  );
+
+  // Format web search results for AI
+  const webSearchContext = formatSearchResultsForAI(uniqueResults);
+
+  // Build the enhanced prompt with web search results
+  const bioSection = contact.linkedInBio
+    ? `LinkedIn Bio / About Section:\n${contact.linkedInBio}`
+    : 'No LinkedIn bio provided - using web search results instead.';
+
+  const prompt = `Analyze this interviewer's profile to help the candidate prepare for their interview.
+
+${bioSection}
+
+Web Search Results for "${contact.name}" at ${company}:
+${webSearchContext}
+
+Job Context:
+${jdText}
+
+Candidate Resume:
+${resumeText}
+
+Provide a concise "cheat sheet" for the candidate:
+
+1. **Communication Style**: What communication style might they prefer? (formal/casual, technical/business, direct/storytelling, metrics-focused, etc.)
+
+2. **What They Value**: Based on their background and web presence, what do they likely care about? (innovation, metrics, teamwork, technical depth, business impact, etc.)
+
+3. **Talking Points**: 3-4 specific things the candidate should mention that would resonate with this interviewer based on their background.
+
+4. **Questions to Ask Them**: 2-3 personalized questions the candidate could ask, based on the interviewer's experience.
+
+5. **Common Ground**: Any potential shared interests, experiences, or connections with the candidate.
+
+Be concise and actionable. Focus on insights that will help the candidate build rapport and communicate effectively.
+If web search results contain relevant info, incorporate it. If limited info is available, note that and focus on what is known.`;
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
@@ -778,4 +951,166 @@ export async function chatAboutCareer(
     .replace('{question}', question);
 
   return await callAI([{ role: 'user', content: prompt }], CAREER_COACH_SYSTEM_PROMPT);
+}
+
+// Research a company/role based on available information
+export async function researchCompany(
+  company: string,
+  title: string,
+  jdText: string,
+  topics: string,
+  resumeText?: string,
+  webSearchResults?: string
+): Promise<string> {
+  const additionalContext = getAdditionalContext();
+
+  const webSearchSection = webSearchResults
+    ? `\n**Web Search Results:**\n${webSearchResults}\n`
+    : '';
+
+  const prompt = `You are a career research assistant helping a job seeker prepare for their application to ${company} for the ${title} role.
+
+Based on the job description${webSearchResults ? ' and web search results' : ''}, research and provide insights on the following topics: ${topics}
+
+**Job Description:**
+${jdText}
+${webSearchSection}
+${resumeText ? `**Candidate's Resume:**\n${resumeText}` : ''}
+${additionalContext}
+
+**Instructions:**
+${webSearchResults ? `- Synthesize information from both the job description AND web search results
+- Prioritize recent and relevant information` : `- Extract and analyze information from the job description`}
+- Make informed inferences about the company based on:
+  - How they describe themselves in the JD
+  - The requirements and qualifications they prioritize
+  - The language and tone they use
+  - Benefits, perks, and culture signals mentioned
+- Provide actionable insights the candidate can use in their application or interview
+- Be clear about what is stated vs. what is inferred
+- Format the response in clear markdown sections
+
+Focus on: ${topics}`;
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
+// Analyze a company as a potential employer
+export async function analyzeCompanyAsEmployer(
+  company: string,
+  title: string,
+  jdText: string,
+  focusAreas?: string,
+  resumeText?: string,
+  webSearchResults?: string
+): Promise<string> {
+  const additionalContext = getAdditionalContext();
+
+  const defaultFocus = 'company overview, culture indicators, growth signals, role expectations, potential concerns';
+  const focus = focusAreas || defaultFocus;
+
+  const webSearchSection = webSearchResults
+    ? `\n**Web Search Results (Company Reviews, News, etc.):**\n${webSearchResults}\n`
+    : '';
+
+  const prompt = `You are a career advisor helping a job seeker evaluate ${company} as a potential employer for the ${title} position.
+
+**Job Description:**
+${jdText}
+${webSearchSection}
+${resumeText ? `**Candidate's Resume:**\n${resumeText}` : ''}
+${additionalContext}
+
+**Analysis Focus Areas:** ${focus}
+
+**Provide a comprehensive analysis including:**
+
+## Company Overview
+- What can be inferred about the company from the JD${webSearchResults ? ' and web search results' : ''}?
+- Industry and apparent market position
+- Company size/stage indicators (startup, growth, enterprise)
+${webSearchResults ? '- Recent news or developments' : ''}
+
+## Culture & Work Environment
+- Culture signals from the job posting${webSearchResults ? ' and employee reviews' : ''}
+- Work style expectations (collaborative, autonomous, etc.)
+- Red flags or green flags
+
+## Role Analysis
+- What they're really looking for
+- Hidden requirements or expectations
+- Growth potential in this role
+
+## Strategic Insights
+- How competitive this role might be
+- Key differentiators a strong candidate should have
+- Questions to ask in the interview
+
+## Fit Assessment
+${resumeText ? '- How well the candidate aligns with what they\'re seeking\n- Areas where the candidate could emphasize strengths\n- Potential concerns to address proactively' : '- General advice for candidates pursuing this role'}
+
+Be analytical and honest. Help the candidate understand both the opportunity and the challenges.`;
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
+/**
+ * Generate an enhanced search query for job search based on candidate profile.
+ *
+ * Takes the user's basic search query and enriches it with relevant keywords
+ * from their resume, stories, and context documents for better search results.
+ *
+ * @param userQuery - The user's original search query (e.g., "software engineer")
+ * @param candidateProfile - Combined text from resume, stories, and context docs
+ * @returns Enhanced search query string (max 100 chars)
+ */
+export async function generateEnhancedSearchQuery(
+  userQuery: string,
+  candidateProfile: string
+): Promise<string> {
+  // Truncate profile to avoid token limits (first 2000 chars should capture key info)
+  const truncatedProfile = candidateProfile.slice(0, 2000);
+
+  const prompt = `You are helping a job seeker optimize their search query for better job matches.
+
+**User's search query:** "${userQuery}"
+
+**Candidate background:**
+${truncatedProfile}
+
+**Detect the query type and enhance accordingly:**
+
+1. **Company name search** (e.g., "Electronic Arts", "Google", "Acme Corp")
+   → Keep the company name. Only add 1-2 relevant skills from their background. Do NOT add job titles.
+   → Example: "Electronic Arts" → "Electronic Arts game development C++"
+
+2. **Role/job title search** (e.g., "software engineer", "product manager")
+   → Keep the role. Add 1-2 related titles from their experience AND 1-2 key skills.
+   → Example: "software engineer" → "software engineer technical lead game development C++"
+
+3. **Skill search** (e.g., "React", "Python", "Unity")
+   → Keep the skill. Add 1-2 related roles from their experience.
+   → Example: "React" → "React frontend engineer developer"
+
+4. **Mixed search** (e.g., "Google engineer", "EA game developer")
+   → Keep both company and role. Only add skills, not more titles.
+   → Example: "Google engineer" → "Google engineer backend Python AWS"
+
+**Rules:**
+- Maximum 80 characters
+- PRESERVE the user's original intent - do not override it with job titles
+- Output ONLY the enhanced query, no explanation
+- No quotes or special operators
+
+**Enhanced search query:**`;
+
+  try {
+    const response = await callAI([{ role: 'user', content: prompt }]);
+    // Clean up the response - remove quotes, trim, limit length
+    const cleaned = response.replace(/^["']|["']$/g, '').trim().slice(0, 80);
+    return cleaned || userQuery; // Fallback to original if AI returns empty
+  } catch (error) {
+    console.warn('[AI] Failed to generate enhanced search query:', error);
+    return userQuery; // Fallback to original query on error
+  }
 }
