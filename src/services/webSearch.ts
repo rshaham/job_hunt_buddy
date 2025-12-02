@@ -1,8 +1,8 @@
 /**
- * Web Search Service using Tavily API
+ * Web Search Service
  *
  * Provides real web search capabilities for research tools.
- * Uses VITE_TAVILY_API_KEY from environment variables.
+ * Uses server-side proxy (/api/search/web) to protect API keys.
  */
 
 export interface TavilySearchResult {
@@ -12,10 +12,12 @@ export interface TavilySearchResult {
   score: number;
 }
 
-interface TavilyResponse {
+interface ProxyResponse {
   results: TavilySearchResult[];
-  answer?: string;
   query: string;
+  error?: string;
+  code?: string;
+  retryAfter?: number;
 }
 
 // Domain hints for different research types
@@ -50,7 +52,7 @@ export const NEWS_DOMAINS = [
 export class WebSearchError extends Error {
   constructor(
     message: string,
-    public readonly code: 'NO_API_KEY' | 'API_ERROR' | 'NETWORK_ERROR'
+    public readonly code: 'RATE_LIMITED' | 'DAILY_CAP' | 'API_ERROR' | 'NETWORK_ERROR' | 'NOT_CONFIGURED'
   ) {
     super(message);
     this.name = 'WebSearchError';
@@ -58,14 +60,15 @@ export class WebSearchError extends Error {
 }
 
 /**
- * Check if web search is available (API key is configured)
+ * Check if web search is available
+ * Always returns true since the proxy handles API keys server-side
  */
 export function isWebSearchAvailable(): boolean {
-  return !!import.meta.env.VITE_TAVILY_API_KEY;
+  return true;
 }
 
 /**
- * Search the web using Tavily API
+ * Search the web using server-side proxy
  *
  * @param query - Search query
  * @param options - Optional search configuration
@@ -81,42 +84,50 @@ export async function searchWeb(
     searchDepth?: 'basic' | 'advanced';
   }
 ): Promise<TavilySearchResult[]> {
-  const apiKey = import.meta.env.VITE_TAVILY_API_KEY;
-
-  if (!apiKey) {
-    throw new WebSearchError(
-      'Web search API key not configured. Add VITE_TAVILY_API_KEY to your .env file.',
-      'NO_API_KEY'
-    );
-  }
-
   try {
-    const response = await fetch('https://api.tavily.com/search', {
+    const response = await fetch('/api/search/web', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        api_key: apiKey,
         query,
-        search_depth: options?.searchDepth || 'basic',
-        include_domains: options?.includeDomains || [],
-        exclude_domains: options?.excludeDomains || [],
-        max_results: options?.maxResults || 5,
-        include_answer: false,
-        include_raw_content: false,
+        searchDepth: options?.searchDepth || 'basic',
+        includeDomains: options?.includeDomains || [],
+        excludeDomains: options?.excludeDomains || [],
+        maxResults: options?.maxResults || 5,
       }),
     });
 
+    const data: ProxyResponse = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
+      // Handle rate limiting
+      if (response.status === 429) {
+        const retryMsg = data.retryAfter
+          ? ` Try again in ${data.retryAfter} seconds.`
+          : '';
+        throw new WebSearchError(
+          `${data.error || 'Rate limit exceeded.'}${retryMsg}`,
+          data.code === 'DAILY_CAP' ? 'DAILY_CAP' : 'RATE_LIMITED'
+        );
+      }
+
+      // Handle not configured
+      if (response.status === 500 && data.code === 'NOT_CONFIGURED') {
+        throw new WebSearchError(
+          'Web search service not configured.',
+          'NOT_CONFIGURED'
+        );
+      }
+
+      // Handle other API errors
       throw new WebSearchError(
-        `Web search failed: ${response.status} - ${errorText}`,
+        data.error || `Web search failed: ${response.status}`,
         'API_ERROR'
       );
     }
 
-    const data: TavilyResponse = await response.json();
     return data.results || [];
   } catch (error) {
     if (error instanceof WebSearchError) {
