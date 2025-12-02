@@ -18,6 +18,7 @@ import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
 import { EmbeddingStatus } from '../EmbeddingStatus';
+import { isFeatureEnabled } from '../../utils/featureFlags';
 import type { Job } from '../../types';
 
 export function BoardView() {
@@ -105,10 +106,12 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
-          <Button onClick={openJobFinderModal} size="sm" variant="secondary">
-            <Search className="w-4 h-4 mr-1" />
-            Find Jobs
-          </Button>
+          {isFeatureEnabled('jobSearch') && (
+            <Button onClick={openJobFinderModal} size="sm" variant="secondary">
+              <Search className="w-4 h-4 mr-1" />
+              Find Jobs
+            </Button>
+          )}
           <button
             type="button"
             onClick={() => useCommandBarStore.getState().open()}

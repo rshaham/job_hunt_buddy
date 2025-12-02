@@ -1,4 +1,4 @@
-import { Shield, Database, Key, Heart, Scale, Github } from 'lucide-react';
+import { Shield, Database, Key, Heart, Scale, Github, Globe } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 
@@ -60,6 +60,41 @@ export function PrivacyModal() {
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* External Services */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Globe className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Optional External Services
+            </h2>
+          </div>
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+              Some optional features use external services that send data outside your browser:
+            </p>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+              <li className="flex gap-2">
+                <span className="text-blue-500">•</span>
+                <span>
+                  <strong className="text-slate-900 dark:text-white">Job Finder</strong> — Uses SerApi to search job listings.
+                  Your search query and location are sent to their servers.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-500">•</span>
+                <span>
+                  <strong className="text-slate-900 dark:text-white">Web Research</strong> — Uses Tavily for company research.
+                  Research queries are processed externally.
+                </span>
+              </li>
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+              These features require your explicit consent before use. You can enable or disable them in Settings.
+              Your resume, cover letters, and other personal data are never sent to these services.
+            </p>
           </div>
         </section>
 

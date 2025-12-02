@@ -9,9 +9,11 @@ import { useEffect } from 'react';
 import { Search, FileText, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { ExternalServiceConsent } from '../ui/ExternalServiceConsent';
 import { useAppStore } from '../../stores/appStore';
 import { useJobSearchStore } from '../../stores/jobSearchStore';
 import { hasValidCandidateProfile } from '../../services/jobSearch';
+import { isFeatureAvailable } from '../../utils/featureFlags';
 import { SearchForm } from './SearchForm';
 import { SearchResultCard } from './SearchResultCard';
 
@@ -21,6 +23,7 @@ export function JobFinderModal() {
     closeJobFinderModal,
     openSettingsModal,
     settings,
+    updateSettings,
   } = useAppStore();
 
   const {
@@ -53,6 +56,19 @@ export function JobFinderModal() {
   const selectedCount = selectedIds.size;
   const hasResults = results.length > 0;
 
+  // Check feature availability
+  const { available, reason } = isFeatureAvailable('jobSearch', settings);
+
+  const handleConsent = async () => {
+    await updateSettings({
+      externalServicesConsent: {
+        ...settings.externalServicesConsent,
+        jobSearch: true,
+        consentedAt: new Date(),
+      },
+    });
+  };
+
   const handleImport = async () => {
     try {
       const imported = await importSelectedJobs();
@@ -69,6 +85,24 @@ export function JobFinderModal() {
     closeJobFinderModal();
     openSettingsModal();
   };
+
+  // Show consent dialog if no consent
+  if (!available && reason === 'no_consent') {
+    return (
+      <Modal
+        isOpen={isJobFinderModalOpen}
+        onClose={closeJobFinderModal}
+        title="Job Finder"
+        size="lg"
+      >
+        <ExternalServiceConsent
+          service="jobSearch"
+          onConsent={handleConsent}
+          onDecline={closeJobFinderModal}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal
