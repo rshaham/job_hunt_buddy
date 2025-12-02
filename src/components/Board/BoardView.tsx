@@ -95,9 +95,9 @@ export function BoardView() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="Job Hunt Buddy" className="w-16 h-16 rounded-xl" />
+          <img src="/logo.png" alt="Career Forager" className="w-16 h-16 rounded-xl" />
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
-            Job Hunt Buddy
+            Career Forager
             <span className="ml-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full align-middle">
               beta
             </span>

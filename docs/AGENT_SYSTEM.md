@@ -1,10 +1,10 @@
 # Agent System Documentation
 
-This document describes the agentic architecture in Job Hunt Buddy, including the Command Bar, tool system, and how to extend it with new tools.
+This document describes the agentic architecture in Career Forager, including the Command Bar, tool system, and how to extend it with new tools.
 
 ## Overview
 
-The agent system transforms Job Hunt Buddy from passive prompting (user asks → AI responds with text) to **agentic workflows** (AI can query data, take actions, and interact with the database).
+The agent system transforms Career Forager from passive prompting (user asks → AI responds with text) to **agentic workflows** (AI can query data, take actions, and interact with the database).
 
 ### Key Features
 - **Command Bar** (Ctrl+K / Cmd+K) - Natural language interface for commands

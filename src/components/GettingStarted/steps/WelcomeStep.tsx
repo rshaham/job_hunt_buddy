@@ -38,7 +38,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
     <div className="text-center">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Welcome to Job Hunt Buddy
+          Welcome to Career Forager
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
           Your AI-powered job search companion

@@ -1,6 +1,6 @@
 # Future Enhancements
 
-This document tracks planned features and improvements for Job Hunt Buddy. Use this to prioritize development and track ideas.
+This document tracks planned features and improvements for Career Forager. Use this to prioritize development and track ideas.
 
 ## High Priority
 

@@ -1,6 +1,6 @@
 # Embedding System Documentation
 
-This document describes the client-side embedding system used for semantic search in Job Hunt Buddy.
+This document describes the client-side embedding system used for semantic search in Career Forager.
 
 ## Overview
 

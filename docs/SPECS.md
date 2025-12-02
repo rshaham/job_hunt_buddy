@@ -1,6 +1,6 @@
-# Job Hunt Buddy - Technical Specifications
+# Career Forager - Technical Specifications
 
-This document provides detailed technical specifications for future development and maintenance of the Job Hunt Buddy application.
+This document provides detailed technical specifications for future development and maintenance of the Career Forager application.
 
 ## Architecture Overview
 

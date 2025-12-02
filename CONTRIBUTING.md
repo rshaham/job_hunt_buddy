@@ -1,6 +1,6 @@
-# Contributing to Job Hunt Buddy
+# Contributing to Career Forager
 
-Thank you for your interest in contributing to Job Hunt Buddy! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Career Forager! This document provides guidelines and instructions for contributing.
 
 ## Getting Started
 

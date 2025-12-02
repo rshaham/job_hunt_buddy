@@ -394,7 +394,7 @@
       // Store for popup to retrieve
       chrome.storage.local.set({ currentJob: jobData });
 
-      console.log('[Job Hunt Buddy] Extracted job data:', {
+      console.log('[Career Forager] Extracted job data:', {
         title: jobData.title,
         company: jobData.company,
         descriptionLength: jobData.description.length
@@ -402,7 +402,7 @@
 
       return jobData;
     } catch (error) {
-      console.error('[Job Hunt Buddy] Extraction error:', error);
+      console.error('[Career Forager] Extraction error:', error);
       return null;
     }
   }
@@ -423,16 +423,16 @@
       const hasContent = data && (data.title || data.description.length > 100);
 
       if (hasContent) {
-        console.log(`[Job Hunt Buddy] Successfully extracted on attempt ${attempts}`);
+        console.log(`[Career Forager] Successfully extracted on attempt ${attempts}`);
         return;
       }
 
       // Retry if we haven't hit max attempts
       if (attempts < maxRetries) {
-        console.log(`[Job Hunt Buddy] Content not ready, retrying in ${delay}ms (attempt ${attempts}/${maxRetries})`);
+        console.log(`[Career Forager] Content not ready, retrying in ${delay}ms (attempt ${attempts}/${maxRetries})`);
         setTimeout(tryExtract, delay);
       } else {
-        console.log(`[Job Hunt Buddy] Max retries reached, extraction may be incomplete`);
+        console.log(`[Career Forager] Max retries reached, extraction may be incomplete`);
       }
     }
 

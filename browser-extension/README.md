@@ -1,4 +1,4 @@
-# Job Hunt Buddy Browser Extension
+# Career Forager Browser Extension
 
 Chrome extension for one-click job capture from LinkedIn, Indeed, Greenhouse, Lever, and other job sites.
 
@@ -6,8 +6,8 @@ Chrome extension for one-click job capture from LinkedIn, Indeed, Greenhouse, Le
 
 - **Auto-detection**: Automatically extracts job title, company, and description from supported sites
 - **Manual capture**: Select text on any page to capture custom content
-- **Quick preview**: Review extracted data before sending to Job Hunt Buddy
-- **Configurable URL**: Set your Job Hunt Buddy instance URL in settings
+- **Quick preview**: Review extracted data before sending to Career Forager
+- **Configurable URL**: Set your Career Forager instance URL in settings
 
 ## Supported Sites
 
@@ -27,16 +27,16 @@ Chrome extension for one-click job capture from LinkedIn, Indeed, Greenhouse, Le
 ## Usage
 
 1. Navigate to a job posting page
-2. Click the Job Hunt Buddy extension icon
+2. Click the Career Forager extension icon
 3. Review the extracted job details
-4. Click "Send to Job Hunt Buddy"
+4. Click "Send to Career Forager"
 5. The app opens with the job pre-filled
 
 ## Configuration
 
 1. Click the extension icon
 2. Click "Settings" at the bottom
-3. Enter your Job Hunt Buddy app URL (default: `http://localhost:5173`)
+3. Enter your Career Forager app URL (default: `http://localhost:5173`)
 4. Click "Save Settings"
 
 ## Development Notes
@@ -89,7 +89,7 @@ The icons in the `icons/` folder are placeholders. For production, replace with 
 - Try refreshing the page after installing the extension
 - Check the browser console for errors
 
-### Can't connect to Job Hunt Buddy
+### Can't connect to Career Forager
 - Verify the app URL in extension settings
-- Make sure Job Hunt Buddy is running at the configured URL
+- Make sure Career Forager is running at the configured URL
 - Check that the app's URL matches exactly (including http/https)

@@ -1,9 +1,9 @@
-# Job Hunt Buddy
+# Career Forager
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
-[![Try It Live](https://img.shields.io/badge/Try_It_Live-jobhuntbuddy.ai-green.svg)](https://www.jobhuntbuddy.ai)
+[![Try It Live](https://img.shields.io/badge/Try_It_Live-careerforager.com-green.svg)](https://www.careerforager.com)
 
 **Your AI-powered job search companion.** Track applications, get your resume graded, generate tailored cover letters, and prepare for interviews - all in one place. Your data stays on your computer, private and secure.
 
@@ -12,7 +12,7 @@
 
 ---
 
-## What Can Job Hunt Buddy Do?
+## What Can Career Forager Do?
 
 ### Core Features
 
@@ -38,7 +38,7 @@
 
 ## Quick Start Guide
 
-This guide will walk you through setting up Job Hunt Buddy, even if you've never used a terminal before!
+This guide will walk you through setting up Career Forager, even if you've never used a terminal before!
 
 ### What You'll Need
 
@@ -91,7 +91,7 @@ The **terminal** (also called Command Prompt or PowerShell on Windows) is a text
 
 ### Step 2: Install Node.js
 
-**Node.js** is a program that lets your computer run JavaScript applications like Job Hunt Buddy. Think of it as installing a "translator" that helps your computer understand the app.
+**Node.js** is a program that lets your computer run JavaScript applications like Career Forager. Think of it as installing a "translator" that helps your computer understand the app.
 
 1. Go to [https://nodejs.org/](https://nodejs.org/)
 2. Click the big green button that says **"LTS"** (Long Term Support - the stable version)
@@ -110,7 +110,7 @@ The **terminal** (also called Command Prompt or PowerShell on Windows) is a text
 
 ---
 
-### Step 3: Download Job Hunt Buddy
+### Step 3: Download Career Forager
 
 **Option A: Download as ZIP (Easiest)**
 
@@ -133,10 +133,10 @@ git clone https://github.com/rshaham/job_hunt_buddy.git
 
 ### Step 4: Navigate to the Folder
 
-You need to tell the terminal where Job Hunt Buddy is located.
+You need to tell the terminal where Career Forager is located.
 
 1. In your terminal, type `cd ` (that's "cd" followed by a space)
-2. Then type the path to your Job Hunt Buddy folder
+2. Then type the path to your Career Forager folder
 
 **Examples:**
 
@@ -157,7 +157,7 @@ cd ~/Downloads/job_hunt_buddy-main
 
 ### Step 5: Install Dependencies
 
-Job Hunt Buddy uses building blocks created by other developers (called "packages"). This command downloads all of them.
+Career Forager uses building blocks created by other developers (called "packages"). This command downloads all of them.
 
 In your terminal, type:
 
@@ -199,7 +199,7 @@ Now open your web browser and go to:
 http://localhost:5173
 ```
 
-**You should see Job Hunt Buddy!** The app is running on your own computer.
+**You should see Career Forager!** The app is running on your own computer.
 
 > [!IMPORTANT]
 > Keep the terminal window open while using the app. To stop the app later, press **Ctrl+C** in the terminal.
@@ -208,7 +208,7 @@ http://localhost:5173
 
 ### Step 7: Set Up Your AI Provider
 
-When you first open Job Hunt Buddy, a **Getting Started** wizard will guide you through setup. You'll need an API key to use AI features.
+When you first open Career Forager, a **Getting Started** wizard will guide you through setup. You'll need an API key to use AI features.
 
 **Anthropic (Claude) - Recommended:**
 
@@ -227,14 +227,14 @@ When you first open Job Hunt Buddy, a **Getting Started** wizard will guide you 
 
 1. Install [Ollama](https://ollama.ai/)
 2. Run `ollama run llama3.2` to download a model
-3. Select "Local / Ollama" in Job Hunt Buddy
+3. Select "Local / Ollama" in Career Forager
 
 > [!NOTE]
 > Using AI features costs a small amount per use (usually pennies). Anthropic and Google give new accounts some free credits to start.
 
 ---
 
-## Using Job Hunt Buddy
+## Using Career Forager
 
 ### Adding Your First Job
 
@@ -410,7 +410,7 @@ npm run lint
 
 ## Disclaimer
 
-Job Hunt Buddy is provided **free and open source** as a service to the job-seeking community. By using this tool, you agree to:
+Career Forager is provided **free and open source** as a service to the job-seeking community. By using this tool, you agree to:
 
 - **Use it ethically and responsibly** — Be honest in your applications. AI-generated content should be reviewed and personalized before sending. Don't misrepresent your qualifications or spam employers.
 - **Accept it as-is** — We make no guarantees about effectiveness, accuracy, or job search outcomes. This tool is meant to assist, not replace, your own judgment.

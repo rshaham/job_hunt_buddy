@@ -1,8 +1,8 @@
-# CLAUDE.md - Job Hunt Buddy
+# CLAUDE.md - Career Forager
 
 ## What is This?
 
-**Job Hunt Buddy** is a local-first job application tracker with AI-powered features. It helps job seekers organize their job search, prepare for interviews, and manage the entire application pipeline.
+**Career Forager** is a local-first job application tracker with AI-powered features. It helps job seekers organize their job search, prepare for interviews, and manage the entire application pipeline.
 
 ### Core Features
 

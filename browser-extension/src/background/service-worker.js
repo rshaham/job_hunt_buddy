@@ -1,4 +1,4 @@
-// Service worker for Job Hunt Buddy extension
+// Service worker for Career Forager extension
 // Handles background tasks and coordinates between content scripts and popup
 
 const DEFAULT_APP_URL = 'http://localhost:5173';
@@ -54,4 +54,4 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
-console.log('[Job Hunt Buddy] Service worker initialized');
+console.log('[Career Forager] Service worker initialized');

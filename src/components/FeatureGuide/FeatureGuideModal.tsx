@@ -41,7 +41,7 @@ export function FeatureGuideModal() {
     >
       <div className="p-6 space-y-6 overflow-y-auto">
         <p className="text-slate-600 dark:text-slate-400">
-          A complete guide to Job Hunt Buddy's features to help you get the most out of your job search.
+          A complete guide to Career Forager's features to help you get the most out of your job search.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

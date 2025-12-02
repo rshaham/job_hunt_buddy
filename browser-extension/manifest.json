@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Job Hunt Buddy Clipper",
+  "name": "Career Forager Clipper",
   "version": "1.0.0",
-  "description": "One-click job capture for Job Hunt Buddy",
+  "description": "One-click job capture for Career Forager",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": [
     "https://www.linkedin.com/*",

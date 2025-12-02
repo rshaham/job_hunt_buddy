@@ -15,7 +15,7 @@ import type {
 } from '../../types/agent';
 import { DEFAULT_AGENT_SETTINGS } from '../../types/agent';
 
-const AGENT_SYSTEM_PROMPT = `You are a helpful assistant for Job Hunt Buddy, a job application tracking app.
+const AGENT_SYSTEM_PROMPT = `You are a helpful assistant for Career Forager, a job application tracking app.
 You can help users manage their job applications by searching, viewing details, updating statuses, adding notes, and more.
 
 When a user asks you to do something:

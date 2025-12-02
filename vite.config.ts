@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'logo.png'],
       manifest: {
-        name: 'Job Hunt Buddy',
-        short_name: 'JobBuddy',
+        name: 'Career Forager',
+        short_name: 'Forager',
         description: 'AI-powered job search companion - track applications, grade resumes, generate cover letters',
         theme_color: '#6366f1',
         background_color: '#ffffff',

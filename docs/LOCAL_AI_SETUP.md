@@ -1,6 +1,6 @@
 # Running with Local or HuggingFace Models
 
-Job Hunt Buddy supports running with local AI models via Ollama or any OpenAI-compatible endpoint, including HuggingFace Inference Endpoints.
+Career Forager supports running with local AI models via Ollama or any OpenAI-compatible endpoint, including HuggingFace Inference Endpoints.
 
 ## Option 1: Ollama (Recommended for Local)
 
@@ -29,7 +29,7 @@ Job Hunt Buddy supports running with local AI models via Ollama or any OpenAI-co
    ```
    The server runs at `http://localhost:11434` by default.
 
-4. **Configure Job Hunt Buddy**
+4. **Configure Career Forager**
    - Open Settings > API tab
    - Select "Local / OpenAI-Compatible" from the provider dropdown
    - Server URL: `http://localhost:11434/v1` (default)
@@ -69,7 +69,7 @@ Job Hunt Buddy supports running with local AI models via Ollama or any OpenAI-co
 1. Download and install from [lmstudio.ai](https://lmstudio.ai)
 2. Download a model through the app (e.g., Llama 3.2, Mistral)
 3. Start the local server (usually on port 1234)
-4. Configure Job Hunt Buddy:
+4. Configure Career Forager:
    - Provider: "Local / OpenAI-Compatible"
    - Server URL: `http://localhost:1234/v1`
    - Model: Enter the model name as shown in LM Studio
@@ -83,7 +83,7 @@ Use HuggingFace's hosted models for a cloud-based solution without Anthropic/Goo
 ### Free Inference API (Rate Limited)
 
 1. Get a free API key from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
-2. Configure Job Hunt Buddy:
+2. Configure Career Forager:
    - Provider: "Local / OpenAI-Compatible"
    - Server URL: `https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-8B-Instruct/v1`
    - API Key: Your HuggingFace token (`hf_...`)
@@ -96,7 +96,7 @@ For production use with better performance:
 1. Create an endpoint at [huggingface.co/inference-endpoints](https://huggingface.co/inference-endpoints)
 2. Choose a model (e.g., `meta-llama/Llama-3.2-8B-Instruct`)
 3. Select instance type and region
-4. Configure Job Hunt Buddy:
+4. Configure Career Forager:
    - Server URL: Your endpoint URL + `/v1`
    - API Key: Your HuggingFace token
    - Model: The model name

@@ -108,7 +108,7 @@ export function PrivacyModal() {
           </div>
           <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
             <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
-              Job Hunt Buddy is provided <strong>free and open source</strong> as a service to the job-seeking community.
+              Career Forager is provided <strong>free and open source</strong> as a service to the job-seeking community.
               By using this tool, you agree to:
             </p>
             <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
@@ -153,7 +153,7 @@ export function PrivacyModal() {
           </div>
           <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Job Hunt Buddy is open source under the MIT License.
+              Career Forager is open source under the MIT License.
               You can view the source code, report issues, or contribute on GitHub.
             </p>
             <a
