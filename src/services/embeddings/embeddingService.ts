@@ -50,6 +50,11 @@ const CHUNK_OVERLAP_WORDS = 50;   // Overlap between chunks for context
 /**
  * Split text into overlapping chunks for embedding.
  * Ensures long documents have all content indexed.
+ *
+ * Overlapping chunks preserve context across chunk boundaries,
+ * which improves semantic search quality. Without overlap,
+ * important information at the edges of chunks may be lost,
+ * reducing the effectiveness of embeddings for search and retrieval.
  */
 function chunkText(text: string): string[] {
   const words = text.split(/\s+/).filter(Boolean);

@@ -320,10 +320,10 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
 
     default:
       // TypeScript exhaustiveness check
-      const _exhaustiveCheck: never = request;
+      const exhaustiveCheck: never = request;
       sendResponse({
         type: 'ERROR',
-        id: (_exhaustiveCheck as WorkerRequest).id || 'unknown',
+        id: (exhaustiveCheck as WorkerRequest).id || 'unknown',
         message: 'Unknown request type',
         code: 'UNKNOWN_REQUEST',
       });

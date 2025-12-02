@@ -177,5 +177,7 @@ export const EMBEDDING_DIMENSIONS = 384;
  * Generate a unique request ID.
  */
 export function generateRequestId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
