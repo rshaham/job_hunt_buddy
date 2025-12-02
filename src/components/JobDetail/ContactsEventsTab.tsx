@@ -20,11 +20,15 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  Edit3,
+  X,
+  Globe,
 } from 'lucide-react';
 import { Button, Input, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId } from '../../utils/helpers';
-import { analyzeInterviewer } from '../../services/ai';
+import { analyzeInterviewer, analyzeInterviewerWithWebSearch } from '../../services/ai';
+import { isFeatureAvailable } from '../../utils/featureFlags';
 import { format } from 'date-fns';
 import type { Job, Contact, TimelineEvent } from '../../types';
 import type { LucideIcon } from 'lucide-react';
@@ -105,14 +109,27 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
   const [contactName, setContactName] = useState('');
   const [contactRole, setContactRole] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
   const [contactLinkedIn, setContactLinkedIn] = useState('');
   const [contactLinkedInBio, setContactLinkedInBio] = useState('');
+
+  // Edit contact state (separate from add form)
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [editContactName, setEditContactName] = useState('');
+  const [editContactRole, setEditContactRole] = useState('');
+  const [editContactEmail, setEditContactEmail] = useState('');
+  const [editContactPhone, setEditContactPhone] = useState('');
+  const [editContactLinkedIn, setEditContactLinkedIn] = useState('');
 
   // Interviewer intel state
   const [editingBioContactId, setEditingBioContactId] = useState<string | null>(null);
   const [editingBioText, setEditingBioText] = useState('');
   const [analyzingContactId, setAnalyzingContactId] = useState<string | null>(null);
+  const [webSearchingContactId, setWebSearchingContactId] = useState<string | null>(null);
   const [expandedIntelContactId, setExpandedIntelContactId] = useState<string | null>(null);
+
+  // Check if web search feature is available
+  const webSearchAvailable = isFeatureAvailable('webResearch', settings).available;
 
   // Events state
   const [showEventForm, setShowEventForm] = useState(false);
@@ -143,6 +160,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
       name: contactName.trim(),
       role: contactRole.trim(),
       email: contactEmail.trim() || undefined,
+      phone: contactPhone.trim() || undefined,
       linkedin: contactLinkedIn.trim() || undefined,
       linkedInBio: contactLinkedInBio.trim() || undefined,
     };
@@ -152,8 +170,49 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
     setContactName('');
     setContactRole('');
     setContactEmail('');
+    setContactPhone('');
     setContactLinkedIn('');
     setContactLinkedInBio('');
+  };
+
+  // Start editing a contact
+  const handleStartEditContact = (contact: Contact) => {
+    setEditingContactId(contact.id);
+    setEditContactName(contact.name);
+    setEditContactRole(contact.role);
+    setEditContactEmail(contact.email || '');
+    setEditContactPhone(contact.phone || '');
+    setEditContactLinkedIn(contact.linkedin || '');
+  };
+
+  // Save edited contact (preserves linkedInBio and interviewerIntel)
+  const handleSaveEditContact = async () => {
+    if (!editingContactId || !editContactName.trim()) return;
+
+    const updatedContacts = job.contacts.map((c) =>
+      c.id === editingContactId
+        ? {
+            ...c,
+            name: editContactName.trim(),
+            role: editContactRole.trim(),
+            email: editContactEmail.trim() || undefined,
+            phone: editContactPhone.trim() || undefined,
+            linkedin: editContactLinkedIn.trim() || undefined,
+            // Preserve linkedInBio and interviewerIntel
+          }
+        : c
+    );
+    await updateJob(job.id, { contacts: updatedContacts });
+    setEditingContactId(null);
+  };
+
+  const handleCancelEditContact = () => {
+    setEditingContactId(null);
+    setEditContactName('');
+    setEditContactRole('');
+    setEditContactEmail('');
+    setEditContactPhone('');
+    setEditContactLinkedIn('');
   };
 
   // Update contact's LinkedIn bio
@@ -168,7 +227,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
     setEditingBioText('');
   };
 
-  // Analyze interviewer
+  // Analyze interviewer (bio only)
   const handleAnalyzeInterviewer = async (contact: Contact) => {
     if (!contact.linkedInBio) return;
 
@@ -186,6 +245,35 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
       console.error('Failed to analyze interviewer:', error);
     } finally {
       setAnalyzingContactId(null);
+    }
+  };
+
+  // Analyze interviewer with web search for enhanced intel
+  const handleAnalyzeWithWebSearch = async (contact: Contact) => {
+    setWebSearchingContactId(contact.id);
+    try {
+      const resumeText = job.resumeText || settings.defaultResumeText;
+      const intel = await analyzeInterviewerWithWebSearch(
+        {
+          name: contact.name,
+          role: contact.role,
+          linkedin: contact.linkedin,
+          linkedInBio: contact.linkedInBio,
+        },
+        job.company,
+        job.jdText,
+        resumeText
+      );
+
+      const updatedContacts = job.contacts.map((c) =>
+        c.id === contact.id ? { ...c, interviewerIntel: intel } : c
+      );
+      await updateJob(job.id, { contacts: updatedContacts });
+      setExpandedIntelContactId(contact.id);
+    } catch (error) {
+      console.error('Failed to analyze interviewer with web search:', error);
+    } finally {
+      setWebSearchingContactId(null);
     }
   };
 
@@ -252,12 +340,20 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                 onChange={(e) => setContactRole(e.target.value)}
               />
             </div>
-            <Input
-              placeholder="Email"
-              type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                placeholder="Email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+              />
+              <Input
+                placeholder="Phone"
+                type="tel"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+              />
+            </div>
             <Input
               placeholder="LinkedIn URL"
               value={contactLinkedIn}
@@ -300,6 +396,62 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                 key={contact.id}
                 className="p-3 bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-800/50 rounded-xl border border-blue-100 dark:border-blue-800/30 group"
               >
+                {/* Edit Contact Form */}
+                {editingContactId === contact.id ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Edit Contact</span>
+                      <button
+                        type="button"
+                        onClick={handleCancelEditContact}
+                        className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                        title="Cancel editing"
+                      >
+                        <X className="w-4 h-4 text-slate-500" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Name"
+                        value={editContactName}
+                        onChange={(e) => setEditContactName(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Role"
+                        value={editContactRole}
+                        onChange={(e) => setEditContactRole(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Email"
+                        type="email"
+                        value={editContactEmail}
+                        onChange={(e) => setEditContactEmail(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Phone"
+                        type="tel"
+                        value={editContactPhone}
+                        onChange={(e) => setEditContactPhone(e.target.value)}
+                      />
+                    </div>
+                    <Input
+                      placeholder="LinkedIn URL"
+                      value={editContactLinkedIn}
+                      onChange={(e) => setEditContactLinkedIn(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveEditContact} disabled={!editContactName.trim()}>
+                        <Save className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={handleCancelEditContact}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm shrink-0">
@@ -315,14 +467,24 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           <p className="text-sm text-slate-500">{contact.role}</p>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteContactId(contact.id)}
-                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete contact"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditContact(contact)}
+                          className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Edit contact"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteContactId(contact.id)}
+                          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete contact"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Contact Actions */}
@@ -346,6 +508,15 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                             )}
                           </button>
                         </div>
+                      )}
+                      {contact.phone && (
+                        <a
+                          href={`tel:${contact.phone}`}
+                          className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+                        >
+                          <Phone className="w-3 h-3 text-green-500" />
+                          <span className="text-green-600 dark:text-green-400">{contact.phone}</span>
+                        </a>
                       )}
                       {contact.linkedin && (
                         <a
@@ -411,24 +582,47 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
 
                           {/* Analyze Button or Intel Display */}
                           {!contact.interviewerIntel ? (
-                            <button
-                              type="button"
-                              onClick={() => handleAnalyzeInterviewer(contact)}
-                              disabled={analyzingContactId === contact.id}
-                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white rounded-lg transition-colors"
-                            >
-                              {analyzingContactId === contact.id ? (
-                                <>
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                  Analyzing...
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-3 h-3" />
-                                  Generate Intel
-                                </>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleAnalyzeInterviewer(contact)}
+                                disabled={analyzingContactId === contact.id || webSearchingContactId === contact.id}
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+                              >
+                                {analyzingContactId === contact.id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-3 h-3" />
+                                    Generate Intel
+                                  </>
+                                )}
+                              </button>
+                              {webSearchAvailable && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAnalyzeWithWebSearch(contact)}
+                                  disabled={analyzingContactId === contact.id || webSearchingContactId === contact.id}
+                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-400 text-white rounded-lg transition-colors"
+                                  title="Search the web for more information about this person"
+                                >
+                                  {webSearchingContactId === contact.id ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      Searching...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Globe className="w-3 h-3" />
+                                      + Web Search
+                                    </>
+                                  )}
+                                </button>
                               )}
-                            </button>
+                            </div>
                           ) : (
                             <div className="space-y-2">
                               <button
@@ -452,11 +646,11 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                               {expandedIntelContactId === contact.id && (
                                 <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800/30">
                                   <IntelMarkdown content={contact.interviewerIntel} />
-                                  <div className="flex justify-end mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                  <div className="flex justify-end gap-3 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                                     <button
                                       type="button"
                                       onClick={() => handleAnalyzeInterviewer(contact)}
-                                      disabled={analyzingContactId === contact.id}
+                                      disabled={analyzingContactId === contact.id || webSearchingContactId === contact.id}
                                       className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-500"
                                     >
                                       {analyzingContactId === contact.id ? (
@@ -466,6 +660,21 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                                       )}
                                       Re-analyze
                                     </button>
+                                    {webSearchAvailable && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAnalyzeWithWebSearch(contact)}
+                                        disabled={analyzingContactId === contact.id || webSearchingContactId === contact.id}
+                                        className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"
+                                      >
+                                        {webSearchingContactId === contact.id ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          <Globe className="w-3 h-3" />
+                                        )}
+                                        + Web Search
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -473,21 +682,48 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           )}
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingBioContactId(contact.id);
-                            setEditingBioText('');
-                          }}
-                          className="text-xs text-blue-500 hover:text-blue-600 flex items-center gap-1"
-                        >
-                          <Plus className="w-3 h-3" />
-                          Add LinkedIn Bio for AI analysis
-                        </button>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingBioContactId(contact.id);
+                              setEditingBioText('');
+                            }}
+                            className="text-xs text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Add LinkedIn Bio
+                          </button>
+                          {webSearchAvailable && (
+                            <>
+                              <span className="text-xs text-slate-400">or</span>
+                              <button
+                                type="button"
+                                onClick={() => handleAnalyzeWithWebSearch(contact)}
+                                disabled={webSearchingContactId === contact.id}
+                                className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                                title="Generate intel using web search"
+                              >
+                                {webSearchingContactId === contact.id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Searching...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Globe className="w-3 h-3" />
+                                    Web Search Intel
+                                  </>
+                                )}
+                              </button>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             ))
           )}

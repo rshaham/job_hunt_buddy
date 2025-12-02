@@ -72,6 +72,7 @@ export interface Contact {
   name: string;
   role: string;
   email?: string;
+  phone?: string;
   linkedin?: string;
   notes?: string;
   linkedInBio?: string;       // Raw pasted bio text

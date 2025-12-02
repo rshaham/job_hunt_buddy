@@ -538,6 +538,82 @@ export async function analyzeInterviewer(
   return await callAI([{ role: 'user', content: prompt }]);
 }
 
+// Analyze interviewer profile with web search for enhanced intel
+export async function analyzeInterviewerWithWebSearch(
+  contact: { name: string; role?: string; linkedin?: string; linkedInBio?: string },
+  company: string,
+  jdText: string,
+  resumeText: string
+): Promise<string> {
+  // Import web search dynamically to avoid circular dependencies
+  const { searchWeb, formatSearchResultsForAI } = await import('./webSearch');
+
+  // Build search query based on contact info
+  const searchQueries: string[] = [];
+
+  // Primary search: person's name at company
+  searchQueries.push(`"${contact.name}" "${company}"`);
+
+  // If role is available, search for person with role
+  if (contact.role) {
+    searchQueries.push(`"${contact.name}" ${contact.role}`);
+  }
+
+  // Execute search queries in parallel
+  const searchPromises = searchQueries.map((query) =>
+    searchWeb(query, {
+      maxResults: 3,
+      searchDepth: 'basic',
+    }).catch(() => []) // Gracefully handle search failures
+  );
+
+  const searchResultArrays = await Promise.all(searchPromises);
+  const allSearchResults = searchResultArrays.flat();
+
+  // Remove duplicates by URL
+  const uniqueResults = allSearchResults.filter(
+    (result, index, self) => index === self.findIndex((r) => r.url === result.url)
+  );
+
+  // Format web search results for AI
+  const webSearchContext = formatSearchResultsForAI(uniqueResults);
+
+  // Build the enhanced prompt with web search results
+  const bioSection = contact.linkedInBio
+    ? `LinkedIn Bio / About Section:\n${contact.linkedInBio}`
+    : 'No LinkedIn bio provided - using web search results instead.';
+
+  const prompt = `Analyze this interviewer's profile to help the candidate prepare for their interview.
+
+${bioSection}
+
+Web Search Results for "${contact.name}" at ${company}:
+${webSearchContext}
+
+Job Context:
+${jdText}
+
+Candidate Resume:
+${resumeText}
+
+Provide a concise "cheat sheet" for the candidate:
+
+1. **Communication Style**: What communication style might they prefer? (formal/casual, technical/business, direct/storytelling, metrics-focused, etc.)
+
+2. **What They Value**: Based on their background and web presence, what do they likely care about? (innovation, metrics, teamwork, technical depth, business impact, etc.)
+
+3. **Talking Points**: 3-4 specific things the candidate should mention that would resonate with this interviewer based on their background.
+
+4. **Questions to Ask Them**: 2-3 personalized questions the candidate could ask, based on the interviewer's experience.
+
+5. **Common Ground**: Any potential shared interests, experiences, or connections with the candidate.
+
+Be concise and actionable. Focus on insights that will help the candidate build rapport and communicate effectively.
+If web search results contain relevant info, incorporate it. If limited info is available, note that and focus on what is known.`;
+
+  return await callAI([{ role: 'user', content: prompt }]);
+}
+
 // Generate email draft
 export async function generateEmailDraft(
   job: { title: string; company: string; summary: { shortDescription: string } | null },
