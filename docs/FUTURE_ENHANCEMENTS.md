@@ -9,12 +9,6 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 - Set reminders for follow-ups
 - Track interview schedules within the app
 
-### Email Templates
-- Generate follow-up emails after interviews
-- Thank you note templates
-- Withdrawal/acceptance templates
-- Customizable with job context
-
 ## Medium Priority
 
 ### Desktop App (Electron)
@@ -80,6 +74,7 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
   - See [AGENT_SYSTEM.md](./AGENT_SYSTEM.md) for full documentation
 - [x] **Interviewer Profile Analysis** - Analyze LinkedIn profiles for interview prep (`analyze_contact` tool)
 - [x] **Career Coach** - AI-powered career analysis across all applications (`analyze_career` tool)
+- [x] **Email Templates** - Follow-up, thank-you, outreach messages (`draft_outreach` tool)
 - [x] Multi-Provider AI Support (Anthropic, Google Gemini, Ollama/OpenAI-compatible)
 - [x] Getting Started Wizard (in-app onboarding with auto-trigger + help button)
 - [x] Delete All Data option in Settings
