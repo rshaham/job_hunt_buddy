@@ -106,7 +106,7 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
-          {isFeatureEnabled('jobSearch') && (
+          {isFeatureEnabled('jobSearch', settings) && (
             <Button onClick={openJobFinderModal} size="sm" variant="secondary">
               <Search className="w-4 h-4 mr-1" />
               Find Jobs

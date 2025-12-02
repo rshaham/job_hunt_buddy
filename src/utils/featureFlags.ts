@@ -32,10 +32,15 @@ export interface FeatureAvailability {
 }
 
 /**
- * Check if a feature is available (both enabled and consented).
+ * Check if a feature is available.
+ *
+ * Priority:
+ * 1. If user has their own API key → always available (direct mode)
+ * 2. If server feature flag is disabled → not available
+ * 3. If user hasn't consented → not available
  *
  * @param feature - The feature to check
- * @param settings - App settings containing consent status
+ * @param settings - App settings containing consent status and API keys
  * @returns Availability status with reason if unavailable
  */
 export function isFeatureAvailable(
@@ -45,6 +50,11 @@ export function isFeatureAvailable(
   const consent = settings.externalServicesConsent;
 
   if (feature === 'jobSearch') {
+    // User has their own API key → always available (direct mode)
+    if (consent?.serpApiKey) {
+      return { available: true };
+    }
+    // Otherwise check server feature flag
     if (!featureFlags.jobSearchEnabled) {
       return { available: false, reason: 'disabled' };
     }
@@ -55,6 +65,11 @@ export function isFeatureAvailable(
   }
 
   if (feature === 'webResearch') {
+    // User has their own API key → always available (direct mode)
+    if (consent?.tavilyApiKey) {
+      return { available: true };
+    }
+    // Otherwise check server feature flag
     if (!featureFlags.webResearchEnabled) {
       return { available: false, reason: 'disabled' };
     }
@@ -70,13 +85,21 @@ export function isFeatureAvailable(
 /**
  * Check if a feature flag is enabled (ignores consent).
  * Use this to show/hide UI elements.
+ *
+ * Returns true if:
+ * - Server feature flag is enabled, OR
+ * - User has their own API key (direct mode)
  */
-export function isFeatureEnabled(feature: FeatureKey): boolean {
+export function isFeatureEnabled(feature: FeatureKey, settings?: AppSettings): boolean {
+  const consent = settings?.externalServicesConsent;
+
   if (feature === 'jobSearch') {
-    return featureFlags.jobSearchEnabled;
+    // Show if user has their own key OR server enables it
+    return !!consent?.serpApiKey || featureFlags.jobSearchEnabled;
   }
   if (feature === 'webResearch') {
-    return featureFlags.webResearchEnabled;
+    // Show if user has their own key OR server enables it
+    return !!consent?.tavilyApiKey || featureFlags.webResearchEnabled;
   }
   return false;
 }

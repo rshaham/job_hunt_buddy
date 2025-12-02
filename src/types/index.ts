@@ -260,6 +260,9 @@ export interface AppSettings {
     jobSearch?: boolean;    // SerApi job search consent
     webResearch?: boolean;  // Tavily web research consent
     consentedAt?: Date;
+    // User-provided API keys for direct mode (bypasses server proxy)
+    tavilyApiKey?: string;  // For web research - base64 encoded
+    serpApiKey?: string;    // For job search - base64 encoded
   };
 }
 

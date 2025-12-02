@@ -1,8 +1,15 @@
 /**
  * Job Search Service
  *
- * Handles API calls to the /api/search/jobs proxy endpoint
- * and provides utilities for transforming search results to Job entities.
+ * Two modes:
+ * 1. Direct mode: User provides their own SerApi key (stored in settings)
+ *    - Calls SerApi directly from browser
+ *    - No server proxy, no rate limiting
+ *    - Truly local: searches never touch our servers
+ *
+ * 2. Proxy mode: Uses server-side proxy (/api/search/jobs)
+ *    - API key is server-side only
+ *    - Rate limited via Upstash Redis
  */
 
 import type { Job, TimelineEvent } from '../../types';
@@ -13,7 +20,8 @@ import type {
   EnrichedSearchResult,
   JobSearchErrorCode,
 } from '../../types/jobSearch';
-import { generateId } from '../../utils/helpers';
+import { generateId, decodeApiKey } from '../../utils/helpers';
+import { useAppStore } from '../../stores/appStore';
 
 /**
  * Custom error class for job search failures.
@@ -30,7 +38,12 @@ export class JobSearchError extends Error {
 }
 
 /**
- * Search for jobs via the /api/search/jobs proxy endpoint.
+ * Search for jobs via the server proxy.
+ *
+ * Note: SerApi doesn't support CORS, so we can't call it directly from the browser.
+ * Even with a user-provided API key, we must go through the proxy.
+ * However, if the user provides their own key, we send it to the proxy which
+ * will use it instead of the server's key (and skip rate limiting).
  *
  * @param criteria - Search parameters (query, location, remoteOnly)
  * @returns Array of job results
@@ -44,6 +57,21 @@ export async function searchJobs(
     throw new JobSearchError('Please enter a search query', 'INVALID_QUERY');
   }
 
+  // Check if user has their own API key
+  const { settings } = useAppStore.getState();
+  const userApiKey = settings.externalServicesConsent?.serpApiKey;
+
+  return searchJobsViaProxy(criteria, userApiKey ? decodeApiKey(userApiKey) : undefined);
+}
+
+/**
+ * Proxy search - uses server-side proxy.
+ * If userApiKey is provided, proxy uses it and skips rate limiting.
+ */
+async function searchJobsViaProxy(
+  criteria: JobSearchCriteria,
+  userApiKey?: string
+): Promise<SearchResultJob[]> {
   try {
     const response = await fetch('/api/search/jobs', {
       method: 'POST',
@@ -51,8 +79,8 @@ export async function searchJobs(
       body: JSON.stringify({
         query: criteria.query.trim(),
         location: criteria.location?.trim() || undefined,
-        // Note: remoteOnly could be added to query or as a separate param
-        // For now, we can append "remote" to query if remoteOnly is true
+        // If user provided their own API key, send it to proxy (skips rate limiting)
+        userApiKey: userApiKey || undefined,
       }),
     });
 

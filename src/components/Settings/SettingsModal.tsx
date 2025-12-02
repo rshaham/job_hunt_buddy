@@ -1205,52 +1205,120 @@ export function SettingsModal() {
               </h3>
               <div className="space-y-3 max-w-xl">
                 {/* Job Search Toggle */}
-                <label className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.externalServicesConsent?.jobSearch ?? false}
-                    onChange={(e) => updateSettings({
-                      externalServicesConsent: {
-                        ...settings.externalServicesConsent,
-                        jobSearch: e.target.checked,
-                        consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
-                      }
-                    })}
-                    className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
-                      Job Search
-                    </span>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Find job listings via SerApi. <span className="text-amber-600 dark:text-amber-400">Sends:</span> search query, location.
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.externalServicesConsent?.jobSearch ?? false}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          jobSearch: e.target.checked,
+                          consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                        Job Search
+                      </span>
+                      {settings.externalServicesConsent?.serpApiKey ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Your key — uses your quota, no rate limits
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Find job listings via SerApi. <span className="text-amber-600 dark:text-amber-400">Sends:</span> search query, location.
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                  {/* SerApi Key Input */}
+                  <div className="mt-3 pl-7">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Your SerApi Key <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+                    </label>
+                    <Input
+                      type="password"
+                      value={decodeApiKey(settings.externalServicesConsent?.serpApiKey || '')}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          serpApiKey: e.target.value ? encodeApiKey(e.target.value) : undefined,
+                        }
+                      })}
+                      placeholder="Enter your SerApi key..."
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Get a free key at{' '}
+                      <a href="https://serpapi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        serpapi.com
+                      </a>
+                      {' '}• Note: SerApi requires server proxy (CORS), but your key uses your own quota.
                     </p>
                   </div>
-                </label>
+                </div>
 
                 {/* Web Research Toggle */}
-                <label className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.externalServicesConsent?.webResearch ?? false}
-                    onChange={(e) => updateSettings({
-                      externalServicesConsent: {
-                        ...settings.externalServicesConsent,
-                        webResearch: e.target.checked,
-                        consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
-                      }
-                    })}
-                    className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
-                      Web Research
-                    </span>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Research companies and people via Tavily. <span className="text-amber-600 dark:text-amber-400">Sends:</span> company name, person name, research topic.
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.externalServicesConsent?.webResearch ?? false}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          webResearch: e.target.checked,
+                          consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                        Web Research
+                      </span>
+                      {settings.externalServicesConsent?.tavilyApiKey ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Direct mode — searches stay in your browser
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Research companies and people via Tavily. <span className="text-amber-600 dark:text-amber-400">Sends:</span> company name, person name, research topic.
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                  {/* Tavily Key Input */}
+                  <div className="mt-3 pl-7">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Your Tavily Key <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+                    </label>
+                    <Input
+                      type="password"
+                      value={decodeApiKey(settings.externalServicesConsent?.tavilyApiKey || '')}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          tavilyApiKey: e.target.value ? encodeApiKey(e.target.value) : undefined,
+                        }
+                      })}
+                      placeholder="Enter your Tavily key..."
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Get a free key at{' '}
+                      <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        tavily.com
+                      </a>
+                      {' '}(1,000 searches/month free)
                     </p>
                   </div>
-                </label>
+                </div>
               </div>
 
               {/* What's NOT sent */}

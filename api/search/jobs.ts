@@ -15,6 +15,8 @@ interface JobSearchRequest {
   query: string;
   location?: string;
   num?: number;
+  /** User-provided API key (uses their quota, skips rate limiting) */
+  userApiKey?: string;
 }
 
 interface SerpapiJobResult {
@@ -67,38 +69,44 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Get API key from server environment
-  const apiKey = process.env.SERPAPI_API_KEY;
+  // Validate request body
+  const body = req.body as JobSearchRequest;
+
+  // Check if user provided their own API key
+  const userProvidedKey = body.userApiKey;
+
+  // Get API key - prefer user's key, fall back to server key
+  const apiKey = userProvidedKey || process.env.SERPAPI_API_KEY;
   if (!apiKey) {
-    console.error('[JobSearch] SERPAPI_API_KEY not configured');
+    console.error('[JobSearch] No API key available (user or server)');
     return res.status(500).json({
       error: 'Job search service not configured',
       code: 'NOT_CONFIGURED',
     });
   }
 
-  // Get client IP for rate limiting
-  const forwardedFor = req.headers['x-forwarded-for'];
-  const clientIP = typeof forwardedFor === 'string'
-    ? forwardedFor.split(',')[0].trim()
-    : req.socket?.remoteAddress || 'unknown';
+  // Only apply rate limiting if using server's API key
+  if (!userProvidedKey) {
+    // Get client IP for rate limiting
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const clientIP = typeof forwardedFor === 'string'
+      ? forwardedFor.split(',')[0].trim()
+      : req.socket?.remoteAddress || 'unknown';
 
-  // Check rate limits (use separate prefix for job searches)
-  const rateLimitResult = await checkAllRateLimits(clientIP, 'job-search');
-  if (!rateLimitResult.allowed) {
-    const errorMessage = rateLimitResult.reason === 'daily_cap'
-      ? 'Daily search limit reached. Try again tomorrow.'
-      : 'Rate limit exceeded. Please wait before searching again.';
+    // Check rate limits (use separate prefix for job searches)
+    const rateLimitResult = await checkAllRateLimits(clientIP, 'job-search');
+    if (!rateLimitResult.allowed) {
+      const errorMessage = rateLimitResult.reason === 'daily_cap'
+        ? 'Daily search limit reached. Try again tomorrow.'
+        : 'Rate limit exceeded. Please wait before searching again.';
 
-    return res.status(429).json({
-      error: errorMessage,
-      code: rateLimitResult.reason === 'daily_cap' ? 'DAILY_CAP' : 'RATE_LIMITED',
-      retryAfter: rateLimitResult.retryAfter,
-    });
+      return res.status(429).json({
+        error: errorMessage,
+        code: rateLimitResult.reason === 'daily_cap' ? 'DAILY_CAP' : 'RATE_LIMITED',
+        retryAfter: rateLimitResult.retryAfter,
+      });
+    }
   }
-
-  // Validate request body
-  const body = req.body as JobSearchRequest;
 
   if (!body.query || typeof body.query !== 'string') {
     return res.status(400).json({
@@ -130,8 +138,19 @@ export default async function handler(
       const errorText = await response.text();
       console.error('[JobSearch] SerApi error:', response.status, errorText);
 
+      // Parse error for more specific message
+      let errorMessage = 'Job search service temporarily unavailable';
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error) {
+          errorMessage = `SerApi: ${errorJson.error}`;
+        }
+      } catch {
+        // Keep default message
+      }
+
       return res.status(502).json({
-        error: 'Job search service temporarily unavailable',
+        error: errorMessage,
         code: 'UPSTREAM_ERROR',
       });
     }
@@ -139,6 +158,16 @@ export default async function handler(
     const data: SerpapiResponse = await response.json();
 
     if (data.error) {
+      // "No results" is not an error - just return empty array
+      if (data.error.toLowerCase().includes('hasn\'t returned any results')) {
+        console.log('[JobSearch] No results found for query');
+        return res.status(200).json({
+          results: [],
+          query: body.query,
+          location: body.location,
+        });
+      }
+
       console.error('[JobSearch] SerApi returned error:', data.error);
       return res.status(502).json({
         error: 'Job search service error',

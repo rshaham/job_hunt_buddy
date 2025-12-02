@@ -2,8 +2,20 @@
  * Web Search Service
  *
  * Provides real web search capabilities for research tools.
- * Uses server-side proxy (/api/search/web) to protect API keys.
+ *
+ * Two modes:
+ * 1. Direct mode: User provides their own Tavily API key (stored in settings)
+ *    - Calls Tavily API directly from browser
+ *    - No server proxy, no rate limiting
+ *    - Truly local: searches never touch our servers
+ *
+ * 2. Proxy mode: Uses server-side proxy (/api/search/web)
+ *    - API key is server-side only
+ *    - Rate limited via Upstash Redis
  */
+
+import { useAppStore } from '../stores/appStore';
+import { decodeApiKey } from '../utils/helpers';
 
 export interface TavilySearchResult {
   title: string;
@@ -67,8 +79,16 @@ export function isWebSearchAvailable(): boolean {
   return true;
 }
 
+export interface SearchWebOptions {
+  includeDomains?: string[];
+  excludeDomains?: string[];
+  maxResults?: number;
+  searchDepth?: 'basic' | 'advanced';
+}
+
 /**
- * Search the web using server-side proxy
+ * Search the web - uses direct mode if user has their own API key,
+ * otherwise falls back to server proxy.
  *
  * @param query - Search query
  * @param options - Optional search configuration
@@ -77,12 +97,74 @@ export function isWebSearchAvailable(): boolean {
  */
 export async function searchWeb(
   query: string,
-  options?: {
-    includeDomains?: string[];
-    excludeDomains?: string[];
-    maxResults?: number;
-    searchDepth?: 'basic' | 'advanced';
+  options?: SearchWebOptions
+): Promise<TavilySearchResult[]> {
+  // Check if user has their own API key for direct mode
+  const { settings } = useAppStore.getState();
+  const userApiKey = settings.externalServicesConsent?.tavilyApiKey;
+
+  if (userApiKey) {
+    return searchWebDirect(query, decodeApiKey(userApiKey), options);
   }
+
+  return searchWebViaProxy(query, options);
+}
+
+/**
+ * Direct search - calls Tavily API directly from browser
+ * Used when user provides their own API key
+ */
+async function searchWebDirect(
+  query: string,
+  apiKey: string,
+  options?: SearchWebOptions
+): Promise<TavilySearchResult[]> {
+  try {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query,
+        search_depth: options?.searchDepth || 'basic',
+        include_domains: options?.includeDomains || [],
+        exclude_domains: options?.excludeDomains || [],
+        max_results: options?.maxResults || 5,
+        include_answer: false,
+        include_raw_content: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new WebSearchError(
+        `Tavily API error: ${response.status} - ${errorText}`,
+        'API_ERROR'
+      );
+    }
+
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    if (error instanceof WebSearchError) {
+      throw error;
+    }
+    throw new WebSearchError(
+      `Web search error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'NETWORK_ERROR'
+    );
+  }
+}
+
+/**
+ * Proxy search - uses server-side proxy with rate limiting
+ * Used when user doesn't have their own API key
+ */
+async function searchWebViaProxy(
+  query: string,
+  options?: SearchWebOptions
 ): Promise<TavilySearchResult[]> {
   try {
     const response = await fetch('/api/search/web', {
