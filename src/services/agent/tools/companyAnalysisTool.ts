@@ -1,7 +1,6 @@
 import { useAppStore } from '../../../stores/appStore';
 import { analyzeCompanyAsEmployer } from '../../ai';
 import {
-  isWebSearchAvailable,
   searchCompanyInfo,
   searchInterviewExperiences,
   formatSearchResultsForAI,
@@ -25,7 +24,7 @@ interface CompanyAnalysisResult {
 
 export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAnalysisResult> = {
   name: 'company_analysis',
-  description: 'Analyze a company as a potential employer using web search and job posting analysis. Searches for company reviews, culture info, and interview experiences. Provides insights on culture, work environment, role expectations, and fit assessment. Saves analysis as prep material. Requires VITE_TAVILY_API_KEY to be configured.',
+  description: 'Analyze a company as a potential employer using web search and job posting analysis. Searches for company reviews, culture info, and interview experiences. Provides insights on culture, work environment, role expectations, and fit assessment. Saves analysis as prep material.',
   category: 'write',
   inputSchema: companyAnalysisSchema,
   requiresConfirmation: true,
@@ -33,13 +32,11 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
   confirmationMessage(input) {
     const { jobs } = useAppStore.getState();
     const job = jobs.find((j) => j.id === input.jobId);
-    const webAvailable = isWebSearchAvailable();
-    const searchNote = webAvailable ? ' (includes web search)' : ' (JD analysis only - no web search API key)';
 
     if (job) {
-      return `Analyze "${job.company}" as a potential employer?${searchNote} This will use AI credits.`;
+      return `Analyze "${job.company}" as a potential employer? (includes web search) This will use AI credits.`;
     }
-    return `Analyze this company as a potential employer?${searchNote} This will use AI credits.`;
+    return `Analyze this company as a potential employer? (includes web search) This will use AI credits.`;
   },
 
   async execute(input): Promise<ToolResult<CompanyAnalysisResult>> {
@@ -68,33 +65,26 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
     let webSearchUsed = false;
     let allSearchResults: TavilySearchResult[] = [];
 
-    if (isWebSearchAvailable()) {
-      try {
-        // Search for company info and interview experiences in parallel
-        const [companyResults, interviewResults] = await Promise.all([
-          searchCompanyInfo(job.company, ['culture', 'reviews', 'benefits', 'work-life balance']),
-          searchInterviewExperiences(job.company, job.title),
-        ]);
+    try {
+      // Search for company info and interview experiences in parallel
+      const [companyResults, interviewResults] = await Promise.all([
+        searchCompanyInfo(job.company, ['culture', 'reviews', 'benefits', 'work-life balance']),
+        searchInterviewExperiences(job.company, job.title),
+      ]);
 
-        allSearchResults = [...companyResults, ...interviewResults];
-        if (allSearchResults.length > 0) {
-          webSearchResults = formatSearchResultsForAI(allSearchResults);
-          webSearchUsed = true;
-        }
-      } catch (error) {
-        if (error instanceof WebSearchError) {
-          return {
-            success: false,
-            error: `Web search failed: ${error.message}`,
-          };
-        }
-        throw error;
+      allSearchResults = [...companyResults, ...interviewResults];
+      if (allSearchResults.length > 0) {
+        webSearchResults = formatSearchResultsForAI(allSearchResults);
+        webSearchUsed = true;
       }
-    } else {
-      return {
-        success: false,
-        error: 'Web search is not configured. Add VITE_TAVILY_API_KEY to your .env file to enable company analysis.',
-      };
+    } catch (error) {
+      if (error instanceof WebSearchError) {
+        return {
+          success: false,
+          error: `Web search failed: ${error.message}`,
+        };
+      }
+      throw error;
     }
 
     try {

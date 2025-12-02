@@ -1,7 +1,6 @@
 import { useAppStore } from '../../../stores/appStore';
 import { researchCompany } from '../../ai';
 import {
-  isWebSearchAvailable,
   searchTopics,
   formatSearchResultsForAI,
   appendSourcesToContent,
@@ -26,7 +25,7 @@ interface WebResearchResult {
 
 export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult> = {
   name: 'web_research',
-  description: 'Research a company or role using web search and job description analysis. Searches the web for company info, reviews, tech stack, and more. Saves findings as prep material. Requires VITE_TAVILY_API_KEY to be configured.',
+  description: 'Research a company or role using web search and job description analysis. Searches the web for company info, reviews, tech stack, and more. Saves findings as prep material.',
   category: 'write',
   inputSchema: webResearchSchema,
   requiresConfirmation: true,
@@ -34,13 +33,11 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
   confirmationMessage(input) {
     const { jobs } = useAppStore.getState();
     const job = jobs.find((j) => j.id === input.jobId);
-    const webAvailable = isWebSearchAvailable();
-    const searchNote = webAvailable ? ' (includes web search)' : ' (JD analysis only - no web search API key)';
 
     if (job) {
-      return `Research "${input.topics}" for "${job.company}"?${searchNote} This will use AI credits.`;
+      return `Research "${input.topics}" for "${job.company}"? (includes web search) This will use AI credits.`;
     }
-    return `Research "${input.topics}"?${searchNote} This will use AI credits.`;
+    return `Research "${input.topics}"? (includes web search) This will use AI credits.`;
   },
 
   async execute(input): Promise<ToolResult<WebResearchResult>> {
@@ -86,27 +83,20 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
     let webSearchUsed = false;
     let searchResults: TavilySearchResult[] = [];
 
-    if (isWebSearchAvailable()) {
-      try {
-        searchResults = await searchTopics(job.company, input.topics);
-        if (searchResults.length > 0) {
-          webSearchResults = formatSearchResultsForAI(searchResults);
-          webSearchUsed = true;
-        }
-      } catch (error) {
-        if (error instanceof WebSearchError) {
-          return {
-            success: false,
-            error: `Web search failed: ${error.message}`,
-          };
-        }
-        throw error;
+    try {
+      searchResults = await searchTopics(job.company, input.topics);
+      if (searchResults.length > 0) {
+        webSearchResults = formatSearchResultsForAI(searchResults);
+        webSearchUsed = true;
       }
-    } else {
-      return {
-        success: false,
-        error: 'Web search is not configured. Add VITE_TAVILY_API_KEY to your .env file to enable web research.',
-      };
+    } catch (error) {
+      if (error instanceof WebSearchError) {
+        return {
+          success: false,
+          error: `Web search failed: ${error.message}`,
+        };
+      }
+      throw error;
     }
 
     try {
