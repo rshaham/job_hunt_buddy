@@ -11,13 +11,14 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
 import { EmbeddingStatus } from '../EmbeddingStatus';
+import { isFeatureEnabled } from '../../utils/featureFlags';
 import type { Job } from '../../types';
 
 export function BoardView() {
@@ -32,6 +33,7 @@ export function BoardView() {
     openPrivacyModal,
     openFeatureGuideModal,
     openCareerCoachModal,
+    openJobFinderModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -104,6 +106,12 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
+          {isFeatureEnabled('jobSearch') && (
+            <Button onClick={openJobFinderModal} size="sm" variant="secondary">
+              <Search className="w-4 h-4 mr-1" />
+              Find Jobs
+            </Button>
+          )}
           <button
             type="button"
             onClick={() => useCommandBarStore.getState().open()}

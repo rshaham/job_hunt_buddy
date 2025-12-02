@@ -9,6 +9,7 @@ import {
   WebSearchError,
   type TavilySearchResult,
 } from '../../webSearch';
+import { isFeatureAvailable } from '../../../utils/featureFlags';
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import type { PrepMaterial } from '../../../types';
 import { webResearchSchema, type WebResearchInput } from './schemas';
@@ -58,6 +59,23 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
         success: false,
         error: 'No job description found for this job. Add a job description first.',
       };
+    }
+
+    // Check feature availability and consent
+    const { available, reason } = isFeatureAvailable('webResearch', settings);
+    if (!available) {
+      if (reason === 'disabled') {
+        return {
+          success: false,
+          error: 'Web research feature is currently disabled.',
+        };
+      }
+      if (reason === 'no_consent') {
+        return {
+          success: false,
+          error: 'Web research requires consent. Please enable it in Settings → Privacy to allow external web searches.',
+        };
+      }
     }
 
     // Get resume text (job-specific or default) for context

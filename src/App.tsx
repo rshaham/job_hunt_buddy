@@ -10,6 +10,7 @@ import { PrivacyModal } from './components/Privacy';
 import { FeatureGuideModal } from './components/FeatureGuide';
 import { CareerCoachModal } from './components/CareerCoach';
 import { CommandBar } from './components/CommandBar';
+import { JobFinderModal } from './components/JobFinder';
 import { ToastContainer } from './components/ui';
 
 function App() {
@@ -116,6 +117,7 @@ function App() {
       <PrivacyModal />
       <FeatureGuideModal />
       <CareerCoachModal />
+      <JobFinderModal />
       <CommandBar />
       <ToastContainer />
     </>

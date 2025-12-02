@@ -71,6 +71,7 @@ interface AppState {
   isPrivacyModalOpen: boolean;
   isFeatureGuideModalOpen: boolean;
   isCareerCoachModalOpen: boolean;
+  isJobFinderModalOpen: boolean;
 
   // Career Coach State
   careerCoachState: CareerCoachState;
@@ -114,6 +115,8 @@ interface AppState {
   closeFeatureGuideModal: () => void;
   openCareerCoachModal: () => void;
   closeCareerCoachModal: () => void;
+  openJobFinderModal: () => void;
+  closeJobFinderModal: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -143,6 +146,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isPrivacyModalOpen: false,
   isFeatureGuideModalOpen: false,
   isCareerCoachModalOpen: false,
+  isJobFinderModalOpen: false,
   careerCoachState: { history: [] },
 
   // Load initial data
@@ -397,6 +401,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeFeatureGuideModal: () => set({ isFeatureGuideModalOpen: false }),
   openCareerCoachModal: () => set({ isCareerCoachModalOpen: true }),
   closeCareerCoachModal: () => set({ isCareerCoachModalOpen: false }),
+  openJobFinderModal: () => set({ isJobFinderModalOpen: true }),
+  closeJobFinderModal: () => set({ isJobFinderModalOpen: false }),
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {

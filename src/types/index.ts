@@ -254,6 +254,13 @@ export interface AppSettings {
 
   // Onboarding
   onboardingCompleted: boolean;
+
+  // Privacy consent for external services
+  externalServicesConsent?: {
+    jobSearch?: boolean;    // SerApi job search consent
+    webResearch?: boolean;  // Tavily web research consent
+    consentedAt?: Date;
+  };
 }
 
 export const DEFAULT_STATUSES: Status[] = [

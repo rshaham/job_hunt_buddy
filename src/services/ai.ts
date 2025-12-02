@@ -977,3 +977,64 @@ Be analytical and honest. Help the candidate understand both the opportunity and
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
+
+/**
+ * Generate an enhanced search query for job search based on candidate profile.
+ *
+ * Takes the user's basic search query and enriches it with relevant keywords
+ * from their resume, stories, and context documents for better search results.
+ *
+ * @param userQuery - The user's original search query (e.g., "software engineer")
+ * @param candidateProfile - Combined text from resume, stories, and context docs
+ * @returns Enhanced search query string (max 100 chars)
+ */
+export async function generateEnhancedSearchQuery(
+  userQuery: string,
+  candidateProfile: string
+): Promise<string> {
+  // Truncate profile to avoid token limits (first 2000 chars should capture key info)
+  const truncatedProfile = candidateProfile.slice(0, 2000);
+
+  const prompt = `You are helping a job seeker optimize their search query for better job matches.
+
+**User's search query:** "${userQuery}"
+
+**Candidate background:**
+${truncatedProfile}
+
+**Detect the query type and enhance accordingly:**
+
+1. **Company name search** (e.g., "Electronic Arts", "Google", "Acme Corp")
+   → Keep the company name. Only add 1-2 relevant skills from their background. Do NOT add job titles.
+   → Example: "Electronic Arts" → "Electronic Arts game development C++"
+
+2. **Role/job title search** (e.g., "software engineer", "product manager")
+   → Keep the role. Add 1-2 related titles from their experience AND 1-2 key skills.
+   → Example: "software engineer" → "software engineer technical lead game development C++"
+
+3. **Skill search** (e.g., "React", "Python", "Unity")
+   → Keep the skill. Add 1-2 related roles from their experience.
+   → Example: "React" → "React frontend engineer developer"
+
+4. **Mixed search** (e.g., "Google engineer", "EA game developer")
+   → Keep both company and role. Only add skills, not more titles.
+   → Example: "Google engineer" → "Google engineer backend Python AWS"
+
+**Rules:**
+- Maximum 80 characters
+- PRESERVE the user's original intent - do not override it with job titles
+- Output ONLY the enhanced query, no explanation
+- No quotes or special operators
+
+**Enhanced search query:**`;
+
+  try {
+    const response = await callAI([{ role: 'user', content: prompt }]);
+    // Clean up the response - remove quotes, trim, limit length
+    const cleaned = response.replace(/^["']|["']$/g, '').trim().slice(0, 80);
+    return cleaned || userQuery; // Fallback to original if AI returns empty
+  } catch (error) {
+    console.warn('[AI] Failed to generate enhanced search query:', error);
+    return userQuery; // Fallback to original query on error
+  }
+}
