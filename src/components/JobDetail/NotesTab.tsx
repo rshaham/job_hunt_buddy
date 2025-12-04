@@ -9,6 +9,8 @@ import {
   Save,
   X,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -95,9 +97,47 @@ export function NotesTab({ job }: NotesTabProps) {
   const [newNote, setNewNote] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   // Delete confirmation state
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+
+  // Toggle note expansion
+  const toggleNoteExpanded = (noteId: string) => {
+    setExpandedNotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(noteId)) {
+        next.delete(noteId);
+      } else {
+        next.add(noteId);
+      }
+      return next;
+    });
+  };
+
+  // Strip markdown formatting for preview
+  const stripMarkdown = (text: string) => {
+    return text
+      .replace(/^#{1,6}\s+/gm, '') // Remove headers
+      .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold
+      .replace(/\*(.+?)\*/g, '$1') // Remove italic
+      .replace(/`(.+?)`/g, '$1') // Remove inline code
+      .replace(/^\s*[-*+]\s+/gm, '') // Remove list markers
+      .replace(/^\s*\d+\.\s+/gm, '') // Remove numbered list markers
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+      .trim();
+  };
+
+  // Get preview text (first meaningful line, stripped of markdown)
+  const getPreviewText = (content: string) => {
+    // Find first non-empty line
+    const lines = content.split('\n').filter((line) => line.trim());
+    const firstLine = stripMarkdown(lines[0] || '');
+    if (firstLine.length > 100) {
+      return firstLine.substring(0, 100) + '...';
+    }
+    return firstLine + (lines.length > 1 ? '...' : '');
+  };
 
   // Notes handlers
   const handleAddNote = async () => {
@@ -220,7 +260,32 @@ export function NotesTab({ job }: NotesTabProps) {
                   </div>
                 ) : (
                   <>
-                    <NoteMarkdown content={note.content} />
+                    {/* Collapsed/Expanded header */}
+                    <div
+                      className="flex items-start gap-2 cursor-pointer"
+                      onClick={() => toggleNoteExpanded(note.id)}
+                    >
+                      <button
+                        type="button"
+                        className="mt-0.5 p-0.5 hover:bg-amber-200/50 dark:hover:bg-amber-800/30 rounded transition-colors flex-shrink-0"
+                        title={expandedNotes.has(note.id) ? 'Collapse note' : 'Expand note'}
+                      >
+                        {expandedNotes.has(note.id) ? (
+                          <ChevronUp className="w-4 h-4 text-slate-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        {expandedNotes.has(note.id) ? (
+                          <NoteMarkdown content={note.content} />
+                        ) : (
+                          <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
+                            {getPreviewText(note.content)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between mt-3 pt-2 border-t border-amber-100 dark:border-amber-800/20">
                       <span className="text-xs text-slate-400">
                         {format(new Date(note.createdAt), 'MMM d, h:mm a')}
@@ -229,7 +294,8 @@ export function NotesTab({ job }: NotesTabProps) {
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setEditingNoteId(note.id);
                             setEditingNoteContent(note.content);
                           }}
@@ -240,7 +306,10 @@ export function NotesTab({ job }: NotesTabProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setDeleteNoteId(note.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteNoteId(note.id);
+                          }}
                           className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                           title="Delete note"
                         >
