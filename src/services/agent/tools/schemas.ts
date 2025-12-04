@@ -183,6 +183,61 @@ export const getStaleJobsSchema = z.object({
 });
 
 // ============================================
+// Update/Delete Tool Schemas
+// ============================================
+
+export const updateLearningTaskSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the learning task'),
+  taskId: z.string().describe('The ID of the learning task to update'),
+  updates: z.object({
+    skill: z.string().optional().describe('New skill name'),
+    description: z.string().optional().describe('New description'),
+    status: z.enum(['pending', 'in_progress', 'completed']).optional().describe('New status'),
+    priority: z.enum(['high', 'medium', 'low']).optional().describe('New priority'),
+    dueDate: z.string().optional().describe('New due date (ISO format, or empty to clear)'),
+    resourceUrl: z.string().optional().describe('New resource URL'),
+  }).describe('Fields to update'),
+});
+
+export const deleteLearningTaskSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the learning task'),
+  taskId: z.string().describe('The ID of the learning task to delete'),
+});
+
+export const updateContactSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the contact'),
+  contactId: z.string().describe('The ID of the contact to update'),
+  updates: z.object({
+    name: z.string().optional().describe('New contact name'),
+    role: z.string().optional().describe('New role'),
+    email: z.string().optional().describe('New email'),
+    phone: z.string().optional().describe('New phone number'),
+    linkedin: z.string().optional().describe('New LinkedIn URL'),
+    notes: z.string().optional().describe('New notes'),
+  }).describe('Fields to update'),
+});
+
+export const deleteContactSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the contact'),
+  contactId: z.string().describe('The ID of the contact to delete'),
+});
+
+export const updateTimelineEventSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the event'),
+  eventId: z.string().describe('The ID of the timeline event to update'),
+  updates: z.object({
+    type: z.string().optional().describe('New event type'),
+    description: z.string().optional().describe('New description'),
+    date: z.string().optional().describe('New date (ISO format)'),
+  }).describe('Fields to update'),
+});
+
+export const deleteTimelineEventSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the event'),
+  eventId: z.string().describe('The ID of the timeline event to delete'),
+});
+
+// ============================================
 // Type exports
 // ============================================
 
@@ -218,3 +273,9 @@ export type ListUpcomingEventsInput = z.infer<typeof listUpcomingEventsSchema>;
 export type GetApplicationSummaryInput = z.infer<typeof getApplicationSummarySchema>;
 export type ListAllNotesInput = z.infer<typeof listAllNotesSchema>;
 export type GetStaleJobsInput = z.infer<typeof getStaleJobsSchema>;
+export type UpdateLearningTaskInput = z.infer<typeof updateLearningTaskSchema>;
+export type DeleteLearningTaskInput = z.infer<typeof deleteLearningTaskSchema>;
+export type UpdateContactInput = z.infer<typeof updateContactSchema>;
+export type DeleteContactInput = z.infer<typeof deleteContactSchema>;
+export type UpdateTimelineEventInput = z.infer<typeof updateTimelineEventSchema>;
+export type DeleteTimelineEventInput = z.infer<typeof deleteTimelineEventSchema>;

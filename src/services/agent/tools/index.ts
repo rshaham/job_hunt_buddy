@@ -32,6 +32,13 @@ export { listUpcomingEventsTool } from './listUpcomingEventsTool';
 export { getApplicationSummaryTool } from './getApplicationSummaryTool';
 export { listAllNotesTool } from './listAllNotesTool';
 export { getStaleJobsTool } from './getStaleJobsTool';
+// Update/Delete tools
+export { updateLearningTaskTool } from './updateLearningTaskTool';
+export { deleteLearningTaskTool } from './deleteLearningTaskTool';
+export { updateContactTool } from './updateContactTool';
+export { deleteContactTool } from './deleteContactTool';
+export { updateTimelineEventTool } from './updateTimelineEventTool';
+export { deleteTimelineEventTool } from './deleteTimelineEventTool';
 
 // Schemas
 export * from './schemas';
@@ -68,6 +75,12 @@ import { listUpcomingEventsTool } from './listUpcomingEventsTool';
 import { getApplicationSummaryTool } from './getApplicationSummaryTool';
 import { listAllNotesTool } from './listAllNotesTool';
 import { getStaleJobsTool } from './getStaleJobsTool';
+import { updateLearningTaskTool } from './updateLearningTaskTool';
+import { deleteLearningTaskTool } from './deleteLearningTaskTool';
+import { updateContactTool } from './updateContactTool';
+import { deleteContactTool } from './deleteContactTool';
+import { updateTimelineEventTool } from './updateTimelineEventTool';
+import { deleteTimelineEventTool } from './deleteTimelineEventTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -111,6 +124,13 @@ export const allTools: ToolDefinitionBase[] = [
   getApplicationSummaryTool,
   listAllNotesTool,
   getStaleJobsTool,
+  // Update/Delete tools
+  updateLearningTaskTool,
+  deleteLearningTaskTool,
+  updateContactTool,
+  deleteContactTool,
+  updateTimelineEventTool,
+  deleteTimelineEventTool,
 ];
 
 /**
@@ -155,4 +175,11 @@ export const writeTools: ToolDefinitionBase[] = [
   addLearningTaskTool,
   draftOutreachTool,
   bulkUpdateStatusTool,
+  // Update/Delete tools
+  updateLearningTaskTool,
+  deleteLearningTaskTool,
+  updateContactTool,
+  deleteContactTool,
+  updateTimelineEventTool,
+  deleteTimelineEventTool,
 ];
