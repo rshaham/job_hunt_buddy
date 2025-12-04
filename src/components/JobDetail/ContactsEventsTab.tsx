@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
-import { generateId } from '../../utils/helpers';
+import { generateId, formatDateOnly } from '../../utils/helpers';
 import { analyzeInterviewer, analyzeInterviewerWithWebSearch } from '../../services/ai';
 import { isFeatureAvailable } from '../../utils/featureFlags';
 import { format } from 'date-fns';
@@ -830,7 +830,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-slate-400">
-                              {format(new Date(event.date), 'MMM d, yyyy')}
+                              {formatDateOnly(event.date)}
                             </span>
                             <button
                               type="button"

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
+import { formatDateOnly } from '../../utils/helpers';
 import { format, isPast, isToday } from 'date-fns';
 import type { Job, LearningTask } from '../../types';
 
@@ -249,7 +250,7 @@ function TaskCard({
                     {isOverdue && <AlertTriangle className="w-3 h-3" />}
                     <Clock className="w-3 h-3" />
                     {isOverdue ? 'Overdue: ' : isDueToday ? 'Due today: ' : 'Due: '}
-                    {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                    {formatDateOnly(task.dueDate)}
                   </span>
                 )}
 
