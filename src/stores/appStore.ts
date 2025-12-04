@@ -1,8 +1,59 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
+import { useEmbeddingStore } from '../services/embeddings';
+
+// ============================================================================
+// Embedding Integration Helpers
+// ============================================================================
+
+/**
+ * Trigger background embedding for a job.
+ * Non-blocking - doesn't wait for embedding to complete.
+ */
+function triggerJobEmbedding(job: Job): void {
+  // Use setTimeout to ensure this runs after the current call stack
+  setTimeout(() => {
+    useEmbeddingStore.getState().embedJobContent(job).catch((error) => {
+      console.warn('[AppStore] Failed to embed job:', error);
+    });
+  }, 0);
+}
+
+/**
+ * Trigger background embedding for a story.
+ */
+function triggerStoryEmbedding(story: SavedStory): void {
+  setTimeout(() => {
+    useEmbeddingStore.getState().embedStoryContent(story).catch((error) => {
+      console.warn('[AppStore] Failed to embed story:', error);
+    });
+  }, 0);
+}
+
+/**
+ * Trigger background embedding for a document.
+ */
+function triggerDocumentEmbedding(doc: ContextDocument): void {
+  setTimeout(() => {
+    useEmbeddingStore.getState().embedDocumentContent(doc).catch((error) => {
+      console.warn('[AppStore] Failed to embed document:', error);
+    });
+  }, 0);
+}
+
+/**
+ * Remove embeddings for a deleted job.
+ */
+function triggerJobEmbeddingRemoval(jobId: string): void {
+  setTimeout(() => {
+    useEmbeddingStore.getState().removeJobEmbeddings(jobId).catch((error) => {
+      console.warn('[AppStore] Failed to remove job embeddings:', error);
+    });
+  }, 0);
+}
 
 interface AppState {
   // Jobs
@@ -20,6 +71,7 @@ interface AppState {
   isPrivacyModalOpen: boolean;
   isFeatureGuideModalOpen: boolean;
   isCareerCoachModalOpen: boolean;
+  isJobFinderModalOpen: boolean;
 
   // Career Coach State
   careerCoachState: CareerCoachState;
@@ -46,6 +98,10 @@ interface AppState {
   // Saved story actions
   updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
 
+  // Learning task actions
+  updateLearningTask: (jobId: string, taskId: string, updates: Partial<LearningTask>) => Promise<void>;
+  deleteLearningTask: (jobId: string, taskId: string) => Promise<void>;
+
   // UI actions
   openAddJobModal: () => void;
   closeAddJobModal: () => void;
@@ -59,6 +115,8 @@ interface AppState {
   closeFeatureGuideModal: () => void;
   openCareerCoachModal: () => void;
   closeCareerCoachModal: () => void;
+  openJobFinderModal: () => void;
+  closeJobFinderModal: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -88,6 +146,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isPrivacyModalOpen: false,
   isFeatureGuideModalOpen: false,
   isCareerCoachModalOpen: false,
+  isJobFinderModalOpen: false,
   careerCoachState: { history: [] },
 
   // Load initial data
@@ -115,6 +174,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       set({ jobs, settings, isLoading: false });
+
+      // Auto-initialize embeddings in the background
+      // Non-blocking - app is functional while embeddings load
+      setTimeout(() => {
+        useEmbeddingStore.getState().initialize().then(() => {
+          // After model is ready, index any unindexed content
+          const state = get();
+          useEmbeddingStore.getState().indexAllContent(
+            state.jobs,
+            state.settings.savedStories || [],
+            state.settings.contextDocuments || []
+          ).catch((error) => {
+            console.warn('[AppStore] Background indexing failed:', error);
+          });
+        }).catch((error) => {
+          console.warn('[AppStore] Embedding initialization failed:', error);
+        });
+      }, 100); // Small delay to let UI render first
     } catch (error) {
       console.error('Failed to load data:', error);
       set({ isLoading: false });
@@ -133,6 +210,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     await db.createJob(job);
     set((state) => ({ jobs: [...state.jobs, job] }));
+
+    // Trigger background embedding
+    triggerJobEmbedding(job);
+
     return job;
   },
 
@@ -143,6 +224,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         job.id === id ? { ...job, ...updates, lastUpdated: new Date() } : job
       ),
     }));
+
+    // Re-embed if embeddable content changed
+    const embeddableFields = ['jdText', 'notes', 'qaHistory', 'coverLetter'];
+    if (embeddableFields.some((field) => field in updates)) {
+      const job = get().jobs.find((j) => j.id === id);
+      if (job) {
+        triggerJobEmbedding(job);
+      }
+    }
   },
 
   deleteJob: async (id) => {
@@ -151,6 +241,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       jobs: state.jobs.filter((job) => job.id !== id),
       selectedJobId: state.selectedJobId === id ? null : state.selectedJobId,
     }));
+
+    // Remove job embeddings
+    triggerJobEmbeddingRemoval(id);
   },
 
   moveJob: async (id, newStatus) => {
@@ -221,6 +314,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     };
     const newDocuments = [...(settings.contextDocuments || []), newDoc];
     await get().updateSettings({ contextDocuments: newDocuments });
+
+    // Trigger background embedding
+    triggerDocumentEmbedding(newDoc);
+
     return newDoc;
   },
 
@@ -230,12 +327,29 @@ export const useAppStore = create<AppState>((set, get) => ({
       doc.id === id ? { ...doc, ...updates } : doc
     );
     await get().updateSettings({ contextDocuments: newDocuments });
+
+    // Re-embed if content changed
+    if ('fullText' in updates || 'summary' in updates || 'useSummary' in updates) {
+      const doc = newDocuments.find((d) => d.id === id);
+      if (doc) {
+        triggerDocumentEmbedding(doc);
+      }
+    }
   },
 
   deleteContextDocument: async (id) => {
     const { settings } = get();
     const newDocuments = (settings.contextDocuments || []).filter((doc) => doc.id !== id);
     await get().updateSettings({ contextDocuments: newDocuments });
+
+    // Remove document embedding
+    setTimeout(() => {
+      import('../services/embeddings').then(({ removeEmbeddingsByEntity }) => {
+        removeEmbeddingsByEntity('doc', id).catch((error) => {
+          console.warn('[AppStore] Failed to remove document embedding:', error);
+        });
+      });
+    }, 0);
   },
 
   // Saved story actions
@@ -245,6 +359,33 @@ export const useAppStore = create<AppState>((set, get) => ({
       story.id === id ? { ...story, ...updates } : story
     );
     await get().updateSettings({ savedStories: newStories });
+
+    // Re-embed if content changed
+    if ('question' in updates || 'answer' in updates) {
+      const story = newStories.find((s) => s.id === id);
+      if (story) {
+        triggerStoryEmbedding(story);
+      }
+    }
+  },
+
+  // Learning task actions
+  updateLearningTask: async (jobId, taskId, updates) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedTasks = (job.learningTasks || []).map((task) =>
+      task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
+    );
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
+  },
+
+  deleteLearningTask: async (jobId, taskId) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedTasks = (job.learningTasks || []).filter((task) => task.id !== taskId);
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
   },
 
   // UI actions
@@ -260,6 +401,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeFeatureGuideModal: () => set({ isFeatureGuideModalOpen: false }),
   openCareerCoachModal: () => set({ isCareerCoachModalOpen: true }),
   closeCareerCoachModal: () => set({ isCareerCoachModalOpen: false }),
+  openJobFinderModal: () => set({ isJobFinderModalOpen: true }),
+  closeJobFinderModal: () => set({ isJobFinderModalOpen: false }),
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {

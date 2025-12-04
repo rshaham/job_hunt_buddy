@@ -11,11 +11,14 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
+import { EmbeddingStatus } from '../EmbeddingStatus';
+import { isFeatureEnabled } from '../../utils/featureFlags';
 import type { Job } from '../../types';
 
 export function BoardView() {
@@ -30,6 +33,7 @@ export function BoardView() {
     openPrivacyModal,
     openFeatureGuideModal,
     openCareerCoachModal,
+    openJobFinderModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -94,6 +98,9 @@ export function BoardView() {
           <img src="/logo.png" alt="Job Hunt Buddy" className="w-16 h-16 rounded-xl" />
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
             Job Hunt Buddy
+            <span className="ml-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full align-middle">
+              beta
+            </span>
           </h1>
         </div>
 
@@ -102,6 +109,35 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
+          {isFeatureEnabled('jobSearch', settings) && (
+            <Button onClick={openJobFinderModal} size="sm" variant="secondary">
+              <Search className="w-4 h-4 mr-1" />
+              Find Jobs
+            </Button>
+          )}
+          <button
+            type="button"
+            onClick={() => useCommandBarStore.getState().open()}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300
+              hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            title="Open AI Agent (Ctrl+K)"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>AI Agent</span>
+            <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 rounded font-mono">
+              Ctrl+K
+            </kbd>
+          </button>
+          {/* Active AI Model Indicator */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 dark:text-slate-400
+              bg-slate-100 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600"
+            title={`Active AI: ${settings.providers[settings.activeProvider]?.model || 'Not configured'}`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="font-medium">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
+          </div>
+          <EmbeddingStatus />
           <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
             <HelpCircle className="w-4 h-4" />
           </Button>

@@ -77,6 +77,18 @@ export function htmlToMarkdown(html: string): string {
   return turndownService.turndown(html);
 }
 
+/**
+ * Format a date-only value without timezone conversion.
+ * Use this for dates where only the day matters (due dates, event dates).
+ * This prevents timezone shift issues where a UTC date displays as the previous day.
+ */
+export function formatDateOnly(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  // Use UTC methods to avoid timezone shift
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+}
+
 // Check if AI is configured for the active provider
 export function isAIConfigured(settings: AppSettings): boolean {
   const provider = settings.activeProvider || 'anthropic';

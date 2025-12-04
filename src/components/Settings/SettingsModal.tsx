@@ -22,6 +22,8 @@ import {
   AlertTriangle,
   X,
   HelpCircle,
+  Shield,
+  Globe,
 } from 'lucide-react';
 import { Modal, Button, Input, Textarea, ConfirmModal } from '../ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
@@ -30,6 +32,7 @@ import { testApiKey, convertResumeToMarkdown, summarizeDocument } from '../../se
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { encodeApiKey, decodeApiKey } from '../../utils/helpers';
 import { PROVIDER_MODELS, type ProviderType, type ContextDocument } from '../../types';
+import { DEFAULT_AGENT_SETTINGS, type ConfirmationLevel } from '../../types/agent';
 import { showToast } from '../../stores/toastStore';
 import { exportJobsAsCSV } from '../../services/db';
 import ReactMarkdown from 'react-markdown';
@@ -407,6 +410,14 @@ export function SettingsModal() {
             <TabsTrigger value="preferences">
               <Settings className="w-4 h-4 mr-1.5 inline" />
               Preferences
+            </TabsTrigger>
+            <TabsTrigger value="agent">
+              <Bot className="w-4 h-4 mr-1.5 inline" />
+              Agent
+            </TabsTrigger>
+            <TabsTrigger value="privacy">
+              <Shield className="w-4 h-4 mr-1.5 inline" />
+              Privacy
             </TabsTrigger>
           </TabsList>
 
@@ -1086,6 +1097,239 @@ export function SettingsModal() {
               <p className="text-xs text-slate-500 mt-2">
                 Permanently delete all jobs, settings, API keys, and resume data.
               </p>
+            </section>
+          </TabsContent>
+
+          {/* Agent Tab */}
+          <TabsContent value="agent" className="space-y-6">
+            {/* Confirmation Level */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Tool Confirmation
+              </h3>
+              <select
+                aria-label="Select confirmation level"
+                value={settings.agentSettings?.requireConfirmation ?? DEFAULT_AGENT_SETTINGS.requireConfirmation}
+                onChange={(e) => updateSettings({
+                  agentSettings: {
+                    ...settings.agentSettings,
+                    requireConfirmation: e.target.value as ConfirmationLevel,
+                    maxIterations: settings.agentSettings?.maxIterations ?? DEFAULT_AGENT_SETTINGS.maxIterations,
+                  }
+                })}
+                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="all">All Tool Uses - Confirm every action</option>
+                <option value="write-only">Write Operations Only - Confirm changes (default)</option>
+                <option value="destructive-only">Destructive Only - Confirm deletions/status changes</option>
+                <option value="never">Never - Auto-execute all tools</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-2">
+                Control when the Command Bar (Ctrl+K) asks for confirmation before executing tools.
+              </p>
+            </section>
+
+            {/* Max Iterations */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
+                Max Agent Iterations
+                <span className="group relative">
+                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    How many tool calls the agent can make per request
+                  </span>
+                </span>
+              </h3>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={settings.agentSettings?.maxIterations ?? DEFAULT_AGENT_SETTINGS.maxIterations}
+                onChange={(e) => {
+                  const value = Math.min(20, Math.max(1, parseInt(e.target.value) || DEFAULT_AGENT_SETTINGS.maxIterations));
+                  updateSettings({
+                    agentSettings: {
+                      ...settings.agentSettings,
+                      requireConfirmation: settings.agentSettings?.requireConfirmation ?? DEFAULT_AGENT_SETTINGS.requireConfirmation,
+                      maxIterations: value,
+                    }
+                  });
+                }}
+                className="max-w-[120px]"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Limits how many tool calls the AI can make to complete a request. Higher = more complex tasks possible. Default: 7
+              </p>
+            </section>
+
+            {/* Command Bar Info */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Command Bar
+              </h3>
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  Press <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Ctrl+K</kbd> (or <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Cmd+K</kbd> on Mac) to open the Command Bar.
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Use natural language to search jobs, update statuses, add notes, and more.
+                </p>
+              </div>
+            </section>
+          </TabsContent>
+
+          {/* Privacy Tab */}
+          <TabsContent value="privacy" className="space-y-6">
+            {/* Privacy Impact Notice */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg max-w-xl">
+              <div className="flex gap-3">
+                <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-blue-800 dark:text-blue-200 text-sm mb-1">
+                    Your Data Stays Local
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    All your jobs, resumes, cover letters, and notes are stored only in your browser.
+                    The optional features below send limited data to third-party services to work.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* External Services Section */}
+            <section>
+              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                External Services
+              </h3>
+              <div className="space-y-3 max-w-xl">
+                {/* Job Search Toggle */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.externalServicesConsent?.jobSearch ?? false}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          jobSearch: e.target.checked,
+                          consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                        Job Search
+                      </span>
+                      {settings.externalServicesConsent?.serpApiKey ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Your key — uses your quota, no rate limits
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Find job listings via SerApi. <span className="text-amber-600 dark:text-amber-400">Sends:</span> search query, location.
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                  {/* SerApi Key Input */}
+                  <div className="mt-3 pl-7">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Your SerApi Key <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+                    </label>
+                    <Input
+                      type="password"
+                      value={decodeApiKey(settings.externalServicesConsent?.serpApiKey || '')}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          serpApiKey: e.target.value ? encodeApiKey(e.target.value) : undefined,
+                        }
+                      })}
+                      placeholder="Enter your SerApi key..."
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Get a free key at{' '}
+                      <a href="https://serpapi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        serpapi.com
+                      </a>
+                      {' '}• Note: SerApi requires server proxy (CORS), but your key uses your own quota.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Web Research Toggle */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.externalServicesConsent?.webResearch ?? false}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          webResearch: e.target.checked,
+                          consentedAt: e.target.checked ? new Date() : settings.externalServicesConsent?.consentedAt,
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                        Web Research
+                      </span>
+                      {settings.externalServicesConsent?.tavilyApiKey ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Direct mode — searches stay in your browser
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Research companies and people via Tavily. <span className="text-amber-600 dark:text-amber-400">Sends:</span> company name, person name, research topic.
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                  {/* Tavily Key Input */}
+                  <div className="mt-3 pl-7">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Your Tavily Key <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+                    </label>
+                    <Input
+                      type="password"
+                      value={decodeApiKey(settings.externalServicesConsent?.tavilyApiKey || '')}
+                      onChange={(e) => updateSettings({
+                        externalServicesConsent: {
+                          ...settings.externalServicesConsent,
+                          tavilyApiKey: e.target.value ? encodeApiKey(e.target.value) : undefined,
+                        }
+                      })}
+                      placeholder="Enter your Tavily key..."
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Get a free key at{' '}
+                      <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        tavily.com
+                      </a>
+                      {' '}(1,000 searches/month free)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* What's NOT sent */}
+              <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg max-w-xl">
+                <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    <strong>Never sent:</strong> your resume, cover letters, notes, contacts, or any personal data.
+                  </span>
+                </p>
+              </div>
             </section>
           </TabsContent>
         </Tabs>

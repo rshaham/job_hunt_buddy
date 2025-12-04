@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAppStore } from './stores/appStore';
+import { useCommandBarStore } from './stores/commandBarStore';
 import { BoardView } from './components/Board';
 import { JobDetailView } from './components/JobDetail';
 import { AddJobModal } from './components/AddJob';
@@ -8,14 +9,32 @@ import { GettingStartedModal } from './components/GettingStarted';
 import { PrivacyModal } from './components/Privacy';
 import { FeatureGuideModal } from './components/FeatureGuide';
 import { CareerCoachModal } from './components/CareerCoach';
+import { CommandBar } from './components/CommandBar';
+import { JobFinderModal } from './components/JobFinder';
 import { ToastContainer } from './components/ui';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
+  const { isOpen: isCommandBarOpen, open: openCommandBar } = useCommandBarStore();
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Global keyboard shortcut for Command Bar (Ctrl+K / Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (!isCommandBarOpen) {
+          openCommandBar();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCommandBarOpen, openCommandBar]);
 
   useEffect(() => {
     // Apply theme on load and changes
@@ -98,6 +117,8 @@ function App() {
       <PrivacyModal />
       <FeatureGuideModal />
       <CareerCoachModal />
+      <JobFinderModal />
+      <CommandBar />
       <ToastContainer />
     </>
   );

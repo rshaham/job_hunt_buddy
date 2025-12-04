@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
-import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Printer, Tag, HelpCircle } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Tag, HelpCircle, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Button, Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { gradeResume, convertResumeToMarkdown } from '../../services/ai';
@@ -64,65 +66,125 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
     URL.revokeObjectURL(url);
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
-    // Convert markdown to HTML
-    const rawHtml = job.resumeText!
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^\* (.+)$/gm, '<li>$1</li>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPdf(true);
+    setShowDownloadMenu(false);
+    try {
+      // Convert markdown to HTML
+      const rawHtml = job.resumeText!
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^\* (.+)$/gm, '<li>$1</li>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
 
-    // Sanitize HTML to prevent XSS attacks
-    const htmlContent = DOMPurify.sanitize(rawHtml, {
-      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'ul', 'li', 'strong', 'em', 'br'],
-      ALLOWED_ATTR: [],
-    });
+      // Sanitize HTML to prevent XSS attacks
+      const htmlContent = DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'ul', 'li', 'strong', 'em', 'br'],
+        ALLOWED_ATTR: [],
+      });
 
-    // Sanitize title content as well
-    const safeCompany = DOMPurify.sanitize(job.company, { ALLOWED_TAGS: [] });
-    const safeTitle = DOMPurify.sanitize(job.title, { ALLOWED_TAGS: [] });
+      // Create a temporary container for rendering
+      const container = document.createElement('div');
+      container.style.cssText = `
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 7.5in;
+        padding: 0;
+        font-family: Georgia, serif;
+        font-size: 11pt;
+        line-height: 1.4;
+        color: #333;
+        background: white;
+      `;
+      container.innerHTML = `
+        <style>
+          h1 { font-size: 18pt; margin-bottom: 0.3em; color: #000; }
+          h2 { font-size: 13pt; margin-top: 1em; margin-bottom: 0.3em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+          h3 { font-size: 11pt; margin-top: 0.8em; margin-bottom: 0.2em; }
+          p { margin: 0.3em 0; }
+          ul { margin: 0.3em 0; padding-left: 1.2em; }
+          li { margin: 0.15em 0; }
+          strong { font-weight: 600; }
+        </style>
+        <p>${htmlContent}</p>
+      `;
+      document.body.appendChild(container);
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${safeCompany} - ${safeTitle} Resume</title>
-          <style>
-            body {
-              font-family: 'Georgia', serif;
-              max-width: 8.5in;
-              margin: 0 auto;
-              padding: 0.5in;
-              font-size: 11pt;
-              line-height: 1.4;
-              color: #333;
-            }
-            h1 { font-size: 18pt; margin-bottom: 0.3em; color: #000; }
-            h2 { font-size: 13pt; margin-top: 1em; margin-bottom: 0.3em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
-            h3 { font-size: 11pt; margin-top: 0.8em; margin-bottom: 0.2em; }
-            p { margin: 0.3em 0; }
-            ul { margin: 0.3em 0; padding-left: 1.2em; }
-            li { margin: 0.15em 0; }
-            strong { font-weight: 600; }
-            @media print {
-              body { padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <p>${htmlContent}</p>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+      // Render to canvas with higher scale for quality
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      // Remove temporary container
+      document.body.removeChild(container);
+
+      // Create PDF with proper page breaks
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'in',
+        format: 'letter',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 0.5; // 0.5 inch margins
+      const contentWidth = pageWidth - margin * 2;
+      const contentHeight = pageHeight - margin * 2;
+
+      // Calculate image dimensions
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / (imgWidth / 2); // Account for scale: 2
+      const scaledHeight = (imgHeight / 2) * ratio;
+
+      // Calculate how many pages we need
+      const totalPages = Math.ceil(scaledHeight / contentHeight);
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+
+        // Calculate the portion of the image to show on this page
+        const sourceY = (page * contentHeight / ratio) * 2; // Source Y in canvas pixels
+        const sourceHeight = Math.min((contentHeight / ratio) * 2, imgHeight - sourceY);
+
+        // Create a canvas for this page's portion
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = imgWidth;
+        pageCanvas.height = sourceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(
+            canvas,
+            0, sourceY, imgWidth, sourceHeight,
+            0, 0, imgWidth, sourceHeight
+          );
+
+          const pageImgData = pageCanvas.toDataURL('image/png');
+          const pageImgHeight = (sourceHeight / 2) * ratio;
+          pdf.addImage(pageImgData, 'PNG', margin, margin, contentWidth, pageImgHeight);
+        }
+      }
+
+      // Download
+      const filename = `${job.company}-${job.title}-resume.pdf`.replace(/\s+/g, '-').toLowerCase();
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -183,12 +245,49 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
             <Button variant="secondary" size="sm" onClick={() => setIsViewModalOpen(true)} title="View Resume">
               <Eye className="w-4 h-4" />
             </Button>
-            <Button variant="secondary" size="sm" onClick={handleDownload} title="Download Markdown">
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={handlePrint} title="Print / Save as PDF">
-              <Printer className="w-4 h-4" />
-            </Button>
+            <div className="relative">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                disabled={isGeneratingPdf}
+                title="Download"
+              >
+                {isGeneratingPdf ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </>
+                )}
+              </Button>
+              {showDownloadMenu && (
+                <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDownloadPDF();
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Download as PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDownload();
+                      setShowDownloadMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Download as Markdown
+                  </button>
+                </div>
+              )}
+            </div>
             <Button variant="ghost" size="sm" onClick={handleClearResume} title="Remove">
               <Trash2 className="w-4 h-4" />
             </Button>

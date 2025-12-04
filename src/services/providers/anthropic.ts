@@ -1,9 +1,12 @@
 import type { AIMessage, AIProvider } from './index';
 import type { ProviderSettings } from '../../types';
+import type { AIMessageWithTools, AIResponseWithTools, AnthropicToolDef } from '../../types/agent';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 export const anthropicProvider: AIProvider = {
+  supportsToolCalling: true,
+
   async call(messages: AIMessage[], systemPrompt?: string, config?: ProviderSettings): Promise<string> {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -30,6 +33,41 @@ export const anthropicProvider: AIProvider = {
 
     const data = await response.json();
     return data.content[0].text;
+  },
+
+  async callWithTools(
+    messages: AIMessageWithTools[],
+    tools: AnthropicToolDef[],
+    systemPrompt?: string,
+    config?: ProviderSettings
+  ): Promise<AIResponseWithTools> {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': config!.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: config!.model,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages,
+        tools,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Anthropic API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return {
+      content: data.content,
+      stop_reason: data.stop_reason,
+    };
   },
 
   async testConnection(config: ProviderSettings): Promise<boolean> {

@@ -1,0 +1,251 @@
+import { create } from 'zustand';
+import { AgentExecutor } from '../services/agent';
+import type { AgentExecutionState, ConfirmationRequest, AIMessageWithTools } from '../types/agent';
+
+interface ToolCallEntry {
+  id: string;
+  name: string;
+  status: 'pending' | 'executing' | 'complete' | 'error' | 'declined';
+  result?: string;
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+type CommandBarState = 'empty' | 'typing' | 'processing' | 'confirming' | 'complete' | 'error';
+
+interface CommandBarStore {
+  // State
+  isOpen: boolean;
+  state: CommandBarState;
+  inputValue: string;
+  toolCalls: ToolCallEntry[];
+  response: string | null;
+  error: string | null;
+  agentState: AgentExecutionState | null;
+  pendingConfirmation: ConfirmationRequest | null;
+
+  // Conversation history
+  chatHistory: ChatMessage[];
+  agentMessages: AIMessageWithTools[];
+
+  // Internal promise resolvers for confirmation
+  confirmationResolver: ((confirmed: boolean) => void) | null;
+
+  // Actions
+  open: () => void;
+  close: () => void;
+  reset: () => void;
+  clearHistory: () => void;
+  setInput: (value: string) => void;
+  submit: () => Promise<void>;
+  confirmAction: () => void;
+  cancelAction: () => void;
+}
+
+export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
+  // Initial state
+  isOpen: false,
+  state: 'empty',
+  inputValue: '',
+  toolCalls: [],
+  response: null,
+  error: null,
+  agentState: null,
+  pendingConfirmation: null,
+  chatHistory: [],
+  agentMessages: [],
+  confirmationResolver: null,
+
+  open: () => set({ isOpen: true, state: get().chatHistory.length > 0 ? 'complete' : 'empty' }),
+
+  close: () => {
+    const { confirmationResolver } = get();
+    // If waiting for confirmation, treat close as cancel
+    if (confirmationResolver) {
+      confirmationResolver(false);
+    }
+    // Keep conversation history when closing, only reset transient state
+    set({
+      isOpen: false,
+      state: 'empty',
+      inputValue: '',
+      toolCalls: [],
+      error: null,
+      agentState: null,
+      pendingConfirmation: null,
+      confirmationResolver: null,
+    });
+  },
+
+  reset: () => set({
+    state: 'empty',
+    inputValue: '',
+    toolCalls: [],
+    response: null,
+    error: null,
+    agentState: null,
+    pendingConfirmation: null,
+    confirmationResolver: null,
+    // Keep chatHistory and agentMessages for continuing conversation
+  }),
+
+  clearHistory: () => set({
+    state: 'empty',
+    inputValue: '',
+    toolCalls: [],
+    response: null,
+    error: null,
+    agentState: null,
+    pendingConfirmation: null,
+    confirmationResolver: null,
+    chatHistory: [],
+    agentMessages: [],
+  }),
+
+  setInput: (value: string) => {
+    const { chatHistory } = get();
+    set({
+      inputValue: value,
+      state: value.trim() ? 'typing' : (chatHistory.length > 0 ? 'complete' : 'empty'),
+    });
+  },
+
+  submit: async () => {
+    const { inputValue, agentMessages, chatHistory } = get();
+    if (!inputValue.trim()) return;
+
+    const userMessage = inputValue.trim();
+
+    // Add user message to chat history immediately
+    set({
+      state: 'processing',
+      toolCalls: [],
+      response: null,
+      error: null,
+      inputValue: '',
+      chatHistory: [...chatHistory, { role: 'user' as const, content: userMessage }],
+    });
+
+    const executor = new AgentExecutor({
+      initialMessages: agentMessages,
+      onStateChange: (agentState) => {
+        set({ agentState });
+
+        // Track tool calls
+        if (agentState.currentTool && agentState.status === 'executing_tool') {
+          set((state) => {
+            const existingCall = state.toolCalls.find(
+              (tc) => tc.name === agentState.currentTool && tc.status === 'pending'
+            );
+            if (existingCall) {
+              return {
+                toolCalls: state.toolCalls.map((tc) =>
+                  tc.name === agentState.currentTool && tc.status === 'pending'
+                    ? { ...tc, status: 'executing' as const }
+                    : tc
+                ),
+              };
+            }
+            return {
+              toolCalls: [
+                ...state.toolCalls,
+                { id: Date.now().toString(), name: agentState.currentTool!, status: 'executing' as const },
+              ],
+            };
+          });
+        }
+
+        // Mark completed tools
+        if (agentState.toolsExecuted.length > 0) {
+          set((state) => ({
+            toolCalls: state.toolCalls.map((tc) =>
+              agentState.toolsExecuted.includes(tc.name) && tc.status === 'executing'
+                ? { ...tc, status: 'complete' as const }
+                : tc
+            ),
+          }));
+        }
+      },
+
+      onConfirmationRequest: async (request) => {
+        return new Promise<boolean>((resolve) => {
+          set({
+            state: 'confirming',
+            pendingConfirmation: request,
+            confirmationResolver: resolve,
+          });
+        });
+      },
+    });
+
+    try {
+      const response = await executor.run(userMessage);
+
+      // Get updated messages for conversation continuity
+      const newAgentMessages = executor.getMessages();
+
+      set((state) => ({
+        state: 'complete',
+        response,
+        pendingConfirmation: null,
+        confirmationResolver: null,
+        agentMessages: newAgentMessages,
+        chatHistory: [...state.chatHistory, { role: 'assistant' as const, content: response }],
+      }));
+    } catch (error) {
+      set({
+        state: 'error',
+        error: error instanceof Error ? error.message : 'An unknown error occurred',
+        pendingConfirmation: null,
+        confirmationResolver: null,
+      });
+    }
+  },
+
+  confirmAction: () => {
+    const { confirmationResolver, pendingConfirmation } = get();
+    if (confirmationResolver) {
+      // Mark the tool as executing
+      if (pendingConfirmation) {
+        set((state) => ({
+          toolCalls: state.toolCalls.map((tc) =>
+            tc.name === pendingConfirmation.toolName && tc.status === 'pending'
+              ? { ...tc, status: 'executing' as const }
+              : tc
+          ),
+        }));
+      }
+      confirmationResolver(true);
+      set({
+        state: 'processing',
+        pendingConfirmation: null,
+        confirmationResolver: null,
+      });
+    }
+  },
+
+  cancelAction: () => {
+    const { confirmationResolver, pendingConfirmation } = get();
+    if (confirmationResolver) {
+      // Mark the tool as declined
+      if (pendingConfirmation) {
+        set((state) => ({
+          toolCalls: state.toolCalls.map((tc) =>
+            tc.name === pendingConfirmation.toolName && tc.status === 'pending'
+              ? { ...tc, status: 'declined' as const }
+              : tc
+          ),
+        }));
+      }
+      confirmationResolver(false);
+      set({
+        state: 'processing',
+        pendingConfirmation: null,
+        confirmationResolver: null,
+      });
+    }
+  },
+}));
