@@ -36,12 +36,14 @@ export interface SearchResultJob {
  * Search form inputs
  */
 export interface JobSearchCriteria {
-  /** Job title, skills, or keywords */
+  /** Job title, skills, or keywords (or natural language description for AI search) */
   query: string;
   /** City, state, or region */
   location?: string;
   /** Filter for remote jobs only */
   remoteOnly?: boolean;
+  /** Use AI-powered search (multiple queries, ranking, explanations) */
+  useAISearch?: boolean;
 }
 
 /**

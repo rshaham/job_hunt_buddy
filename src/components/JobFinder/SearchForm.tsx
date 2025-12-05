@@ -2,10 +2,11 @@
  * Search Form Component
  *
  * Input form for job search criteria including query, location, and remote toggle.
+ * Supports AI-powered search that uses natural language and multiple queries.
  */
 
 import { useState, type FormEvent } from 'react';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import type { JobSearchCriteria } from '../../types/jobSearch';
@@ -20,6 +21,7 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [remoteOnly, setRemoteOnly] = useState(false);
+  const [useAISearch, setUseAISearch] = useState(true); // Default to AI-powered search
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
       query: searchQuery,
       location: location.trim() || undefined,
       remoteOnly,
+      useAISearch,
     });
   };
 
@@ -66,31 +69,60 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
       </div>
 
       <div className="flex items-center justify-between">
-        {/* Remote toggle */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={remoteOnly}
-            onClick={() => setRemoteOnly(!remoteOnly)}
-            disabled={isSearching || disabled}
-            className={`
-              relative w-11 h-6 rounded-full transition-colors
-              ${remoteOnly ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}
-              ${isSearching || disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-          >
-            <span
+        <div className="flex items-center gap-6">
+          {/* Remote toggle */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={remoteOnly}
+              onClick={() => setRemoteOnly(!remoteOnly)}
+              disabled={isSearching || disabled}
               className={`
-                absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform
-                ${remoteOnly ? 'translate-x-5' : 'translate-x-0'}
+                relative w-11 h-6 rounded-full transition-colors
+                ${remoteOnly ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}
+                ${isSearching || disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
-            />
-          </button>
-          <span className="text-sm text-slate-600 dark:text-slate-400">
-            Remote only
-          </span>
-        </label>
+            >
+              <span
+                className={`
+                  absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform
+                  ${remoteOnly ? 'translate-x-5' : 'translate-x-0'}
+                `}
+              />
+            </button>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Remote only
+            </span>
+          </label>
+
+          {/* AI Search toggle */}
+          <label className="flex items-center gap-2 cursor-pointer" title="AI generates multiple queries and ranks results by match">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={useAISearch}
+              onClick={() => setUseAISearch(!useAISearch)}
+              disabled={isSearching || disabled}
+              className={`
+                relative w-11 h-6 rounded-full transition-colors
+                ${useAISearch ? 'bg-purple-500' : 'bg-slate-300 dark:bg-slate-600'}
+                ${isSearching || disabled ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+            >
+              <span
+                className={`
+                  absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform
+                  ${useAISearch ? 'translate-x-5' : 'translate-x-0'}
+                `}
+              />
+            </button>
+            <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+              <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+              AI Search
+            </span>
+          </label>
+        </div>
 
         {/* Search button */}
         <Button
@@ -104,7 +136,11 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
             </>
           ) : (
             <>
-              <Search className="w-4 h-4 mr-2" />
+              {useAISearch ? (
+                <Sparkles className="w-4 h-4 mr-2" />
+              ) : (
+                <Search className="w-4 h-4 mr-2" />
+              )}
               Search
             </>
           )}
