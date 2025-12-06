@@ -30,6 +30,8 @@ export interface SearchResultJob {
   remote?: boolean;
   /** URL to the job posting */
   link: string;
+  /** Direct application URL from SerApi's apply_options */
+  applyLink?: string;
 }
 
 /**

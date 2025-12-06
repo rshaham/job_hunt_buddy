@@ -11,7 +11,8 @@
  */
 
 import { useAppStore } from '../../../stores/appStore';
-import type { ToolDefinition, ToolResult } from '../../../types/agent';
+import { useCommandBarStore } from '../../../stores/commandBarStore';
+import type { ToolDefinition, ToolResult, ToolProgressCallback } from '../../../types/agent';
 import type { SearchResultJob } from '../../../types/jobSearch';
 import { findExternalJobsSchema, type FindExternalJobsInput } from './schemas';
 import {
@@ -33,12 +34,26 @@ interface RankedJobResult {
   description: string;
   source: string;
   link?: string;
+  applyLink?: string;
   postedAt?: string;
   salary?: string;
   remote?: boolean;
   matchScore: number;
   matchGrade: string;
   matchExplanation: string;
+  /** Pre-formatted markdown links for Preview and View actions */
+  actions: string;
+  /** Google Jobs ID for building deep links */
+  jobId?: string;
+}
+
+/**
+ * Build pre-formatted action links for a job.
+ * Uses jobId for stable linking - the AI agent may reorder results in the table,
+ * so we can't rely on array indices.
+ */
+function buildActionLinks(jobId: string): string {
+  return `[Preview](jhb://preview/${encodeURIComponent(jobId)})`;
 }
 
 interface FindExternalJobsResult {
@@ -117,47 +132,44 @@ function deduplicateJobs(jobs: SearchResultJob[]): SearchResultJob[] {
 }
 
 /**
- * Generate a brief explanation for why a job matches the profile
+ * Generate a brief explanation for why a job matches the profile.
+ * Uses templates instead of AI calls for performance.
  */
-async function generateMatchExplanation(
-  job: SearchResultJob,
-  candidateProfile: string,
-  matchScore: number
-): Promise<string> {
-  // For lower scores or to save API calls, use a simple template
-  if (matchScore < 60) {
-    return `${matchScore}% match - may require additional skills or experience`;
+function getMatchExplanation(matchScore: number): string {
+  if (matchScore >= 85) {
+    return 'Excellent match - strong alignment with your skills and experience';
   }
-
-  const prompt = `In one sentence (max 20 words), explain why this job matches the candidate's profile:
-
-Job: ${job.title} at ${job.company}
-Key points from JD: ${job.description?.slice(0, 500) || 'N/A'}
-
-Candidate skills (excerpt): ${candidateProfile.slice(0, 800)}
-
-Focus on the strongest matching skills/experience. Be specific.`;
-
-  try {
-    const explanation = await callAI([{ role: 'user', content: prompt }]);
-    return explanation.trim().slice(0, 150);
-  } catch {
-    return matchScore >= 80
-      ? 'Strong skills alignment with job requirements'
-      : matchScore >= 70
-        ? 'Good match with relevant experience'
-        : 'Moderate match - some skills align';
+  if (matchScore >= 75) {
+    return 'Strong match - good fit with your background';
   }
+  if (matchScore >= 65) {
+    return 'Good match - relevant experience detected';
+  }
+  if (matchScore >= 55) {
+    return 'Moderate match - some skills align';
+  }
+  return 'Lower match - may require additional skills or experience';
 }
 
 export const findExternalJobsTool: ToolDefinition<FindExternalJobsInput, FindExternalJobsResult> = {
   name: 'find_external_jobs',
-  description: 'Search for new job opportunities using intelligent multi-query search. Generates multiple search queries, aggregates results, and ranks them against your profile. Use this when someone asks to find jobs, search for positions, or look for opportunities. When presenting results, first summarize the search queries used and total results found, then list the top matches with their scores and explanations.',
+  description: `Search for new job opportunities using intelligent multi-query search. Generates multiple search queries, aggregates results, and ranks them against the user's profile.
+
+Use this when someone asks to find jobs, search for positions, or look for opportunities.
+
+When presenting results, format them as follows:
+1. First, summarize the search: "I searched using X queries and found Y unique jobs"
+2. List the queries used
+3. Present the top matches in a markdown table with these columns:
+   | # | Job Title | Company | Score | Location | Actions |
+   Include the match grade (A, B+, etc.) with the score percentage.
+4. IMPORTANT: In the Actions column, use the \`actions\` field value from each job result EXACTLY as provided - it contains pre-formatted clickable links. Do NOT modify or reconstruct these links.
+5. Below the table, mention that users can click Preview to see the full job description.`,
   category: 'read',
   inputSchema: findExternalJobsSchema,
   requiresConfirmation: false,
 
-  async execute(input): Promise<ToolResult<FindExternalJobsResult>> {
+  async execute(input, onProgress?: ToolProgressCallback): Promise<ToolResult<FindExternalJobsResult>> {
     const { settings, jobs: existingJobs } = useAppStore.getState();
     const maxResults = input.maxResults || 15;
 
@@ -166,6 +178,7 @@ export const findExternalJobsTool: ToolDefinition<FindExternalJobsInput, FindExt
     const candidateProfile = hasProfile ? buildCandidateProfile(settings) : null;
 
     // 1. Generate search queries
+    onProgress?.('Generating search queries...');
     console.log('[FindExternalJobs] Generating search queries...');
     const queries = await generateSearchQueries(
       input.description,
@@ -174,24 +187,31 @@ export const findExternalJobsTool: ToolDefinition<FindExternalJobsInput, FindExt
     );
     console.log('[FindExternalJobs] Queries:', queries);
 
-    // 2. Execute searches for each query
-    const allResults: SearchResultJob[] = [];
-    const queriesUsed: string[] = [];
-
-    for (const query of queries) {
+    // 2. Execute searches for all queries in parallel
+    onProgress?.(`Searching ${queries.length} queries in parallel...`);
+    console.log(`[FindExternalJobs] Searching ${queries.length} queries in parallel...`);
+    const searchPromises = queries.map(async (query) => {
       try {
-        console.log(`[FindExternalJobs] Searching: "${query}"`);
         const results = await searchJobs({
           query,
           location: input.location,
         });
-
-        allResults.push(...results);
-        queriesUsed.push(query);
         console.log(`[FindExternalJobs] Got ${results.length} results for "${query}"`);
+        return { query, results, success: true };
       } catch (error) {
         console.warn(`[FindExternalJobs] Search failed for "${query}":`, error);
-        // Continue with other queries
+        return { query, results: [] as SearchResultJob[], success: false };
+      }
+    });
+
+    const searchResults = await Promise.all(searchPromises);
+
+    const allResults: SearchResultJob[] = [];
+    const queriesUsed: string[] = [];
+    for (const { query, results, success } of searchResults) {
+      if (success) {
+        allResults.push(...results);
+        queriesUsed.push(query);
       }
     }
 
@@ -209,6 +229,7 @@ export const findExternalJobsTool: ToolDefinition<FindExternalJobsInput, FindExt
     }
 
     // 3. Deduplicate results
+    onProgress?.(`Found ${allResults.length} jobs, deduplicating...`);
     const uniqueJobs = deduplicateJobs(allResults);
     console.log(`[FindExternalJobs] ${allResults.length} results -> ${uniqueJobs.length} unique`);
 
@@ -220,6 +241,7 @@ export const findExternalJobsTool: ToolDefinition<FindExternalJobsInput, FindExt
     let rankedJobs: RankedJobResult[];
 
     if (hasProfile) {
+      onProgress?.(`Scoring ${newJobs.length} jobs against your profile...`);
       console.log('[FindExternalJobs] Scoring jobs against profile...');
       const profileEmbedding = await getCandidateProfileEmbedding(settings);
 
@@ -234,44 +256,66 @@ export const findExternalJobsTool: ToolDefinition<FindExternalJobsInput, FindExt
       // Sort by score descending
       scoredJobs.sort((a, b) => b.score - a.score);
 
-      // Take top results and generate explanations
+      onProgress?.(`Ranking top ${Math.min(maxResults, scoredJobs.length)} matches...`);
+      // Take top results with template explanations (no AI calls for speed)
       const topJobs = scoredJobs.slice(0, maxResults);
-      rankedJobs = [];
-
-      for (const { job, score } of topJobs) {
-        const explanation = await generateMatchExplanation(job, candidateProfile!, score);
-        rankedJobs.push({
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          description: job.description || '',
-          source: job.source,
-          link: job.link,
-          postedAt: job.postedAt,
-          salary: job.salary,
-          remote: job.remote,
-          matchScore: score,
-          matchGrade: scoreToGrade(score),
-          matchExplanation: explanation,
-        });
-      }
-    } else {
-      // No profile - just return jobs without scoring
-      rankedJobs = newJobs.slice(0, maxResults).map(job => ({
+      rankedJobs = topJobs.map(({ job, score }) => ({
         title: job.title,
         company: job.company,
         location: job.location,
         description: job.description || '',
         source: job.source,
         link: job.link,
+        applyLink: job.applyLink,
+        postedAt: job.postedAt,
+        salary: job.salary,
+        remote: job.remote,
+        matchScore: score,
+        matchGrade: scoreToGrade(score),
+        matchExplanation: getMatchExplanation(score),
+        actions: buildActionLinks(job.jobId),
+        jobId: job.jobId,
+      }));
+    } else {
+      // No profile - just return jobs without scoring
+      rankedJobs = newJobs.slice(0, maxResults).map((job) => ({
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        description: job.description || '',
+        source: job.source,
+        link: job.link,
+        applyLink: job.applyLink,
         postedAt: job.postedAt,
         salary: job.salary,
         remote: job.remote,
         matchScore: 0,
         matchGrade: 'N/A',
         matchExplanation: 'Add your resume to settings to see match scores',
+        actions: buildActionLinks(job.jobId),
+        jobId: job.jobId,
       }));
     }
+
+    // Store results in commandBarStore for preview links
+    useCommandBarStore.getState().setSearchResults(
+      rankedJobs.map(job => ({
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        description: job.description,
+        source: job.source,
+        link: job.link,
+        applyLink: job.applyLink,
+        postedAt: job.postedAt,
+        salary: job.salary,
+        remote: job.remote,
+        matchScore: job.matchScore,
+        matchGrade: job.matchGrade,
+        matchExplanation: job.matchExplanation,
+        jobId: job.jobId,
+      }))
+    );
 
     return {
       success: true,

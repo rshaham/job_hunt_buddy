@@ -129,6 +129,38 @@ export function isJobAlreadyImported(link: string, existingJobs: Job[]): boolean
 }
 
 /**
+ * Build an apply link for a job.
+ * Priority: applyLink (direct apply URL) > link > Google Jobs deep link
+ *
+ * @param job - Job data with title, company, and optionally applyLink/link/jobId
+ * @returns URL to apply for the job
+ */
+export function buildGoogleJobsLink(job: {
+  title: string;
+  company: string;
+  link?: string;
+  applyLink?: string;
+  jobId?: string;
+}): string {
+  // Prefer applyLink - direct application URL from SerApi's apply_options
+  if (job.applyLink?.startsWith('http')) {
+    return job.applyLink;
+  }
+
+  // Fall back to link field if valid
+  if (job.link?.startsWith('http')) {
+    return job.link;
+  }
+
+  // Last resort: Google Jobs deep link with jobId
+  const query = encodeURIComponent(`${job.title} ${job.company}`);
+  if (job.jobId) {
+    return `https://www.google.com/search?q=${query}&ibp=htl;jobs#htidocid=${job.jobId}`;
+  }
+  return `https://www.google.com/search?q=${query}&ibp=htl;jobs`;
+}
+
+/**
  * Convert a match score (0-100) to a letter grade.
  *
  * @param score - Match percentage (0-100)
@@ -170,7 +202,13 @@ export function transformSearchResultToJob(
   return {
     company: result.company,
     title: result.title,
-    jdLink: result.link || '',
+    jdLink: buildGoogleJobsLink({
+      title: result.title,
+      company: result.company,
+      link: result.link,
+      applyLink: result.applyLink,
+      jobId: result.jobId,
+    }),
     jdText: result.description || '',
     status: defaultStatus,
 

@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { AgentExecutor } from '../services/agent';
 import type { AgentExecutionState, ConfirmationRequest, AIMessageWithTools } from '../types/agent';
+import type { PreviewJob } from '../components/JobFinder';
+
+/** Search result from agent's find_external_jobs tool */
+export interface AgentSearchResult extends PreviewJob {
+  matchExplanation?: string;
+}
 
 interface ToolCallEntry {
   id: string;
@@ -31,6 +37,9 @@ interface CommandBarStore {
   chatHistory: ChatMessage[];
   agentMessages: AIMessageWithTools[];
 
+  // Search results from agent (for preview links)
+  searchResults: AgentSearchResult[];
+
   // Internal promise resolvers for confirmation
   confirmationResolver: ((confirmed: boolean) => void) | null;
 
@@ -43,6 +52,7 @@ interface CommandBarStore {
   submit: () => Promise<void>;
   confirmAction: () => void;
   cancelAction: () => void;
+  setSearchResults: (results: AgentSearchResult[]) => void;
 }
 
 export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
@@ -57,6 +67,7 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   pendingConfirmation: null,
   chatHistory: [],
   agentMessages: [],
+  searchResults: [],
   confirmationResolver: null,
 
   open: () => set({ isOpen: true, state: get().chatHistory.length > 0 ? 'complete' : 'empty' }),
@@ -248,4 +259,6 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
       });
     }
   },
+
+  setSearchResults: (results) => set({ searchResults: results }),
 }));

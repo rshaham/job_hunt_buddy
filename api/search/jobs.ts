@@ -36,6 +36,11 @@ interface SerpapiJobResult {
   };
   job_id?: string;
   link?: string;
+  // Apply options contain actual application links (LinkedIn, Indeed, company site, etc.)
+  apply_options?: {
+    title: string;  // e.g., "LinkedIn", "Indeed", "Company Website"
+    link: string;   // Direct application URL
+  }[];
 }
 
 interface SerpapiResponse {
@@ -58,6 +63,7 @@ interface JobResult {
   remote?: boolean;
   jobId?: string;
   link?: string;
+  applyLink?: string;  // Direct application link from apply_options
 }
 
 export default async function handler(
@@ -187,6 +193,8 @@ export default async function handler(
       remote: job.detected_extensions?.work_from_home,
       jobId: job.job_id,
       link: job.link,
+      // Use first apply option's link if available (direct application URL)
+      applyLink: job.apply_options?.[0]?.link,
     }));
 
     return res.status(200).json({

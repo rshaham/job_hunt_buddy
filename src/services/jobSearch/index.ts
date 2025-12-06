@@ -10,6 +10,7 @@ export {
   searchJobs,
   isJobAlreadyImported,
   scoreToGrade,
+  buildGoogleJobsLink,
   transformSearchResultToJob,
   enrichSearchResults,
   JobSearchError,

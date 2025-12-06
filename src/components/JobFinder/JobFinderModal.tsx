@@ -5,7 +5,7 @@
  * with resume match scoring.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, FileText, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -16,6 +16,8 @@ import { hasValidCandidateProfile } from '../../services/jobSearch';
 import { isFeatureAvailable } from '../../utils/featureFlags';
 import { SearchForm } from './SearchForm';
 import { SearchResultCard } from './SearchResultCard';
+import { JobPreviewModal } from './JobPreviewModal';
+import type { EnrichedSearchResult } from '../../types/jobSearch';
 
 export function JobFinderModal() {
   const {
@@ -46,6 +48,9 @@ export function JobFinderModal() {
     deselectAll,
     importSelectedJobs,
   } = useJobSearchStore();
+
+  // State for preview modal
+  const [previewJob, setPreviewJob] = useState<EnrichedSearchResult | null>(null);
 
   // Clear results when modal closes
   useEffect(() => {
@@ -254,6 +259,7 @@ export function JobFinderModal() {
                   key={job.jobId}
                   job={job}
                   onToggleSelect={toggleSelection}
+                  onPreview={setPreviewJob}
                 />
               ))}
             </div>
@@ -299,6 +305,14 @@ export function JobFinderModal() {
             </div>
           </div>
         )}
+
+        {/* Job Preview Modal */}
+        <JobPreviewModal
+          isOpen={!!previewJob}
+          onClose={() => setPreviewJob(null)}
+          job={previewJob}
+          isImported={previewJob?.isImported}
+        />
       </div>
     </Modal>
   );
