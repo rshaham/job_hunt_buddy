@@ -238,6 +238,16 @@ export const deleteTimelineEventSchema = z.object({
 });
 
 // ============================================
+// External Job Search Schema
+// ============================================
+
+export const findExternalJobsSchema = z.object({
+  description: z.string().describe('Natural language description of what jobs to search for (e.g., "senior React developer at gaming companies", "remote backend engineer with Python")'),
+  location: z.string().optional().describe('Preferred location (e.g., "San Francisco", "Remote", "New York")'),
+  maxResults: z.number().default(15).describe('Maximum number of results to return after deduplication and ranking'),
+});
+
+// ============================================
 // Type exports
 // ============================================
 
@@ -279,3 +289,4 @@ export type UpdateContactInput = z.infer<typeof updateContactSchema>;
 export type DeleteContactInput = z.infer<typeof deleteContactSchema>;
 export type UpdateTimelineEventInput = z.infer<typeof updateTimelineEventSchema>;
 export type DeleteTimelineEventInput = z.infer<typeof deleteTimelineEventSchema>;
+export type FindExternalJobsInput = z.infer<typeof findExternalJobsSchema>;

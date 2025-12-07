@@ -219,17 +219,21 @@ export class AgentExecutor {
         }
       }
 
-      // Execute the tool
+      // Execute the tool with progress callback
       this.updateState({
         status: 'executing_tool',
         currentTool: call.name,
+        toolProgress: undefined,
         pendingConfirmation: undefined,
       });
 
-      const result = await toolRegistry.execute(call);
+      const result = await toolRegistry.execute(call, (message) => {
+        this.updateState({ toolProgress: message });
+      });
 
       this.updateState({
         toolsExecuted: [...this.state.toolsExecuted, call.name],
+        toolProgress: undefined,
       });
 
       results.push({

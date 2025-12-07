@@ -5,7 +5,7 @@
  * and selection checkbox.
  */
 
-import { Check, ExternalLink, MapPin, Clock, DollarSign, Building2 } from 'lucide-react';
+import { Check, ExternalLink, MapPin, Clock, DollarSign, Building2, Eye } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { MatchScoreBadge } from './MatchScoreBadge';
 import type { EnrichedSearchResult } from '../../types/jobSearch';
@@ -13,9 +13,10 @@ import type { EnrichedSearchResult } from '../../types/jobSearch';
 interface SearchResultCardProps {
   job: EnrichedSearchResult;
   onToggleSelect: (jobId: string) => void;
+  onPreview: (job: EnrichedSearchResult) => void;
 }
 
-export function SearchResultCard({ job, onToggleSelect }: SearchResultCardProps) {
+export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResultCardProps) {
   const handleClick = () => {
     if (!job.isImported) {
       onToggleSelect(job.jobId);
@@ -125,18 +126,31 @@ export function SearchResultCard({ job, onToggleSelect }: SearchResultCardProps)
           <span className="text-xs text-slate-400 dark:text-slate-500">
             {job.source}
           </span>
-          {job.link && (
-            <a
-              href={job.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-xs text-primary hover:underline"
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreview(job);
+              }}
+              className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary"
             >
-              View Original
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
+              <Eye className="w-3 h-3" />
+              Preview
+            </button>
+            {job.link && (
+              <a
+                href={job.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                View Original
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>

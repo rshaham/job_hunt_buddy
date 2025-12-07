@@ -1,7 +1,19 @@
-import { useEffect, useRef } from 'react';
-import { useCommandBarStore } from '../../stores/commandBarStore';
-import ReactMarkdown from 'react-markdown';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCommandBarStore, type AgentSearchResult } from '../../stores/commandBarStore';
+import { useAppStore } from '../../stores/appStore';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { JobPreviewModal } from '../JobFinder';
+import { buildGoogleJobsLink } from '../../services/jobSearch';
+import { analyzeJobDescription } from '../../services/ai';
+
+// Custom URL transform that preserves jhb:// protocol (not in ReactMarkdown's default whitelist)
+const customUrlTransform = (url: string) => {
+  if (url.startsWith('jhb://')) {
+    return url;
+  }
+  return defaultUrlTransform(url);
+};
 
 // Suggested commands for quick access
 const SUGGESTED_COMMANDS = [
@@ -22,6 +34,8 @@ export function CommandBar() {
     error,
     pendingConfirmation,
     chatHistory,
+    agentState,
+    searchResults,
     close,
     setInput,
     submit,
@@ -32,6 +46,90 @@ export function CommandBar() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [previewJob, setPreviewJob] = useState<AgentSearchResult | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  // Get addJob from app store
+  const { addJob } = useAppStore();
+
+  // Handle preview link clicks (jhb://preview/JOBID)
+  const handlePreviewLink = useCallback((href: string) => {
+    console.log('[CommandBar] Preview link clicked:', href);
+    const match = href.match(/^jhb:\/\/preview\/(.+)$/);
+    if (match) {
+      const jobId = decodeURIComponent(match[1]);
+      console.log('[CommandBar] Looking for jobId:', jobId, 'in', searchResults.length, 'results');
+      const job = searchResults.find(r => r.jobId === jobId);
+      if (job) {
+        setPreviewJob(job);
+        return true;
+      } else {
+        console.warn('[CommandBar] No job found with jobId:', jobId);
+      }
+    } else {
+      console.warn('[CommandBar] Unexpected preview link format:', href);
+    }
+    return false;
+  }, [searchResults]);
+
+  // Handle importing a job from the preview modal
+  const handleImportJob = useCallback(async () => {
+    if (!previewJob) return;
+
+    setIsImporting(true);
+    try {
+      // Get the default status from settings (matches importSelectedJobs behavior)
+      const { settings } = useAppStore.getState();
+      const defaultStatus = settings.statuses[0]?.name || 'Interested';
+
+      // Build job link using shared utility
+      const jobLink = buildGoogleJobsLink({
+        title: previewJob.title,
+        company: previewJob.company,
+        link: previewJob.link,
+        applyLink: previewJob.applyLink,
+        jobId: previewJob.jobId,
+      });
+
+      // Prepare base job data
+      const jobData: Parameters<typeof addJob>[0] = {
+        company: previewJob.company,
+        title: previewJob.title,
+        jdText: previewJob.description,
+        jdLink: jobLink,
+        status: defaultStatus,
+        summary: null,
+        resumeAnalysis: null,
+        coverLetter: null,
+        contacts: [],
+        notes: [],
+        timeline: [],
+        prepMaterials: [],
+        qaHistory: [],
+        learningTasks: [],
+      };
+
+      // Run AI analysis if we have a description (matches importSelectedJobs behavior)
+      if (previewJob.description) {
+        try {
+          console.log('[CommandBar] Analyzing job description...');
+          const analysis = await analyzeJobDescription(previewJob.description);
+          if (analysis.company) jobData.company = analysis.company;
+          if (analysis.title) jobData.title = analysis.title;
+          if (analysis.summary) jobData.summary = analysis.summary;
+        } catch (error) {
+          console.warn('[CommandBar] AI analysis failed, continuing with basic data:', error);
+        }
+      }
+
+      await addJob(jobData);
+      setPreviewJob(null); // Close modal after successful import
+    } catch (error) {
+      console.error('[CommandBar] Failed to import job:', error);
+    } finally {
+      setIsImporting(false);
+    }
+  }, [previewJob, addJob]);
 
   // Focus input when opened or after response
   useEffect(() => {
@@ -40,12 +138,12 @@ export function CommandBar() {
     }
   }, [isOpen, state]);
 
-  // Scroll to bottom when chat history changes
+  // Scroll to bottom when chat history changes or progress updates
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [chatHistory, toolCalls]);
+  }, [chatHistory, toolCalls, agentState?.toolProgress]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -89,7 +187,10 @@ export function CommandBar() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/50 backdrop-blur-sm"
-      onClick={close}
+      onClick={() => {
+        // Don't close CommandBar if preview modal is open (prevents both closing at once)
+        if (!previewJob) close();
+      }}
     >
       <div
         className="w-[60vw] min-w-[400px] max-w-[1200px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[80vh]"
@@ -154,17 +255,33 @@ export function CommandBar() {
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-table:border-collapse prose-th:border prose-th:border-gray-300 prose-th:dark:border-gray-600 prose-th:px-3 prose-th:py-2 prose-th:bg-gray-200 prose-th:dark:bg-gray-600 prose-td:border prose-td:border-gray-300 prose-td:dark:border-gray-600 prose-td:px-3 prose-td:py-2">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
+                          urlTransform={customUrlTransform}
                           components={{
-                            a: ({ href, children }) => (
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300"
-                              >
-                                {children}
-                              </a>
-                            ),
+                            a: ({ href, children }) => {
+                              // Handle custom jhb:// protocol links
+                              if (href?.startsWith('jhb://')) {
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePreviewLink(href)}
+                                    className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300 cursor-pointer"
+                                  >
+                                    {children}
+                                  </button>
+                                );
+                              }
+                              // Regular external links
+                              return (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-300"
+                                >
+                                  {children}
+                                </a>
+                              );
+                            },
                           }}
                         >
                           {msg.content}
@@ -230,6 +347,13 @@ export function CommandBar() {
                   );
                 });
               })()}
+
+              {/* Progress message from current tool */}
+              {agentState?.toolProgress && (
+                <div className="text-sm text-gray-500 dark:text-gray-400 italic pl-6 mt-1">
+                  {agentState.toolProgress}
+                </div>
+              )}
             </div>
           )}
 
@@ -310,6 +434,15 @@ export function CommandBar() {
           </kbd>
         </div>
       </div>
+
+      {/* Job Preview Modal */}
+      <JobPreviewModal
+        isOpen={!!previewJob}
+        onClose={() => setPreviewJob(null)}
+        job={previewJob}
+        onImport={handleImportJob}
+        isImporting={isImporting}
+      />
     </div>
   );
 }

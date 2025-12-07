@@ -30,18 +30,22 @@ export interface SearchResultJob {
   remote?: boolean;
   /** URL to the job posting */
   link: string;
+  /** Direct application URL from SerApi's apply_options */
+  applyLink?: string;
 }
 
 /**
  * Search form inputs
  */
 export interface JobSearchCriteria {
-  /** Job title, skills, or keywords */
+  /** Job title, skills, or keywords (or natural language description for AI search) */
   query: string;
   /** City, state, or region */
   location?: string;
   /** Filter for remote jobs only */
   remoteOnly?: boolean;
+  /** Use AI-powered search (multiple queries, ranking, explanations) */
+  useAISearch?: boolean;
 }
 
 /**

@@ -27,7 +27,9 @@ import {
   JobSearchError,
 } from '../services/jobSearch';
 import { generateEnhancedSearchQuery, analyzeJobDescription } from '../services/ai';
+import { findExternalJobsTool } from '../services/agent/tools/findExternalJobsTool';
 import { useAppStore } from './appStore';
+import { generateId } from '../utils/helpers';
 
 interface JobSearchState {
   // Search state
@@ -37,6 +39,10 @@ interface JobSearchState {
   isEnhancingQuery: boolean;
   enhancedQuery: string | null;
   searchError: string | null;
+
+  // AI search state
+  aiSearchQueries: string[] | null;
+  aiSearchStats: { totalFound: number; totalAfterDedup: number } | null;
 
   // Scoring state
   scoringProgress: { completed: number; total: number };
@@ -84,6 +90,8 @@ export const useJobSearchStore = create<JobSearchState & JobSearchActions>(
     isEnhancingQuery: false,
     enhancedQuery: null,
     searchError: null,
+    aiSearchQueries: null,
+    aiSearchStats: null,
     scoringProgress: { completed: 0, total: 0 },
     isScoring: false,
     scoringAbortController: null,
@@ -111,10 +119,61 @@ export const useJobSearchStore = create<JobSearchState & JobSearchActions>(
         scoringProgress: { completed: 0, total: 0 },
         isScoring: false,
         scoringAbortController: null,
+        aiSearchQueries: null,
+        aiSearchStats: null,
       });
 
       try {
-        const { settings } = useAppStore.getState();
+        const { settings, jobs } = useAppStore.getState();
+
+        // AI-powered search path
+        if (criteria.useAISearch) {
+          set({ isEnhancingQuery: true });
+
+          const result = await findExternalJobsTool.execute({
+            description: criteria.query,
+            location: criteria.location,
+            maxResults: 20,
+          });
+
+          if (!result.success) {
+            throw new Error('error' in result ? result.error : 'AI search failed');
+          }
+
+          const { jobs: aiJobs, queriesUsed, totalFound, totalAfterDedup } = result.data;
+
+          // Transform AI results to EnrichedSearchResult format
+          const enrichedResults: EnrichedSearchResult[] = aiJobs.map((job) => ({
+            jobId: generateId(),
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            source: job.source,
+            description: job.description,
+            postedAt: job.postedAt,
+            salary: job.salary,
+            remote: job.remote,
+            link: job.link || '',
+            matchScore: job.matchScore,
+            matchGrade: job.matchGrade,
+            isSelected: false,
+            isImported: job.link ? jobs.some(j => j.jdLink === job.link) : false,
+            scoreStatus: 'complete' as const,
+          }));
+
+          set({
+            results: enrichedResults,
+            isSearching: false,
+            isEnhancingQuery: false,
+            enhancedQuery: queriesUsed.join(' | '),
+            aiSearchQueries: queriesUsed,
+            aiSearchStats: { totalFound, totalAfterDedup },
+          });
+
+          return;
+        }
+
+        // Standard search path (existing logic)
         let searchQuery = criteria.query;
 
         // If we have a valid candidate profile, enhance the search query with AI
@@ -139,9 +198,6 @@ export const useJobSearchStore = create<JobSearchState & JobSearchActions>(
 
         // Perform search with (possibly enhanced) query
         const rawResults = await searchJobs({ ...criteria, query: searchQuery });
-
-        // Get existing jobs to check for duplicates
-        const { jobs } = useAppStore.getState();
 
         // Enrich results with initial state
         const enrichedResults = enrichSearchResults(rawResults, jobs);
@@ -255,6 +311,9 @@ export const useJobSearchStore = create<JobSearchState & JobSearchActions>(
         isScoring: false,
         scoringAbortController: null,
         selectedIds: new Set(),
+        aiSearchQueries: null,
+        aiSearchStats: null,
+        enhancedQuery: null,
       });
     },
 

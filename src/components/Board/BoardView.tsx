@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search, ArrowUpDown, X } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
@@ -20,6 +20,9 @@ import { Button } from '../ui';
 import { EmbeddingStatus } from '../EmbeddingStatus';
 import { isFeatureEnabled } from '../../utils/featureFlags';
 import type { Job } from '../../types';
+
+type SortOption = 'dateAdded' | 'company' | 'title' | 'resumeFit';
+type SortDirection = 'asc' | 'desc';
 
 export function BoardView() {
   const {
@@ -37,6 +40,11 @@ export function BoardView() {
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
+
+  // Filter and sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('dateAdded');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -82,13 +90,68 @@ export function BoardView() {
     }
   };
 
+  // Filter and sort jobs
+  const filteredAndSortedJobs = useMemo(() => {
+    let result = [...jobs];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (job) =>
+          job.company.toLowerCase().includes(query) ||
+          job.title.toLowerCase().includes(query) ||
+          job.summary?.shortDescription?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort jobs
+    result.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'dateAdded':
+          comparison = new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime();
+          break;
+        case 'company':
+          comparison = a.company.localeCompare(b.company);
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'resumeFit':
+          const aFit = a.resumeAnalysis?.matchPercentage ?? -1;
+          const bFit = b.resumeAnalysis?.matchPercentage ?? -1;
+          comparison = aFit - bFit;
+          break;
+      }
+
+      return sortDirection === 'desc' ? -comparison : comparison;
+    });
+
+    return result;
+  }, [jobs, searchQuery, sortBy, sortDirection]);
+
   const jobsByStatus = settings.statuses.reduce(
     (acc, status) => {
-      acc[status.name] = jobs.filter((job) => job.status === status.name);
+      acc[status.name] = filteredAndSortedJobs.filter((job) => job.status === status.name);
       return acc;
     },
     {} as Record<string, Job[]>
   );
+
+  const totalVisible = filteredAndSortedJobs.length;
+  const hasActiveFilters = searchQuery.trim() !== '';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSortBy('dateAdded');
+    setSortDirection('desc');
+  };
+
+  const toggleSortDirection = () => {
+    setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+  };
 
   return (
     <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-900">
@@ -155,6 +218,64 @@ export function BoardView() {
           </Button>
         </div>
       </header>
+
+      {/* Filter/Sort Toolbar */}
+      <div className="flex items-center gap-4 px-6 py-2 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        {/* Search */}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search jobs..."
+            className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+              bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
+
+        {/* Sort */}
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="w-4 h-4 text-slate-400" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            title="Sort by"
+            className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+              bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="dateAdded">Date Added</option>
+            <option value="resumeFit">Resume Fit</option>
+            <option value="company">Company</option>
+            <option value="title">Title</option>
+          </select>
+          <button
+            type="button"
+            onClick={toggleSortDirection}
+            className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+              bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+            title={sortDirection === 'desc' ? 'Descending' : 'Ascending'}
+          >
+            {sortDirection === 'desc' ? '↓' : '↑'}
+          </button>
+        </div>
+
+        {/* Clear & Count */}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="flex items-center gap-1 px-2 py-1 text-sm text-slate-600 dark:text-slate-400
+              hover:text-red-600 dark:hover:text-red-400 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Clear
+          </button>
+        )}
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          {hasActiveFilters ? `${totalVisible} of ${jobs.length}` : `${jobs.length} jobs`}
+        </span>
+      </div>
 
       {/* Board */}
       <div className="flex-1 overflow-x-auto p-6">

@@ -5,7 +5,7 @@
  * with resume match scoring.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, FileText, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -16,6 +16,8 @@ import { hasValidCandidateProfile } from '../../services/jobSearch';
 import { isFeatureAvailable } from '../../utils/featureFlags';
 import { SearchForm } from './SearchForm';
 import { SearchResultCard } from './SearchResultCard';
+import { JobPreviewModal } from './JobPreviewModal';
+import type { EnrichedSearchResult } from '../../types/jobSearch';
 
 export function JobFinderModal() {
   const {
@@ -37,6 +39,8 @@ export function JobFinderModal() {
     selectedIds,
     isImporting,
     importProgress,
+    aiSearchQueries,
+    aiSearchStats,
     search,
     clearResults,
     toggleSelection,
@@ -44,6 +48,9 @@ export function JobFinderModal() {
     deselectAll,
     importSelectedJobs,
   } = useJobSearchStore();
+
+  // State for preview modal
+  const [previewJob, setPreviewJob] = useState<EnrichedSearchResult | null>(null);
 
   // Clear results when modal closes
   useEffect(() => {
@@ -152,6 +159,11 @@ export function JobFinderModal() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                 <span>{results.length} jobs found</span>
+                {aiSearchStats && (
+                  <span className="text-purple-600 dark:text-purple-400">
+                    ({aiSearchStats.totalFound} total, {aiSearchStats.totalAfterDedup} unique)
+                  </span>
+                )}
                 {isScoring && (
                   <span className="flex items-center gap-1.5">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -182,6 +194,18 @@ export function JobFinderModal() {
                 </Button>
               </div>
             </div>
+            {/* AI Search queries used */}
+            {aiSearchQueries && aiSearchQueries.length > 0 && (
+              <div className="mt-2 text-xs text-slate-500 dark:text-slate-500">
+                <span className="text-purple-600 dark:text-purple-400 font-medium">AI queries:</span>{' '}
+                {aiSearchQueries.map((q, i) => (
+                  <span key={i}>
+                    {i > 0 && ' • '}
+                    <span className="text-slate-600 dark:text-slate-400">"{q}"</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -213,13 +237,17 @@ export function JobFinderModal() {
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                {isEnhancingQuery ? 'Optimizing search for your profile...' : 'Searching for jobs...'}
+                {isEnhancingQuery
+                  ? 'AI is generating search queries and ranking results...'
+                  : 'Searching for jobs...'}
               </h3>
-              {enhancedQuery && !isEnhancingQuery && (
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-                  Searching: "{enhancedQuery}"
-                </p>
-              )}
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                {isEnhancingQuery
+                  ? 'Analyzing your profile and generating multiple search strategies'
+                  : enhancedQuery
+                    ? `Searching: "${enhancedQuery}"`
+                    : 'Finding jobs that match your criteria'}
+              </p>
             </div>
           )}
 
@@ -231,6 +259,7 @@ export function JobFinderModal() {
                   key={job.jobId}
                   job={job}
                   onToggleSelect={toggleSelection}
+                  onPreview={setPreviewJob}
                 />
               ))}
             </div>
@@ -276,6 +305,14 @@ export function JobFinderModal() {
             </div>
           </div>
         )}
+
+        {/* Job Preview Modal */}
+        <JobPreviewModal
+          isOpen={!!previewJob}
+          onClose={() => setPreviewJob(null)}
+          job={previewJob}
+          isImported={previewJob?.isImported}
+        />
       </div>
     </Modal>
   );

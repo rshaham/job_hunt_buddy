@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ToolDefinitionBase, ToolResult, AnthropicToolDef, ToolUseBlock } from '../../types/agent';
+import type { ToolDefinitionBase, ToolResult, AnthropicToolDef, ToolUseBlock, ToolProgressCallback } from '../../types/agent';
 
 /**
  * Tool Registry - manages all available tools for the agent
@@ -76,8 +76,10 @@ export class ToolRegistry {
 
   /**
    * Execute a tool call
+   * @param toolCall - The tool call from the AI
+   * @param onProgress - Optional callback for tools to report progress
    */
-  async execute(toolCall: ToolUseBlock): Promise<ToolResult> {
+  async execute(toolCall: ToolUseBlock, onProgress?: ToolProgressCallback): Promise<ToolResult> {
     const tool = this.tools.get(toolCall.name);
 
     if (!tool) {
@@ -98,8 +100,8 @@ export class ToolRegistry {
         };
       }
 
-      // Execute the tool
-      return await tool.execute(parseResult.data);
+      // Execute the tool with progress callback
+      return await tool.execute(parseResult.data, onProgress);
     } catch (error) {
       return {
         success: false,

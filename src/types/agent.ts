@@ -8,6 +8,9 @@ export type ToolResult<T = unknown> =
   | { success: true; data: T }
   | { success: false; error: string };
 
+// Progress callback for tools to report their progress
+export type ToolProgressCallback = (message: string) => void;
+
 // Base tool definition interface (for collections/registry)
 // Uses 'any' to allow storing heterogeneous tool types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,14 +24,14 @@ export interface ToolDefinitionBase {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   confirmationMessage?: (input: any) => string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  execute: (input: any) => Promise<ToolResult<any>>;
+  execute: (input: any, onProgress?: ToolProgressCallback) => Promise<ToolResult<any>>;
 }
 
 // Typed tool definition interface (for individual tool implementations)
 export interface ToolDefinition<TInput = unknown, TOutput = unknown> extends Omit<ToolDefinitionBase, 'inputSchema' | 'confirmationMessage' | 'execute'> {
   inputSchema: ZodSchema<TInput>;
   confirmationMessage?: (input: TInput) => string;
-  execute: (input: TInput) => Promise<ToolResult<TOutput>>;
+  execute: (input: TInput, onProgress?: ToolProgressCallback) => Promise<ToolResult<TOutput>>;
 }
 
 // Content block types from Anthropic API
@@ -89,6 +92,8 @@ export type AgentStatus =
 export interface AgentExecutionState {
   status: AgentStatus;
   currentTool?: string;
+  /** Progress message from the currently executing tool */
+  toolProgress?: string;
   iterationCount: number;
   maxIterations: number;
   toolsExecuted: string[];

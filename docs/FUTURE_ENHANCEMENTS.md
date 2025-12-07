@@ -4,6 +4,18 @@ This document tracks planned features and improvements for Job Hunt Buddy. Use t
 
 ## High Priority
 
+### Bulk URL Import
+- Paste messy text containing job URLs (LinkedIn posts, recruiter messages, etc.)
+- Automatically extract and parse valid job URLs
+- Fetch job details from each URL
+- Batch import multiple jobs at once
+- Handle various URL formats (LinkedIn, Indeed, Greenhouse, Lever, company career pages)
+
+### Browser Extension Context Menu
+- Right-click on any job posting link → "Add to Job Hunt Buddy"
+- Works on any page, not just supported job boards
+- Quick capture without opening the extension popup
+
 ### Calendar Integration
 - Sync interviews to Google Calendar / Outlook
 - Set reminders for follow-ups

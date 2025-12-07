@@ -52,7 +52,7 @@ function getAIConfig(): { provider: ProviderType; config: ProviderSettings } {
   };
 }
 
-async function callAI(
+export async function callAI(
   messages: AIMessage[],
   systemPrompt?: string,
   overrideConfig?: { provider?: ProviderType; apiKey?: string; model?: string; baseUrl?: string }
@@ -73,7 +73,7 @@ async function callAI(
   return getProvider(provider).call(messages, systemPrompt, config);
 }
 
-function extractJSON(text: string): string {
+export function extractJSON(text: string): string {
   let input = text;
 
   // Strip markdown code fences if present
@@ -82,8 +82,8 @@ function extractJSON(text: string): string {
     input = codeBlockMatch[1];
   }
 
-  // Try to find JSON object in the response
-  const jsonMatch = input.match(/\{[\s\S]*\}/);
+  // Try to find JSON object OR array in the response
+  const jsonMatch = input.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
   if (!jsonMatch) {
     throw new Error('Model did not return JSON. Try again or use a more capable model (Claude, GPT-4, or Gemini).');
   }

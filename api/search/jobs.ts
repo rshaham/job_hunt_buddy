@@ -36,6 +36,11 @@ interface SerpapiJobResult {
   };
   job_id?: string;
   link?: string;
+  // Apply options contain actual application links (LinkedIn, Indeed, company site, etc.)
+  apply_options?: {
+    title: string;  // e.g., "LinkedIn", "Indeed", "Company Website"
+    link: string;   // Direct application URL
+  }[];
 }
 
 interface SerpapiResponse {
@@ -44,6 +49,80 @@ interface SerpapiResponse {
     google_jobs_url?: string;
   };
   error?: string;
+}
+
+/**
+ * Select the best apply link from apply_options based on priority:
+ * 1. Company site (matches company name in title/link, or careers/corporate keywords)
+ * 2. Greendoor
+ * 3. LinkedIn
+ * 4. Indeed
+ * 5. Any other option (except blocklisted sites)
+ * 6. Blocklisted sites (bandana, etc.) - only as last resort
+ */
+function selectBestApplyLink(
+  applyOptions: { title: string; link: string }[] | undefined,
+  companyName: string
+): string | undefined {
+  if (!applyOptions || applyOptions.length === 0) return undefined;
+
+  // Sites that require login or have poor UX - use only as last resort
+  const isBlocklisted = (opt: { title: string; link: string }) =>
+    /bandana/i.test(opt.title) || /bandana/i.test(opt.link);
+
+  // Filter out blocklisted options for priority matching
+  const goodOptions = applyOptions.filter(opt => !isBlocklisted(opt));
+
+  // Normalize company name for matching (remove common suffixes, lowercase)
+  const normalizedCompany = companyName
+    .toLowerCase()
+    .replace(/\s*(inc\.?|llc|ltd\.?|corp\.?|corporation|company|co\.?)$/i, '')
+    .trim();
+
+  // Check if option matches company (by name or typical company site patterns)
+  const isCompanySite = (opt: { title: string; link: string }) => {
+    const titleLower = opt.title.toLowerCase();
+    const linkLower = opt.link.toLowerCase();
+
+    // Match company name in title or link
+    if (normalizedCompany && (titleLower.includes(normalizedCompany) || linkLower.includes(normalizedCompany))) {
+      return true;
+    }
+
+    // Match generic company site patterns
+    return /company|career|jobs?\.|corporate|hire/i.test(opt.title) ||
+           /career|jobs?\./i.test(opt.link);
+  };
+
+  // Priority 1: Company site
+  const companySite = goodOptions.find(isCompanySite);
+  if (companySite) return companySite.link;
+
+  // Priority 2: Greendoor
+  const greendoor = goodOptions.find(opt =>
+    /greendoor|green\s*door/i.test(opt.title) || /greendoor/i.test(opt.link)
+  );
+  if (greendoor) return greendoor.link;
+
+  // Priority 3: LinkedIn
+  const linkedin = goodOptions.find(opt =>
+    /linkedin/i.test(opt.title) || /linkedin/i.test(opt.link)
+  );
+  if (linkedin) return linkedin.link;
+
+  // Priority 4: Indeed
+  const indeed = goodOptions.find(opt =>
+    /indeed/i.test(opt.title) || /indeed/i.test(opt.link)
+  );
+  if (indeed) return indeed.link;
+
+  // Priority 5: Any non-blocklisted option
+  if (goodOptions.length > 0) {
+    return goodOptions[0].link;
+  }
+
+  // Last resort: blocklisted option (better than nothing)
+  return applyOptions[0]?.link;
 }
 
 // Transform SerApi response to a simpler format
@@ -58,6 +137,7 @@ interface JobResult {
   remote?: boolean;
   jobId?: string;
   link?: string;
+  applyLink?: string;  // Direct application link from apply_options
 }
 
 export default async function handler(
@@ -187,6 +267,8 @@ export default async function handler(
       remote: job.detected_extensions?.work_from_home,
       jobId: job.job_id,
       link: job.link,
+      // Select best apply link based on priority (company site > greendoor > linkedin > indeed)
+      applyLink: selectBestApplyLink(job.apply_options, job.company_name),
     }));
 
     return res.status(200).json({
