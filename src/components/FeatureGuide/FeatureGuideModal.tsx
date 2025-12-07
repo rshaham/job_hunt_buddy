@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   BookmarkCheck,
   UserCircle,
@@ -25,12 +26,89 @@ import {
   MapPin,
   Target,
   BarChart3,
+  Kanban,
+  ArrowUpDown,
+  GripVertical,
+  Columns,
+  Pencil,
+  Zap,
+  Moon,
+  Command,
 } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 
+type TabId = 'new' | 'board' | 'job-detail' | 'ai' | 'profile';
+
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  items: { icon: React.ReactNode; label: string; text: string }[];
+  location: string;
+  color: string;
+  isNew?: boolean;
+}
+
+function FeatureCard({ icon, title, description, items, location, color, isNew }: FeatureCardProps) {
+  const colorClasses: Record<string, string> = {
+    purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+    green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+    indigo: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
+    amber: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+    rose: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800',
+    teal: 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800',
+    slate: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+    cyan: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
+    gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700',
+    orange: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
+    pink: 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800',
+    violet: 'bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800',
+    lime: 'bg-lime-50 dark:bg-lime-900/20 border-lime-200 dark:border-lime-800',
+  };
+
+  return (
+    <section className={`p-4 rounded-lg border ${colorClasses[color] || colorClasses.slate}`}>
+      <div className="flex items-center gap-2 mb-3">
+        {icon}
+        <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
+        {isNew && (
+          <span className="px-1.5 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded">
+            NEW
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{description}</p>
+      <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="flex-shrink-0 mt-0.5">{item.icon}</span>
+            <span>
+              <strong>{item.label}:</strong> {item.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <MapPin className="w-3.5 h-3.5" />
+        <span>{location}</span>
+      </div>
+    </section>
+  );
+}
+
 export function FeatureGuideModal() {
   const { isFeatureGuideModalOpen, closeFeatureGuideModal } = useAppStore();
+  const [activeTab, setActiveTab] = useState<TabId>('new');
+
+  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'new', label: "What's New", icon: <Zap className="w-4 h-4" /> },
+    { id: 'board', label: 'Board', icon: <Kanban className="w-4 h-4" /> },
+    { id: 'job-detail', label: 'Job Detail', icon: <FileText className="w-4 h-4" /> },
+    { id: 'ai', label: 'AI Features', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'profile', label: 'Profile & Data', icon: <Database className="w-4 h-4" /> },
+  ];
 
   return (
     <Modal
@@ -39,427 +117,413 @@ export function FeatureGuideModal() {
       title="Feature Guide"
       size="full"
     >
-      <div className="p-6 space-y-6 overflow-y-auto">
-        <p className="text-slate-600 dark:text-slate-400">
-          A complete guide to Job Hunt Buddy's features to help you get the most out of your job search.
-        </p>
+      <div className="flex flex-col h-full">
+        {/* Tabs */}
+        <div className="flex gap-1 px-6 pt-4 pb-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
+                ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-white'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Saved Stories / Memories */}
-          <section className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div className="flex items-center gap-2 mb-3">
-              <BookmarkCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Saved Stories / Memories
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Build a reusable profile of your best interview answers and experiences.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Save className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Save from Prep chats:</strong> When you craft a great answer in the Q&A chat, click "Save to Profile" to keep it</span>
-              </li>
-              <li className="flex gap-2">
-                <RefreshCw className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Reuse across jobs:</strong> Your saved stories are available when preparing for any job</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Settings → Profile → Saved Stories</span>
-            </div>
-          </section>
-
-          {/* Additional Context */}
-          <section className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="flex items-center gap-2 mb-3">
-              <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Additional Context
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Tell the AI about yourself beyond what's on your resume.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <span><strong>What to include:</strong> Skills you're learning, career goals, projects not on resume, personal achievements</span>
-              </li>
-              <li className="flex gap-2">
-                <FileEdit className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <span><strong>How it's used:</strong> AI includes this when grading resumes, tailoring content, and generating cover letters</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Settings → Profile → Additional Context</span>
-            </div>
-          </section>
-
-          {/* Resume Tailoring */}
-          <section className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-2 mb-3">
-              <FileEdit className="w-5 h-5 text-green-600 dark:text-green-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Resume Tailoring
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Customize your resume for each job application with AI assistance.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Auto-Tailor:</strong> One-click AI optimization that rewrites your resume to match job requirements</span>
-              </li>
-              <li className="flex gap-2">
-                <MessageSquare className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Chat refinement:</strong> Tell the AI exactly what to change ("make my Python experience more prominent")</span>
-              </li>
-              <li className="flex gap-2">
-                <GitCompare className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Diff view:</strong> See exactly what changed with side-by-side or word-level comparison</span>
-              </li>
-              <li className="flex gap-2">
-                <Save className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Save:</strong> Keep the tailored version as your resume for this specific job</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Resume tab → Tailor Resume</span>
-            </div>
-          </section>
-
-          {/* Interview Prep */}
-          <section className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Interview Prep (Q&A)
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Practice and prepare for interviews with AI coaching.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <MessageSquare className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Ask anything:</strong> "What questions might they ask about my experience with React?"</span>
-              </li>
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Generate prep:</strong> Click "Generate Interview Prep" for a structured preparation guide</span>
-              </li>
-              <li className="flex gap-2">
-                <BookmarkCheck className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Save answers:</strong> Great responses can be saved to your profile for future use</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Prep tab</span>
-            </div>
-          </section>
-
-          {/* Resume Fit / Grading */}
-          <section className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-            <div className="flex items-center gap-2 mb-3">
-              <GraduationCap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Resume Fit / Grading
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              See how well your resume matches the job requirements.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <GraduationCap className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Letter grade:</strong> Get an A-F grade based on how well your experience matches requirements</span>
-              </li>
-              <li className="flex gap-2">
-                <FileText className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Detailed analysis:</strong> See your strengths, gaps, and specific suggestions for improvement</span>
-              </li>
-              <li className="flex gap-2">
-                <RefreshCw className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Per-job resumes:</strong> Upload a different resume for each job, or use your default</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Resume tab</span>
-            </div>
-          </section>
-
-          {/* Cover Letter */}
-          <section className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-lg border border-rose-200 dark:border-rose-800">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Cover Letter
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Generate and refine tailored cover letters.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Generate:</strong> Create a cover letter based on the job description and your resume</span>
-              </li>
-              <li className="flex gap-2">
-                <MessageSquare className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Refine:</strong> Chat to make changes ("make it more enthusiastic" or "emphasize my leadership")</span>
-              </li>
-              <li className="flex gap-2">
-                <Copy className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Export:</strong> Copy to clipboard or download when you're happy with it</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Cover Letter tab</span>
-            </div>
-          </section>
-
-          {/* Notes, Contacts & Timeline */}
-          <section className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
-            <div className="flex items-center gap-2 mb-3">
-              <StickyNote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Notes, Contacts & Timeline
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Keep track of everything related to each job application.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <StickyNote className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Notes:</strong> Research about the company, interview prep notes, follow-up reminders</span>
-              </li>
-              <li className="flex gap-2">
-                <Users className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Contacts:</strong> Save recruiter and hiring manager info (name, email, LinkedIn)</span>
-              </li>
-              <li className="flex gap-2">
-                <Calendar className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Timeline:</strong> Track key dates (applied, phone screen, interviews, offer)</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Notes tab</span>
-            </div>
-          </section>
-
-          {/* Data & Privacy */}
-          <section className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-3">
-              <Database className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Data & Privacy
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Your data stays on your computer.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Database className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Local storage:</strong> All jobs, resumes, and notes are stored in your browser's database</span>
-              </li>
-              <li className="flex gap-2">
-                <Download className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Backup:</strong> Export your data as JSON anytime from Settings → Export Data</span>
-              </li>
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                <span><strong>AI provider:</strong> Your API key is only sent to your chosen provider (Anthropic, Google, or Ollama)</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Settings → Data Backup</span>
-            </div>
-          </section>
-
-          {/* Keyword Matcher */}
-          <section className="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Keyword Matcher
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              See how your resume keywords match the job description.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Matched:</strong> Green badges show keywords from the JD that appear in your resume</span>
-              </li>
-              <li className="flex gap-2">
-                <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Missing:</strong> Red badges highlight keywords you should consider adding</span>
-              </li>
-              <li className="flex gap-2">
-                <ArrowRight className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Quick action:</strong> Click any missing keyword to jump to Resume Tailoring</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Resume tab (after grading)</span>
-            </div>
-          </section>
-
-          {/* CSV Export */}
-          <section className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-3">
-              <Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                CSV Export
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Export your job data to a spreadsheet format.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Download className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <span><strong>One-click export:</strong> Download all jobs as a CSV file</span>
-              </li>
-              <li className="flex gap-2">
-                <FileText className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Includes:</strong> Company, Title, Status, Date, Match %, Grade, JD Link</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Settings → Data Backup → Export CSV</span>
-            </div>
-          </section>
-
-          {/* Interviewer Intel */}
-          <section className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-            <div className="flex items-center gap-2 mb-3">
-              <UserCheck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Interviewer Intel
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Get AI-powered insights about your interviewers.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Users className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                <span><strong>LinkedIn bio:</strong> Paste an interviewer's bio to get personalized insights</span>
-              </li>
-              <li className="flex gap-2">
-                <MessageSquare className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Get insights:</strong> Communication style, what they value, talking points</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Notes tab → Contacts → Generate Intel</span>
-            </div>
-          </section>
-
-          {/* Emails Tab */}
-          <section className="p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Mail className="w-5 h-5 text-pink-600 dark:text-pink-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Emails Tab
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Generate professional job search emails with AI.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <Mail className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Email types:</strong> Thank You, Follow Up, Withdraw, Negotiate</span>
-              </li>
-              <li className="flex gap-2">
-                <MessageSquare className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Refine:</strong> Chat with AI to adjust tone, length, or content</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Job detail → Emails tab</span>
-            </div>
-          </section>
-
-          {/* Context Documents */}
-          <section className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
-            <div className="flex items-center gap-2 mb-3">
-              <FolderOpen className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Context Documents
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Upload PDFs to give AI more context about you.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <FileText className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Upload:</strong> Portfolio, project docs, certifications, recommendations</span>
-              </li>
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Auto-summarize:</strong> AI condenses large docs to save context window</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Settings → Profile → Context Documents</span>
-            </div>
-          </section>
-
-          {/* Career Coach */}
-          <section className="p-4 bg-lime-50 dark:bg-lime-900/20 rounded-lg border border-lime-200 dark:border-lime-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Target className="w-5 h-5 text-lime-600 dark:text-lime-400" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Career Coach
-              </h3>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Get AI-powered career guidance based on your job search.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              <li className="flex gap-2">
-                <BarChart3 className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Career analysis:</strong> AI analyzes your job applications to identify patterns and opportunities</span>
-              </li>
-              <li className="flex gap-2">
-                <MessageSquare className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Chat:</strong> Discuss career goals, strategy, and get personalized advice</span>
-              </li>
-              <li className="flex gap-2">
-                <Sparkles className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
-                <span><strong>Skill tracking:</strong> Track technical, soft, and domain skills extracted from your experience</span>
-              </li>
-            </ul>
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>🎯 button in header</span>
-            </div>
-          </section>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === 'new' && <WhatsNewTab />}
+          {activeTab === 'board' && <BoardTab />}
+          {activeTab === 'job-detail' && <JobDetailTab />}
+          {activeTab === 'ai' && <AIFeaturesTab />}
+          {activeTab === 'profile' && <ProfileDataTab />}
         </div>
       </div>
     </Modal>
+  );
+}
+
+function WhatsNewTab() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center pb-4">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">What's New</h2>
+        <p className="text-slate-600 dark:text-slate-400">
+          Recent additions and improvements to Job Hunt Buddy
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeatureCard
+          icon={<ArrowUpDown className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+          title="Board Sorting & Filtering"
+          description="Quickly find and organize jobs in your pipeline."
+          items={[
+            { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
+            { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
+          ]}
+          location="Toolbar below header"
+          color="indigo"
+          isNew
+        />
+
+        <FeatureCard
+          icon={<Pencil className="w-5 h-5 text-green-600 dark:text-green-400" />}
+          title="Edit Job Details"
+          description="Fix company names, titles, or links after adding a job."
+          items={[
+            { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click the Edit button in the Overview tab' },
+            { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Save', text: 'Press Enter or click Save when done' },
+          ]}
+          location="Job detail → Overview tab → Edit"
+          color="green"
+          isNew
+        />
+
+        <FeatureCard
+          icon={<Command className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
+          title="AI Agent (Ctrl+K)"
+          description="Natural language interface for job search and questions."
+          items={[
+            { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search jobs', text: '"Find remote React jobs in Seattle"' },
+            { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Ask questions', text: '"What skills does the Google job require?"' },
+          ]}
+          location="Header → AI Agent or press Ctrl+K"
+          color="violet"
+          isNew
+        />
+
+        <FeatureCard
+          icon={<Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
+          title="Find Jobs"
+          description="Search external job boards without leaving the app."
+          items={[
+            { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query Google Jobs via SerApi' },
+            { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add jobs directly to your board' },
+          ]}
+          location="Header → Find Jobs button"
+          color="cyan"
+          isNew
+        />
+      </div>
+    </div>
+  );
+}
+
+function BoardTab() {
+  return (
+    <div className="space-y-6">
+      <p className="text-slate-600 dark:text-slate-400">
+        Features for managing your job pipeline on the main board view.
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeatureCard
+          icon={<ArrowUpDown className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+          title="Sorting & Filtering"
+          description="Quickly find and organize jobs in your pipeline."
+          items={[
+            { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
+            { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
+            { icon: <XCircle className="w-4 h-4 text-indigo-500" />, label: 'Clear', text: 'Reset filters with one click' },
+          ]}
+          location="Toolbar below header"
+          color="indigo"
+        />
+
+        <FeatureCard
+          icon={<GripVertical className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+          title="Drag & Drop"
+          description="Move jobs through your pipeline with ease."
+          items={[
+            { icon: <GripVertical className="w-4 h-4 text-blue-500" />, label: 'Drag', text: 'Click and drag any job card' },
+            { icon: <ArrowRight className="w-4 h-4 text-blue-500" />, label: 'Drop', text: 'Release onto a different status column' },
+          ]}
+          location="Main board view"
+          color="blue"
+        />
+
+        <FeatureCard
+          icon={<Columns className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          title="Custom Status Columns"
+          description="Customize your pipeline stages."
+          items={[
+            { icon: <Columns className="w-4 h-4 text-purple-500" />, label: 'Add/Remove', text: 'Create stages that match your workflow' },
+            { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reorder', text: 'Drag to rearrange column order' },
+          ]}
+          location="Settings → Status Columns"
+          color="purple"
+        />
+
+        <FeatureCard
+          icon={<Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
+          title="Dark Mode"
+          description="Easy on the eyes for late-night job hunting."
+          items={[
+            { icon: <Moon className="w-4 h-4 text-slate-500" />, label: 'Toggle', text: 'Switch between light and dark themes' },
+            { icon: <RefreshCw className="w-4 h-4 text-slate-500" />, label: 'System', text: 'Automatically match your OS preference' },
+          ]}
+          location="Settings → Appearance"
+          color="slate"
+        />
+      </div>
+    </div>
+  );
+}
+
+function JobDetailTab() {
+  return (
+    <div className="space-y-6">
+      <p className="text-slate-600 dark:text-slate-400">
+        Features available when viewing a specific job's details.
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeatureCard
+          icon={<Pencil className="w-5 h-5 text-green-600 dark:text-green-400" />}
+          title="Edit Job Details"
+          description="Update company, title, or link after adding."
+          items={[
+            { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click Edit button to modify fields' },
+            { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Keyboard', text: 'Enter to save, Escape to cancel' },
+          ]}
+          location="Job detail → Overview tab"
+          color="green"
+        />
+
+        <FeatureCard
+          icon={<GraduationCap className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+          title="Resume Fit / Grading"
+          description="See how well your resume matches requirements."
+          items={[
+            { icon: <GraduationCap className="w-4 h-4 text-amber-500" />, label: 'Grade', text: 'Get an A-F grade based on fit' },
+            { icon: <FileText className="w-4 h-4 text-amber-500" />, label: 'Analysis', text: 'Strengths, gaps, and suggestions' },
+            { icon: <RefreshCw className="w-4 h-4 text-amber-500" />, label: 'Per-job', text: 'Use different resumes per job' },
+          ]}
+          location="Job detail → Resume tab"
+          color="amber"
+        />
+
+        <FeatureCard
+          icon={<FileEdit className="w-5 h-5 text-teal-600 dark:text-teal-400" />}
+          title="Resume Tailoring"
+          description="Customize your resume for each application."
+          items={[
+            { icon: <Sparkles className="w-4 h-4 text-teal-500" />, label: 'Auto-Tailor', text: 'One-click AI optimization' },
+            { icon: <MessageSquare className="w-4 h-4 text-teal-500" />, label: 'Chat', text: 'Tell AI exactly what to change' },
+            { icon: <GitCompare className="w-4 h-4 text-teal-500" />, label: 'Diff view', text: 'See what changed side-by-side' },
+          ]}
+          location="Job detail → Resume tab → Tailor"
+          color="teal"
+        />
+
+        <FeatureCard
+          icon={<Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
+          title="Keyword Matcher"
+          description="See how your resume keywords match the JD."
+          items={[
+            { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Matched', text: 'Green badges for found keywords' },
+            { icon: <XCircle className="w-4 h-4 text-red-500" />, label: 'Missing', text: 'Red badges to add' },
+          ]}
+          location="Job detail → Resume tab"
+          color="cyan"
+        />
+
+        <FeatureCard
+          icon={<FileText className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
+          title="Cover Letter"
+          description="Generate and refine tailored cover letters."
+          items={[
+            { icon: <Sparkles className="w-4 h-4 text-rose-500" />, label: 'Generate', text: 'Based on JD and resume' },
+            { icon: <MessageSquare className="w-4 h-4 text-rose-500" />, label: 'Refine', text: 'Chat to make changes' },
+            { icon: <Copy className="w-4 h-4 text-rose-500" />, label: 'Export', text: 'Copy or download' },
+          ]}
+          location="Job detail → Cover Letter tab"
+          color="rose"
+        />
+
+        <FeatureCard
+          icon={<Mail className="w-5 h-5 text-pink-600 dark:text-pink-400" />}
+          title="Emails"
+          description="Generate professional job search emails."
+          items={[
+            { icon: <Mail className="w-4 h-4 text-pink-500" />, label: 'Types', text: 'Thank You, Follow Up, Withdraw, Negotiate' },
+            { icon: <MessageSquare className="w-4 h-4 text-pink-500" />, label: 'Refine', text: 'Adjust tone or content via chat' },
+          ]}
+          location="Job detail → Emails tab"
+          color="pink"
+        />
+
+        <FeatureCard
+          icon={<MessageSquare className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+          title="Interview Prep (Q&A)"
+          description="Practice and prepare with AI coaching."
+          items={[
+            { icon: <MessageSquare className="w-4 h-4 text-indigo-500" />, label: 'Ask', text: '"What questions might they ask?"' },
+            { icon: <Sparkles className="w-4 h-4 text-indigo-500" />, label: 'Generate', text: 'Structured preparation guide' },
+            { icon: <BookmarkCheck className="w-4 h-4 text-indigo-500" />, label: 'Save', text: 'Keep great answers for reuse' },
+          ]}
+          location="Job detail → Prep tab"
+          color="indigo"
+        />
+
+        <FeatureCard
+          icon={<StickyNote className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+          title="Notes, Contacts & Timeline"
+          description="Track everything about each application."
+          items={[
+            { icon: <StickyNote className="w-4 h-4 text-amber-500" />, label: 'Notes', text: 'Research, prep notes, reminders' },
+            { icon: <Users className="w-4 h-4 text-blue-500" />, label: 'Contacts', text: 'Recruiters and hiring managers' },
+            { icon: <Calendar className="w-4 h-4 text-purple-500" />, label: 'Timeline', text: 'Key dates and events' },
+          ]}
+          location="Job detail → Notes tab"
+          color="amber"
+        />
+      </div>
+    </div>
+  );
+}
+
+function AIFeaturesTab() {
+  return (
+    <div className="space-y-6">
+      <p className="text-slate-600 dark:text-slate-400">
+        AI-powered features to supercharge your job search.
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeatureCard
+          icon={<Command className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
+          title="AI Agent (Ctrl+K)"
+          description="Natural language interface for your job search."
+          items={[
+            { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search', text: '"Find remote React jobs in Seattle"' },
+            { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Questions', text: 'Ask about any job in your board' },
+            { icon: <ArrowRight className="w-4 h-4 text-violet-500" />, label: 'Import', text: 'Preview and add jobs directly' },
+          ]}
+          location="Header → AI Agent or Ctrl+K"
+          color="violet"
+        />
+
+        <FeatureCard
+          icon={<Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
+          title="Find Jobs"
+          description="Search Google Jobs without leaving the app."
+          items={[
+            { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query by title, company, location' },
+            { icon: <Sparkles className="w-4 h-4 text-cyan-500" />, label: 'AI Mode', text: 'Generate queries from descriptions' },
+            { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add to board with one click' },
+          ]}
+          location="Header → Find Jobs"
+          color="cyan"
+        />
+
+        <FeatureCard
+          icon={<Target className="w-5 h-5 text-lime-600 dark:text-lime-400" />}
+          title="Career Coach"
+          description="AI-powered career guidance."
+          items={[
+            { icon: <BarChart3 className="w-4 h-4 text-lime-500" />, label: 'Analysis', text: 'Patterns from your applications' },
+            { icon: <MessageSquare className="w-4 h-4 text-lime-500" />, label: 'Chat', text: 'Discuss goals and strategy' },
+            { icon: <Sparkles className="w-4 h-4 text-lime-500" />, label: 'Skills', text: 'Track and develop your skills' },
+          ]}
+          location="Header → 🎓 button"
+          color="lime"
+        />
+
+        <FeatureCard
+          icon={<UserCheck className="w-5 h-5 text-orange-600 dark:text-orange-400" />}
+          title="Interviewer Intel"
+          description="Get insights about your interviewers."
+          items={[
+            { icon: <Users className="w-4 h-4 text-orange-500" />, label: 'Bio', text: "Paste interviewer's LinkedIn bio" },
+            { icon: <MessageSquare className="w-4 h-4 text-orange-500" />, label: 'Insights', text: 'Style, values, talking points' },
+          ]}
+          location="Notes tab → Contacts → Generate Intel"
+          color="orange"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ProfileDataTab() {
+  return (
+    <div className="space-y-6">
+      <p className="text-slate-600 dark:text-slate-400">
+        Manage your profile, documents, and data.
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeatureCard
+          icon={<BookmarkCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          title="Saved Stories / Memories"
+          description="Build a reusable profile of your best answers."
+          items={[
+            { icon: <Save className="w-4 h-4 text-purple-500" />, label: 'Save', text: 'Keep great answers from Q&A chats' },
+            { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reuse', text: 'Available when prepping any job' },
+          ]}
+          location="Settings → Profile → Saved Stories"
+          color="purple"
+        />
+
+        <FeatureCard
+          icon={<UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+          title="Additional Context"
+          description="Tell AI about yourself beyond your resume."
+          items={[
+            { icon: <Sparkles className="w-4 h-4 text-blue-500" />, label: 'Include', text: 'Skills, goals, projects, achievements' },
+            { icon: <FileEdit className="w-4 h-4 text-blue-500" />, label: 'Used for', text: 'Grading, cover letters, prep' },
+          ]}
+          location="Settings → Profile → Additional Context"
+          color="blue"
+        />
+
+        <FeatureCard
+          icon={<FolderOpen className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
+          title="Context Documents"
+          description="Upload PDFs for more AI context."
+          items={[
+            { icon: <FileText className="w-4 h-4 text-violet-500" />, label: 'Upload', text: 'Portfolio, certs, recommendations' },
+            { icon: <Sparkles className="w-4 h-4 text-violet-500" />, label: 'Summarize', text: 'AI condenses large docs' },
+          ]}
+          location="Settings → Profile → Context Documents"
+          color="violet"
+        />
+
+        <FeatureCard
+          icon={<Database className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
+          title="Data & Privacy"
+          description="Your data stays on your computer."
+          items={[
+            { icon: <Database className="w-4 h-4 text-slate-500" />, label: 'Local', text: "Stored in your browser's database" },
+            { icon: <Download className="w-4 h-4 text-slate-500" />, label: 'Backup', text: 'Export as JSON anytime' },
+            { icon: <Sparkles className="w-4 h-4 text-slate-500" />, label: 'API', text: 'Key only sent to your provider' },
+          ]}
+          location="Settings → Data Backup"
+          color="slate"
+        />
+
+        <FeatureCard
+          icon={<Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
+          title="CSV Export"
+          description="Export jobs to spreadsheet format."
+          items={[
+            { icon: <Download className="w-4 h-4 text-gray-500" />, label: 'Export', text: 'One-click download' },
+            { icon: <FileText className="w-4 h-4 text-gray-500" />, label: 'Fields', text: 'Company, Title, Status, Match %, etc.' },
+          ]}
+          location="Settings → Data Backup → Export CSV"
+          color="gray"
+        />
+      </div>
+    </div>
   );
 }
