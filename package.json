@@ -45,9 +45,7 @@
     "dexie": "^4.0.4",
     "dexie-react-hooks": "^1.1.7",
     "diff": "^8.0.2",
-    "dompurify": "^3.3.0",
     "dotenv": "^17.2.3",
-    "html2canvas": "^1.4.1",
     "jsonrepair": "^3.13.1",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.363.0",
@@ -63,7 +61,6 @@
   },
   "devDependencies": {
     "@types/diff": "^7.0.2",
-    "@types/dompurify": "^3.0.5",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
