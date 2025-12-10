@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   Download,
@@ -37,6 +37,7 @@ import { showToast } from '../../stores/toastStore';
 import { exportJobsAsCSV } from '../../services/db';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { SubscriptionCard } from './SubscriptionCard';
 
 export function SettingsModal() {
   const {
@@ -89,6 +90,44 @@ export function SettingsModal() {
 
   const currentModels = PROVIDER_MODELS[activeProvider] || [];
   const isCustomModel = !currentModels.some((m) => m.id === modelInput);
+
+  // Handle Stripe checkout redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const subscriptionStatus = params.get('subscription');
+
+    if (subscriptionStatus === 'success' && sessionId) {
+      // Fetch session info and update settings
+      fetch(`/api/stripe/session?session_id=${sessionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.customerId) {
+            updateSettings({
+              subscription: {
+                customerId: data.customerId,
+                email: data.email,
+                status: data.status,
+                tokensUsed: data.tokensUsed || 0,
+                tokenLimit: data.tokenLimit || 1000000,
+              },
+              activeProvider: 'managed',
+            });
+            showToast('Subscription activated! You can now use Pro features.', 'success');
+          }
+        })
+        .catch(() => {
+          showToast('Failed to activate subscription. Please try restoring access.', 'error');
+        })
+        .finally(() => {
+          // Clean up URL
+          window.history.replaceState({}, '', window.location.pathname);
+        });
+    } else if (subscriptionStatus === 'canceled') {
+      showToast('Checkout was canceled.', 'warning');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [updateSettings]);
 
   // Update form when provider changes
   const handleProviderChange = (provider: ProviderType) => {
@@ -423,23 +462,39 @@ export function SettingsModal() {
 
           {/* API Tab */}
           <TabsContent value="api" className="space-y-6">
-            {/* Provider Selection */}
-            <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                <Server className="w-4 h-4" />
-                AI Provider
-              </h3>
-              <select
-                aria-label="Select AI provider"
-                value={activeProvider}
-                onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
-                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="anthropic">Anthropic (Claude)</option>
-                <option value="openai-compatible">Local / OpenAI-Compatible (Ollama, LM Studio)</option>
-                <option value="gemini">Google Gemini</option>
-              </select>
+            {/* Pro Subscription Card */}
+            <section className="max-w-xl">
+              <SubscriptionCard />
             </section>
+
+            {/* Divider */}
+            {!settings.subscription && (
+              <div className="flex items-center gap-4 max-w-xl">
+                <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
+                <span className="text-xs text-slate-400">or use your own API key</span>
+                <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
+              </div>
+            )}
+
+            {/* Provider Selection - only show if not using managed provider */}
+            {settings.activeProvider !== 'managed' && (
+              <section>
+                <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                  <Server className="w-4 h-4" />
+                  AI Provider
+                </h3>
+                <select
+                  aria-label="Select AI provider"
+                  value={activeProvider}
+                  onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
+                  className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="anthropic">Anthropic (Claude)</option>
+                  <option value="openai-compatible">Local / OpenAI-Compatible (Ollama, LM Studio)</option>
+                  <option value="gemini">Google Gemini</option>
+                </select>
+              </section>
+            )}
 
             {/* Provider-specific Configuration */}
             {activeProvider === 'anthropic' && (

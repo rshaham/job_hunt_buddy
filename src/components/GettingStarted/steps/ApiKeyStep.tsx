@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Loader2, CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp, CreditCard, Key, Shield, Zap, Search, Globe } from 'lucide-react';
 import { Button, Input } from '../../ui';
 import { useAppStore } from '../../../stores/appStore';
 import { testApiKey } from '../../../services/ai';
 import { encodeApiKey, decodeApiKey } from '../../../utils/helpers';
 import { PROVIDER_MODELS, type ProviderType } from '../../../types';
+import { showToast } from '../../../stores/toastStore';
 
 interface ApiKeyStepProps {
   onNext: () => void;
@@ -13,7 +14,9 @@ interface ApiKeyStepProps {
   apiKeySaved: boolean;
 }
 
-const PROVIDER_INFO: Record<ProviderType, { name: string; placeholder: string; helpUrl: string; helpText: string }> = {
+type SetupMode = 'choice' | 'pro' | 'byo';
+
+const PROVIDER_INFO: Record<Exclude<ProviderType, 'managed'>, { name: string; placeholder: string; helpUrl: string; helpText: string }> = {
   anthropic: {
     name: 'Anthropic (Claude)',
     placeholder: 'sk-ant-...',
@@ -37,7 +40,14 @@ const PROVIDER_INFO: Record<ProviderType, { name: string; placeholder: string; h
 export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKeyStepProps) {
   const { settings, updateSettings } = useAppStore();
 
-  const [activeProvider, setActiveProvider] = useState<ProviderType>(settings.activeProvider || 'anthropic');
+  // Mode selection: choice (initial), pro (subscription), or byo (bring your own key)
+  const [mode, setMode] = useState<SetupMode>('choice');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // BYO key state
+  const [activeProvider, setActiveProvider] = useState<Exclude<ProviderType, 'managed'>>(
+    settings.activeProvider === 'managed' ? 'anthropic' : (settings.activeProvider || 'anthropic') as Exclude<ProviderType, 'managed'>
+  );
   const providerSettings = settings.providers?.[activeProvider] || { apiKey: '', model: '', baseUrl: '' };
 
   const [apiKeyInput, setApiKeyInput] = useState(decodeApiKey(providerSettings.apiKey || ''));
@@ -48,7 +58,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
 
   const providerInfo = PROVIDER_INFO[activeProvider];
 
-  const handleProviderChange = (provider: ProviderType) => {
+  const handleProviderChange = (provider: Exclude<ProviderType, 'managed'>) => {
     setActiveProvider(provider);
     const newProviderSettings = settings.providers?.[provider] || { apiKey: '', model: '', baseUrl: '' };
     setApiKeyInput(decodeApiKey(newProviderSettings.apiKey || ''));
@@ -84,17 +94,216 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
     }
   };
 
+  const handleStartTrial = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trial: true }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to start checkout');
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Checkout failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const canProceed = apiKeySaved || testStatus === 'success';
   const needsApiKey = activeProvider !== 'openai-compatible';
 
+  // Initial choice screen
+  if (mode === 'choice') {
+    return (
+      <div>
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            Set Up AI Features
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            Choose how you'd like to power the AI features
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          {/* Pro Plan Card */}
+          <button
+            type="button"
+            onClick={() => setMode('pro')}
+            className="p-5 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 hover:border-primary transition-all text-left group"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <span className="font-semibold text-slate-900 dark:text-white">Pro Plan</span>
+              <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary rounded-full">$15/mo</span>
+            </div>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400 mb-4">
+              <li className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-green-500" />
+                No API key needed
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                1,000,000 tokens/month
+              </li>
+              <li className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-green-500" />
+                Job search included
+              </li>
+              <li className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-green-500" />
+                Web research included
+              </li>
+            </ul>
+            <div className="text-xs text-primary font-medium group-hover:underline">
+              Start 7-day free trial →
+            </div>
+          </button>
+
+          {/* BYO Key Card */}
+          <button
+            type="button"
+            onClick={() => setMode('byo')}
+            className="p-5 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all text-left group"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Key className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <span className="font-semibold text-slate-900 dark:text-white">Bring Your Own Key</span>
+              <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full">Free</span>
+            </div>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400 mb-4">
+              <li className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-500" />
+                100% local & private
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-blue-500" />
+                Use your own API key
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-blue-500" />
+                Direct to AI provider
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-slate-400" />
+                No token limits
+              </li>
+            </ul>
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium group-hover:underline">
+              Set up API key →
+            </div>
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-8">
+          <Button variant="ghost" onClick={onBack}>
+            Back
+          </Button>
+          <div /> {/* Spacer */}
+        </div>
+      </div>
+    );
+  }
+
+  // Pro subscription flow
+  if (mode === 'pro') {
+    return (
+      <div>
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            Start Your Free Trial
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            7 days free, then $15/month. Cancel anytime.
+          </p>
+        </div>
+
+        <div className="max-w-md mx-auto space-y-4">
+          {/* What's included */}
+          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <h3 className="font-medium text-green-800 dark:text-green-200 mb-2">What's included:</h3>
+            <ul className="space-y-1.5 text-sm text-green-700 dark:text-green-300">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                AI-powered resume grading & cover letters
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                1,000,000 tokens/month (50,000 during trial)
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Job search via SerApi
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Company research via Tavily
+              </li>
+            </ul>
+          </div>
+
+          {/* Privacy disclosure */}
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-2">
+              <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-blue-800 dark:text-blue-200 text-sm mb-1">How your data is handled:</h3>
+                <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
+                  <li>• AI prompts route through our server to Claude</li>
+                  <li>• We don't store your conversation content</li>
+                  <li>• Token usage tracked for billing only</li>
+                  <li>• Payment handled by Stripe</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Start Trial Button */}
+          <Button
+            onClick={handleStartTrial}
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isLoading ? 'Redirecting to Stripe...' : 'Start Free Trial'}
+          </Button>
+
+          <p className="text-xs text-center text-slate-500">
+            Credit card required. Cancel anytime before trial ends to avoid charges.
+          </p>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-8">
+          <Button variant="ghost" onClick={() => setMode('choice')}>
+            Back
+          </Button>
+          <div /> {/* Spacer */}
+        </div>
+      </div>
+    );
+  }
+
+  // BYO key flow (original flow)
   return (
     <div>
       <div className="text-center mb-6">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-          Set Up AI Features
+          Set Up Your API Key
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          This app is open source and free. You just need an API key from your preferred provider.
+          100% private - your key stays in your browser
         </p>
       </div>
 
@@ -107,7 +316,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
           <select
             aria-label="Select AI provider"
             value={activeProvider}
-            onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
+            onChange={(e) => handleProviderChange(e.target.value as Exclude<ProviderType, 'managed'>)}
             className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="anthropic">Anthropic (Claude) - Recommended · $5 free credit</option>
@@ -258,7 +467,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
 
       {/* Navigation */}
       <div className="flex justify-between mt-8">
-        <Button variant="ghost" onClick={onBack}>
+        <Button variant="ghost" onClick={() => setMode('choice')}>
           Back
         </Button>
         <Button onClick={onNext} disabled={!canProceed}>

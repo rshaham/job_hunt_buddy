@@ -202,7 +202,19 @@ export interface Status {
 }
 
 // Provider types for multi-provider AI support
-export type ProviderType = 'anthropic' | 'openai-compatible' | 'gemini';
+export type ProviderType = 'anthropic' | 'openai-compatible' | 'gemini' | 'managed';
+
+// Subscription types for Pro tier
+export type SubscriptionStatus = 'active' | 'trialing' | 'inactive' | 'past_due' | 'canceled';
+
+export interface Subscription {
+  customerId: string;
+  email: string;
+  status: SubscriptionStatus;
+  tokensUsed: number;
+  tokenLimit: number;
+  currentPeriodEnd?: Date;
+}
 
 export interface ProviderSettings {
   apiKey: string;
@@ -226,6 +238,9 @@ export const PROVIDER_MODELS: Record<ProviderType, { id: string; name: string; d
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast, free tier available' },
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Most capable' },
     { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro Preview', description: 'Flagship model' },
+  ],
+  managed: [
+    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', description: 'Pro subscription - no API key needed' },
   ],
 };
 
@@ -265,6 +280,9 @@ export interface AppSettings {
     tavilyApiKey?: string;  // For web research - base64 encoded
     serpApiKey?: string;    // For job search - base64 encoded
   };
+
+  // Pro subscription (managed provider)
+  subscription?: Subscription;
 }
 
 export const DEFAULT_STATUSES: Status[] = [
@@ -373,6 +391,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     anthropic: { apiKey: '', model: 'claude-sonnet-4-5' },
     'openai-compatible': { apiKey: '', model: 'llama3.2', baseUrl: 'http://localhost:11434/v1' },
     gemini: { apiKey: '', model: 'gemini-1.5-flash' },
+    managed: { apiKey: '', model: 'claude-sonnet-4-5' }, // Pro subscription - apiKey unused
   },
   defaultResumeText: '',
   defaultResumeName: '',

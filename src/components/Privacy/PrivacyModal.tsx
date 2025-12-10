@@ -1,4 +1,4 @@
-import { Shield, Database, Key, Heart, Scale, Github, Globe } from 'lucide-react';
+import { Shield, Database, Key, Heart, Scale, Github, Globe, CreditCard } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 
@@ -60,6 +60,47 @@ export function PrivacyModal() {
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Pro Subscription */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Pro Subscription
+            </h2>
+          </div>
+          <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+              If you use the Pro subscription instead of your own API key:
+            </p>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+              <li className="flex gap-2">
+                <span className="text-purple-500">•</span>
+                <span>
+                  <strong className="text-slate-900 dark:text-white">AI requests route through our server</strong> — Your prompts
+                  are sent to our API proxy, which forwards them to Claude. We don't store conversation content.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-purple-500">•</span>
+                <span>
+                  <strong className="text-slate-900 dark:text-white">Token usage is tracked</strong> — We track your token usage
+                  for billing purposes using your Stripe customer ID.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-purple-500">•</span>
+                <span>
+                  <strong className="text-slate-900 dark:text-white">Billing via Stripe</strong> — Your payment info is handled
+                  entirely by Stripe. We never see your full card number.
+                </span>
+              </li>
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+              If you prefer complete local control, use the "Bring Your Own Key" option with your own Anthropic, Gemini, or local Ollama setup.
+            </p>
           </div>
         </section>
 

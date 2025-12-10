@@ -32,12 +32,21 @@ export interface FeatureAvailability {
 }
 
 /**
+ * Check if user has an active Pro subscription
+ */
+function isProSubscriber(settings: AppSettings): boolean {
+  const status = settings.subscription?.status;
+  return status === 'active' || status === 'trialing';
+}
+
+/**
  * Check if a feature is available.
  *
  * Priority:
- * 1. If user has their own API key → always available (direct mode)
- * 2. If server feature flag is disabled → not available
- * 3. If user hasn't consented → not available
+ * 1. If user is a Pro subscriber → always available (included in subscription)
+ * 2. If user has their own API key → always available (direct mode)
+ * 3. If server feature flag is disabled → not available
+ * 4. If user hasn't consented → not available
  *
  * @param feature - The feature to check
  * @param settings - App settings containing consent status and API keys
@@ -48,6 +57,11 @@ export function isFeatureAvailable(
   settings: AppSettings
 ): FeatureAvailability {
   const consent = settings.externalServicesConsent;
+
+  // Pro subscribers get all features
+  if (isProSubscriber(settings)) {
+    return { available: true };
+  }
 
   if (feature === 'jobSearch') {
     // User has their own API key → always available (direct mode)
@@ -87,10 +101,16 @@ export function isFeatureAvailable(
  * Use this to show/hide UI elements.
  *
  * Returns true if:
+ * - User is a Pro subscriber (included in subscription), OR
  * - Server feature flag is enabled, OR
  * - User has their own API key (direct mode)
  */
 export function isFeatureEnabled(feature: FeatureKey, settings?: AppSettings): boolean {
+  // Pro subscribers see all features
+  if (settings && isProSubscriber(settings)) {
+    return true;
+  }
+
   const consent = settings?.externalServicesConsent;
 
   if (feature === 'jobSearch') {
