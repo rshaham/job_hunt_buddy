@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle } from 'lucide-react';
+import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle, Download } from 'lucide-react';
 import { Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
+import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
@@ -221,6 +222,17 @@ export function PrepTab({ job }: PrepTabProps) {
     const updatedMaterials = (job.prepMaterials || []).filter((m) => m.id !== materialId);
     await updateJob(job.id, { prepMaterials: updatedMaterials });
     showToast('Research deleted', 'success');
+  };
+
+  const handleDownloadPrepMaterial = async (title: string, content: string) => {
+    try {
+      const filename = generatePdfFilename(job.company, job.title, title.slice(0, 30));
+      await exportMarkdownToPdf(content, { filename, title });
+      showToast('Downloaded as PDF', 'success');
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      showToast('Failed to download', 'error');
+    }
   };
 
   const handleGeneratePrep = async () => {
@@ -561,14 +573,24 @@ export function PrepTab({ job }: PrepTabProps) {
                         <MarkdownContent content={material.content} />
                       </div>
                     </details>
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePrepMaterial(material.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-all flex-shrink-0"
-                      title="Delete research"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadPrepMaterial(material.title, material.content)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded text-slate-400 hover:text-blue-500 transition-all"
+                        title="Download as PDF"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePrepMaterial(material.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-all"
+                        title="Delete research"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
