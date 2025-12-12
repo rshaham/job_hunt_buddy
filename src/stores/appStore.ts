@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -101,6 +101,12 @@ interface AppState {
   // Learning task actions
   updateLearningTask: (jobId: string, taskId: string, updates: Partial<LearningTask>) => Promise<void>;
   deleteLearningTask: (jobId: string, taskId: string) => Promise<void>;
+
+  // Learning task prep session actions
+  startPrepSession: (jobId: string, taskId: string, category: LearningTaskCategory) => Promise<string>;
+  addPrepMessage: (jobId: string, taskId: string, sessionId: string, message: Omit<LearningTaskPrepMessage, 'id' | 'timestamp'>) => Promise<void>;
+  updatePrepSession: (jobId: string, taskId: string, sessionId: string, updates: Partial<LearningTaskPrepSession>) => Promise<void>;
+  savePrepToMaterials: (jobId: string, taskId: string, sessionId: string, title: string, content: string) => Promise<void>;
 
   // UI actions
   openAddJobModal: () => void;
@@ -386,6 +392,88 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const updatedTasks = (job.learningTasks || []).filter((task) => task.id !== taskId);
     await get().updateJob(jobId, { learningTasks: updatedTasks });
+  },
+
+  // Learning task prep session actions
+  startPrepSession: async (jobId, taskId, category) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) throw new Error('Job not found');
+
+    const sessionId = generateId();
+    const newSession: LearningTaskPrepSession = {
+      id: sessionId,
+      category,
+      messages: [],
+      createdAt: new Date(),
+    };
+
+    const updatedTasks = (job.learningTasks || []).map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            prepSessions: [...(task.prepSessions || []), newSession],
+            inferredCategory: category,
+            updatedAt: new Date(),
+          }
+        : task
+    );
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
+    return sessionId;
+  },
+
+  addPrepMessage: async (jobId, taskId, sessionId, message) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const newMessage: LearningTaskPrepMessage = {
+      ...message,
+      id: generateId(),
+      timestamp: new Date(),
+    };
+
+    const updatedTasks = (job.learningTasks || []).map((task) => {
+      if (task.id !== taskId) return task;
+      const updatedSessions = (task.prepSessions || []).map((session) =>
+        session.id === sessionId
+          ? { ...session, messages: [...session.messages, newMessage] }
+          : session
+      );
+      return { ...task, prepSessions: updatedSessions, updatedAt: new Date() };
+    });
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
+  },
+
+  updatePrepSession: async (jobId, taskId, sessionId, updates) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedTasks = (job.learningTasks || []).map((task) => {
+      if (task.id !== taskId) return task;
+      const updatedSessions = (task.prepSessions || []).map((session) =>
+        session.id === sessionId ? { ...session, ...updates } : session
+      );
+      return { ...task, prepSessions: updatedSessions, updatedAt: new Date() };
+    });
+    await get().updateJob(jobId, { learningTasks: updatedTasks });
+  },
+
+  savePrepToMaterials: async (jobId, taskId, sessionId, title, content) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    // Create a new prep material from the summarized session
+    const newMaterial = {
+      id: generateId(),
+      title,
+      content,
+      type: 'other' as const,
+    };
+
+    const updatedMaterials = [...(job.prepMaterials || []), newMaterial];
+    await get().updateJob(jobId, { prepMaterials: updatedMaterials });
+
+    // Mark the session as saved
+    await get().updatePrepSession(jobId, taskId, sessionId, { savedToBank: true });
   },
 
   // UI actions

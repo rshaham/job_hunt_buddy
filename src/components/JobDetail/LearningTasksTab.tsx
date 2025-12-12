@@ -10,12 +10,16 @@ import {
   Edit2,
   Save,
   X,
+  Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { Button, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { formatDateOnly } from '../../utils/helpers';
 import { format, isPast, isToday } from 'date-fns';
 import type { Job, LearningTask } from '../../types';
+import { LearningTaskPrepModal } from './LearningTaskPrepModal';
+import { LEARNING_TASK_CATEGORY_LABELS } from '../../types';
 
 interface LearningTasksTabProps {
   job: Job;
@@ -65,14 +69,18 @@ const priorityConfig = {
 
 function TaskCard({
   task,
+  job: _job,
   onStatusChange,
   onDelete,
   onUpdate,
+  onPrepare,
 }: {
   task: LearningTask;
+  job: Job;
   onStatusChange: (newStatus: LearningTask['status']) => void;
   onDelete: () => void;
   onUpdate: (updates: Partial<LearningTask>) => void;
+  onPrepare: () => void;
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -271,8 +279,35 @@ function TaskCard({
                 <span className="text-slate-400 dark:text-slate-500">
                   Added {format(new Date(task.createdAt), 'MMM d')}
                 </span>
+
+                {/* Category badge if inferred */}
+                {task.inferredCategory && (
+                  <span className="px-1.5 py-0.5 rounded text-xs bg-primary/10 text-primary">
+                    {LEARNING_TASK_CATEGORY_LABELS[task.inferredCategory]}
+                  </span>
+                )}
+
+                {/* Prep session indicator */}
+                {task.prepSessions && task.prepSessions.length > 0 && (
+                  <span className="flex items-center gap-1 text-emerald-500" title="Has prep sessions">
+                    <MessageSquare className="w-3 h-3" />
+                    {task.prepSessions.length}
+                  </span>
+                )}
               </div>
             </div>
+
+            {/* Prepare with AI button */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onPrepare}
+              className="text-primary hover:text-primary/80"
+              title="Prepare with AI coaching"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              Prep
+            </Button>
 
             {/* Edit button */}
             <Button
@@ -315,6 +350,7 @@ function TaskCard({
 
 export function LearningTasksTab({ job }: LearningTasksTabProps) {
   const { updateLearningTask, deleteLearningTask } = useAppStore();
+  const [prepTask, setPrepTask] = useState<LearningTask | null>(null);
 
   const tasks = job.learningTasks || [];
 
@@ -392,12 +428,24 @@ export function LearningTasksTab({ job }: LearningTasksTabProps) {
             <TaskCard
               key={task.id}
               task={task}
+              job={job}
               onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
               onUpdate={(updates) => handleUpdate(task.id, updates)}
               onDelete={() => handleDelete(task.id)}
+              onPrepare={() => setPrepTask(task)}
             />
           ))}
         </div>
+      )}
+
+      {/* Prep Modal */}
+      {prepTask && (
+        <LearningTaskPrepModal
+          isOpen={!!prepTask}
+          onClose={() => setPrepTask(null)}
+          job={job}
+          task={prepTask}
+        />
       )}
     </div>
   );

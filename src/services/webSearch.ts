@@ -276,6 +276,57 @@ export async function searchTopics(
   });
 }
 
+// Interview prep domain suggestions
+export const INTERVIEW_PREP_DOMAINS = [
+  'leetcode.com',
+  'glassdoor.com',
+  'levels.fyi',
+  'reddit.com',
+  'teamblind.com',
+  'interviewcake.com',
+  'geeksforgeeks.org',
+  'medium.com',
+  'linkedin.com',
+];
+
+/**
+ * Search for interview preparation best practices and tips.
+ * Used by learning task prep to fetch category-specific guidance.
+ *
+ * @param topic - The specific topic or skill to prepare for
+ * @param category - The learning task category (behavioral_interview, system_design, etc.)
+ * @param company - Optional company name for company-specific prep
+ * @returns Array of search results with tips and examples
+ */
+export async function searchInterviewPrepBestPractices(
+  topic: string,
+  category: string,
+  company?: string
+): Promise<TavilySearchResult[]> {
+  // Build category-specific search queries
+  const categoryKeywords: Record<string, string> = {
+    behavioral_interview: 'STAR method behavioral interview tips examples',
+    technical_deep_dive: 'technical interview preparation tips coding',
+    system_design: 'system design interview approach framework',
+    cross_functional: 'cross-functional collaboration interview questions',
+    leadership: 'leadership interview questions examples STAR',
+    problem_solving: 'problem solving interview approach debugging',
+    communication: 'communication skills interview demonstrate examples',
+    general: 'interview preparation tips best practices',
+  };
+
+  const categoryTerm = categoryKeywords[category] || categoryKeywords.general;
+  const companyTerm = company ? `"${company}"` : '';
+
+  const query = `${topic} ${categoryTerm} ${companyTerm}`.trim();
+
+  return searchWeb(query, {
+    includeDomains: INTERVIEW_PREP_DOMAINS,
+    maxResults: 5,
+    searchDepth: 'basic',
+  });
+}
+
 /**
  * Extract just the source links as a formatted list
  * Used to append sources directly to AI responses

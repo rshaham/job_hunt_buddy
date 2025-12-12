@@ -17,8 +17,11 @@ import {
   CAREER_COACH_SYSTEM_PROMPT,
   CAREER_COACH_ANALYSIS_PROMPT,
   CAREER_COACH_CHAT_PROMPT,
+  LEARNING_TASK_CATEGORY_DETECTION_PROMPT,
+  LEARNING_TASK_PREP_PROMPTS,
+  LEARNING_TASK_PREP_SUMMARY_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -1113,4 +1116,148 @@ ${truncatedProfile}
     console.warn('[AI] Failed to generate enhanced search query:', error);
     return userQuery; // Fallback to original query on error
   }
+}
+
+// ============================================================================
+// Learning Task Prep Functions
+// ============================================================================
+
+/**
+ * Detect the category of a learning task based on its content.
+ * Uses AI to infer the most appropriate category from the task text.
+ */
+export async function detectLearningTaskCategory(
+  task: LearningTask,
+  job: Job
+): Promise<{ category: LearningTaskCategory; confidence: number; reasoning: string }> {
+  const prompt = LEARNING_TASK_CATEGORY_DETECTION_PROMPT
+    .replace('{skill}', task.skill)
+    .replace('{description}', task.description)
+    .replace('{company}', job.company)
+    .replace('{jobTitle}', job.title);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse category detection response:', { response, jsonStr, error: e });
+    return {
+      category: 'general',
+      confidence: 0.5,
+      reasoning: 'Could not determine category, defaulting to general',
+    };
+  }
+
+  const category = (parsed.category as LearningTaskCategory) || 'general';
+  const validCategories: LearningTaskCategory[] = [
+    'behavioral_interview', 'technical_deep_dive', 'system_design',
+    'cross_functional', 'leadership', 'problem_solving', 'communication', 'general'
+  ];
+
+  return {
+    category: validCategories.includes(category) ? category : 'general',
+    confidence: (parsed.confidence as number) || 0.5,
+    reasoning: (parsed.reasoning as string) || '',
+  };
+}
+
+/**
+ * Chat with AI to prepare for a learning task.
+ * Includes category-specific prompts, relevant stories, and optional web search results.
+ */
+export async function chatAboutLearningTask(
+  task: LearningTask,
+  job: Job,
+  category: LearningTaskCategory,
+  history: LearningTaskPrepMessage[],
+  userMessage: string,
+  options?: {
+    webBestPractices?: string;
+    customInstructions?: string;
+  }
+): Promise<string> {
+  const { settings } = useAppStore.getState();
+
+  // Get resume text
+  const resumeText = job.resumeText || settings.defaultResumeText || '';
+
+  // Get relevant saved stories
+  const relevantStories = settings.savedStories
+    ?.filter(s => {
+      // Filter stories by category match or relevance to task
+      const storyCategory = s.category?.toLowerCase() || '';
+      const taskSkill = task.skill.toLowerCase();
+      return storyCategory.includes(category.split('_')[0]) ||
+             s.question.toLowerCase().includes(taskSkill) ||
+             s.answer.toLowerCase().includes(taskSkill);
+    })
+    .slice(0, 3)
+    .map(s => `**${s.question}**\n${s.answer}`)
+    .join('\n\n') || 'No relevant stories found.';
+
+  // Get the category-specific prompt
+  const basePrompt = LEARNING_TASK_PREP_PROMPTS[category] || LEARNING_TASK_PREP_PROMPTS.general;
+
+  // Build the system prompt
+  const systemPrompt = basePrompt
+    .replace('{jobTitle}', job.title)
+    .replace('{company}', job.company)
+    .replace('{skill}', task.skill)
+    .replace('{description}', task.description)
+    .replace('{resumeText}', resumeText || 'No resume provided')
+    .replace('{relevantStories}', relevantStories)
+    .replace('{webBestPractices}', options?.webBestPractices || 'No additional tips available.')
+    .replace('{customInstructions}', options?.customInstructions || 'None provided.');
+
+  // Build message history
+  const messages: AIMessage[] = [];
+  for (const entry of history) {
+    messages.push({ role: entry.role, content: entry.content });
+  }
+  messages.push({ role: 'user', content: userMessage });
+
+  return await callAI(messages, systemPrompt);
+}
+
+/**
+ * Summarize a prep session into a reusable prep bank entry.
+ */
+export async function summarizePrepSession(
+  task: LearningTask,
+  category: LearningTaskCategory,
+  messages: LearningTaskPrepMessage[]
+): Promise<{ question: string; answer: string }> {
+  // Format conversation for summarization
+  const conversation = messages
+    .map(m => `${m.role === 'user' ? 'User' : 'Coach'}: ${m.content}`)
+    .join('\n\n');
+
+  const prompt = LEARNING_TASK_PREP_SUMMARY_PROMPT
+    .replace('{category}', category)
+    .replace('{skill}', task.skill)
+    .replace('{description}', task.description)
+    .replace('{conversation}', conversation);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse prep summary response:', { response, jsonStr, error: e });
+    // Fallback to basic summary
+    return {
+      question: `${task.skill} - ${task.description}`,
+      answer: 'Preparation session notes (could not extract summary)',
+    };
+  }
+
+  return {
+    question: (parsed.question as string) || `${task.skill} - ${task.description}`,
+    answer: (parsed.answer as string) || 'Preparation session notes',
+  };
 }
