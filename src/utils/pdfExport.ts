@@ -64,12 +64,23 @@ export async function exportMarkdownToPdf(
   // Get line height for current font
   const getLineHeight = () => pdf.getFontSize() * 1.4;
 
+  // Check if we need a new page before rendering content
+  const ensureSpace = (neededHeight: number) => {
+    if (y + neededHeight > pageHeight - margin) {
+      pdf.addPage();
+      y = margin;
+    }
+  };
+
   // Add text with word wrap, returns new Y position
   const addText = (text: string, indent = 0): number => {
     // Sanitize and strip markdown bold markers
     const cleanText = sanitizeText(text).replace(/\*\*(.+?)\*\*/g, '$1');
 
-    const lines = pdf.splitTextToSize(cleanText, contentWidth - indent);
+    // Use 95% of available width as safety buffer for font metric variance
+    // jsPDF's splitTextToSize() can miscalculate widths after font changes
+    const safeWidth = (contentWidth - indent) * 0.95;
+    const lines = pdf.splitTextToSize(cleanText, safeWidth);
     const lineHeight = getLineHeight();
 
     for (const line of lines) {
@@ -94,8 +105,9 @@ export async function exportMarkdownToPdf(
 
     // H1 headers
     if (line.startsWith('# ')) {
-      y += 6; // Extra space before header
       pdf.setFontSize(18);
+      ensureSpace(6 + pdf.getFontSize() * 1.4);  // Space before + header line
+      y += 6; // Extra space before header
       pdf.setFont('helvetica', 'bold');
       addText(line.slice(2));
       y += 4; // Extra space after header
@@ -104,8 +116,9 @@ export async function exportMarkdownToPdf(
     }
     // H2 headers
     else if (line.startsWith('## ')) {
-      y += 4;
       pdf.setFontSize(14);
+      ensureSpace(4 + pdf.getFontSize() * 1.4);  // Space before + header line
+      y += 4;
       pdf.setFont('helvetica', 'bold');
       addText(line.slice(3));
       y += 2;
@@ -114,8 +127,9 @@ export async function exportMarkdownToPdf(
     }
     // H3 headers
     else if (line.startsWith('### ')) {
-      y += 2;
       pdf.setFontSize(12);
+      ensureSpace(2 + pdf.getFontSize() * 1.4);  // Space before + header line
+      y += 2;
       pdf.setFont('helvetica', 'bold');
       addText(line.slice(4));
       pdf.setFontSize(11);
@@ -123,6 +137,7 @@ export async function exportMarkdownToPdf(
     }
     // Bullet points (- or *)
     else if (line.match(/^[\-\*]\s/)) {
+      ensureSpace(getLineHeight());  // Check BEFORE rendering bullet
       pdf.text('•', margin, y);
       addText(line.slice(2), 12);
     }
@@ -130,12 +145,14 @@ export async function exportMarkdownToPdf(
     else if (line.match(/^\d+\.\s/)) {
       const match = line.match(/^(\d+\.)\s(.*)$/);
       if (match) {
+        ensureSpace(getLineHeight());  // Check BEFORE rendering number
         pdf.text(match[1], margin, y);
         addText(match[2], 18);
       }
     }
     // Horizontal rule
     else if (line.match(/^---+$/)) {
+      ensureSpace(16);  // 6 before + 10 after
       y += 6;
       pdf.setDrawColor(200);
       pdf.line(margin, y, pageWidth - margin, y);
