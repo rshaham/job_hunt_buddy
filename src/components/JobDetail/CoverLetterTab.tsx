@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, HelpCircle } from 'lucide-react';
+import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, HelpCircle, Download, ChevronDown, FileText } from 'lucide-react';
 import { Button, Textarea, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateCoverLetter, refineCoverLetter } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
+import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Job, CoverLetterEntry } from '../../types';
@@ -18,6 +19,8 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
   const [isRefining, setIsRefining] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [error, setError] = useState('');
   const [editedLetter, setEditedLetter] = useState(job.coverLetter || '');
   const [userMessage, setUserMessage] = useState('');
@@ -78,6 +81,31 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
     await navigator.clipboard.writeText(editedLetter);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleDownloadText = () => {
+    const blob = new Blob([editedLetter], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${job.company}-${job.title}-cover-letter.txt`.replace(/\s+/g, '-').toLowerCase();
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowDownloadMenu(false);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!editedLetter) return;
+    setIsGeneratingPdf(true);
+    setShowDownloadMenu(false);
+    try {
+      const filename = generatePdfFilename(job.company, job.title, 'cover-letter');
+      await exportMarkdownToPdf(editedLetter, { filename });
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -202,6 +230,47 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
             )}
           </Button>
         )}
+
+        {editedLetter && (
+          <div className="relative">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+              disabled={isGeneratingPdf}
+              title="Download"
+            >
+              {isGeneratingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </>
+              )}
+            </Button>
+            {showDownloadMenu && (
+              <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-10">
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Download as PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadText}
+                  className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Download as Text
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <span className="group relative ml-1">
           <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">

@@ -100,6 +100,47 @@ export interface PrepMaterial {
   type: 'question' | 'answer' | 'research' | 'other';
 }
 
+// Learning task category types for AI-assisted preparation
+export type LearningTaskCategory =
+  | 'behavioral_interview'
+  | 'technical_deep_dive'
+  | 'system_design'
+  | 'cross_functional'
+  | 'leadership'
+  | 'problem_solving'
+  | 'communication'
+  | 'general';
+
+// Human-readable labels for learning task categories
+export const LEARNING_TASK_CATEGORY_LABELS: Record<LearningTaskCategory, string> = {
+  behavioral_interview: 'Behavioral Interview',
+  technical_deep_dive: 'Technical Deep Dive',
+  system_design: 'System Design',
+  cross_functional: 'Cross-Functional',
+  leadership: 'Leadership',
+  problem_solving: 'Problem Solving',
+  communication: 'Communication',
+  general: 'General',
+};
+
+// Prep session message in a learning task conversation
+export interface LearningTaskPrepMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+// Prep session for AI-assisted learning task preparation
+export interface LearningTaskPrepSession {
+  id: string;
+  category: LearningTaskCategory;
+  messages: LearningTaskPrepMessage[];
+  savedToBank?: boolean;
+  webSourcesUsed?: string[];
+  createdAt: Date;
+}
+
 export interface LearningTask {
   id: string;
   skill: string;
@@ -110,6 +151,12 @@ export interface LearningTask {
   resourceUrl?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // AI-assisted preparation
+  inferredCategory?: LearningTaskCategory;
+  prepSessions?: LearningTaskPrepSession[];
+  customInstructions?: string;
+  prepNotes?: string; // Summary notes saved from prep sessions
 }
 
 export interface QAEntry {
@@ -183,6 +230,34 @@ export interface SavedStory {
   createdAt: Date;
 }
 
+// Career development project types
+export type ProjectStatus = 'idea' | 'in_progress' | 'completed';
+
+export interface CareerProjectSource {
+  type: 'career_coach' | 'job' | 'agent' | 'manual';
+  jobId?: string;
+  jobTitle?: string;
+  company?: string;
+}
+
+export interface CareerProject {
+  id: string;
+  title: string;
+  description: string;
+  details?: string;          // Full markdown with architecture, roadmap, etc.
+  skills: string[];
+  status: ProjectStatus;
+  source?: CareerProjectSource;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  idea: 'Idea',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+};
+
 export interface ContextDocument {
   id: string;
   name: string;           // Original filename
@@ -249,6 +324,7 @@ export interface AppSettings {
   additionalContext: string; // Free-form text about the user beyond their resume
   savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
   contextDocuments: ContextDocument[]; // Uploaded PDF documents for context
+  careerProjects: CareerProject[]; // Career development projects
 
   // Agent settings
   agentSettings?: AgentSettings;
@@ -381,5 +457,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   additionalContext: '',
   savedStories: [],
   contextDocuments: [],
+  careerProjects: [],
   onboardingCompleted: false,
 };

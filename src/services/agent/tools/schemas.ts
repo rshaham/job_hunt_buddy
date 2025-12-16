@@ -248,6 +248,21 @@ export const findExternalJobsSchema = z.object({
 });
 
 // ============================================
+// Career Project Schemas
+// ============================================
+
+export const suggestProjectSchema = z.object({
+  title: z.string().describe('Project title (e.g., "Build a REST API", "Create a personal portfolio site")'),
+  description: z.string().describe('Short 1-2 sentence summary of what the project involves'),
+  details: z.string().optional().describe('Full markdown with technical architecture, implementation roadmap, strategic positioning, and learning resources'),
+  skills: z.array(z.string()).describe('Skills this project helps develop (e.g., ["React", "TypeScript", "API Design"])'),
+  status: z.enum(['idea', 'in_progress', 'completed']).default('idea').describe('Initial project status'),
+  jobId: z.string().optional().describe('If suggesting based on a job, the job ID'),
+  jobTitle: z.string().optional().describe('If suggesting based on a job, the job title'),
+  company: z.string().optional().describe('If suggesting based on a job, the company name'),
+});
+
+// ============================================
 // Type exports
 // ============================================
 
@@ -290,3 +305,4 @@ export type DeleteContactInput = z.infer<typeof deleteContactSchema>;
 export type UpdateTimelineEventInput = z.infer<typeof updateTimelineEventSchema>;
 export type DeleteTimelineEventInput = z.infer<typeof deleteTimelineEventSchema>;
 export type FindExternalJobsInput = z.infer<typeof findExternalJobsSchema>;
+export type SuggestProjectInput = z.infer<typeof suggestProjectSchema>;
