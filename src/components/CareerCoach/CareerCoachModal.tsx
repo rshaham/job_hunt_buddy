@@ -9,6 +9,41 @@ import { format, formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { SavedStory, SkillCategory, SkillEntry } from '../../types';
+import { ProjectsTab } from './ProjectsTab';
+import { Lightbulb } from 'lucide-react';
+
+// Parse project suggestions from AI response (```project {...}```)
+interface ParsedProjectSuggestion {
+  title: string;
+  description: string;
+  details?: string;
+  skills: string[];
+}
+
+function parseProjectSuggestions(content: string): { cleanContent: string; projects: ParsedProjectSuggestion[] } {
+  const projectRegex = /```project\s*\n?([\s\S]*?)```/g;
+  const projects: ParsedProjectSuggestion[] = [];
+
+  const cleanContent = content.replace(projectRegex, (_, jsonStr) => {
+    try {
+      const parsed = JSON.parse(jsonStr.trim());
+      if (parsed.title && parsed.description && Array.isArray(parsed.skills)) {
+        projects.push({
+          title: parsed.title,
+          description: parsed.description,
+          details: parsed.details,
+          skills: parsed.skills,
+        });
+      }
+    } catch {
+      // If JSON parsing fails, leave the content as is
+      return `\`\`\`project\n${jsonStr}\`\`\``;
+    }
+    return ''; // Remove the parsed project block from content
+  });
+
+  return { cleanContent: cleanContent.trim(), projects };
+}
 
 // Markdown renderer component with proper styling
 function MarkdownContent({ content }: { content: string }) {
@@ -76,11 +111,12 @@ export function CareerCoachModal() {
     updateSettings,
     addSkill,
     removeSkill,
+    addCareerProject,
     jobs,
     settings,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'coach' | 'skills'>('coach');
+  const [activeTab, setActiveTab] = useState<'coach' | 'skills' | 'projects'>('coach');
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -91,6 +127,7 @@ export function CareerCoachModal() {
   const [includeAllJobs, setIncludeAllJobs] = useState(false);
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [addedProjectTitles, setAddedProjectTitles] = useState<Set<string>>(new Set());
 
   // Skills tab state
   const [expandedCategories, setExpandedCategories] = useState<Record<SkillCategory, boolean>>({
@@ -306,6 +343,23 @@ export function CareerCoachModal() {
     }
   };
 
+  const handleAddSuggestedProject = async (project: ParsedProjectSuggestion) => {
+    try {
+      await addCareerProject({
+        title: project.title,
+        description: project.description,
+        details: project.details,
+        skills: project.skills,
+        status: 'idea',
+        source: { type: 'career_coach' },
+      });
+      setAddedProjectTitles(prev => new Set(prev).add(project.title));
+      showToast('Project added', 'success');
+    } catch {
+      showToast('Failed to add project', 'error');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -467,6 +521,17 @@ export function CareerCoachModal() {
           >
             Skills {skillProfile?.skills?.length ? `(${skillProfile.skills.length})` : ''}
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('projects')}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'projects'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            Projects {settings.careerProjects?.length ? `(${settings.careerProjects.length})` : ''}
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -582,40 +647,103 @@ export function CareerCoachModal() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex justify-start">
-                          <div className="max-w-[85%]">
-                            <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
-                              <MarkdownContent content={entry.content} />
+                        (() => {
+                          const { cleanContent, projects } = parseProjectSuggestions(entry.content);
+                          return (
+                            <div className="flex justify-start">
+                              <div className="max-w-[85%]">
+                                <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
+                                  <MarkdownContent content={cleanContent} />
+                                  {/* Project Suggestions */}
+                                  {projects.length > 0 && (
+                                    <div className="mt-4 space-y-2">
+                                      {projects.map((project, idx) => {
+                                        const isAdded = addedProjectTitles.has(project.title) ||
+                                          settings.careerProjects?.some(p => p.title === project.title);
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg"
+                                          >
+                                            <div className="flex items-start justify-between gap-2">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                                  <span className="font-medium text-sm text-slate-800 dark:text-slate-200">
+                                                    {project.title}
+                                                  </span>
+                                                </div>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                                                  {project.description}
+                                                </p>
+                                                <div className="flex flex-wrap gap-1">
+                                                  {project.skills.map(skill => (
+                                                    <span
+                                                      key={skill}
+                                                      className="px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded"
+                                                    >
+                                                      {skill}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                              <Button
+                                                size="sm"
+                                                variant={isAdded ? 'ghost' : 'secondary'}
+                                                onClick={() => handleAddSuggestedProject(project)}
+                                                disabled={isAdded}
+                                                className="shrink-0"
+                                              >
+                                                {isAdded ? (
+                                                  <>
+                                                    <Check className="w-3.5 h-3.5 mr-1" />
+                                                    Added
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Plus className="w-3.5 h-3.5 mr-1" />
+                                                    Add
+                                                  </>
+                                                )}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1.5 ml-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyToClipboard(entry.id, entry.content)}
+                                    className="text-xs text-slate-400 hover:text-primary flex items-center gap-1 transition-colors"
+                                  >
+                                    {copiedId === entry.id ? (
+                                      <>
+                                        <Check className="w-3 h-3 text-green-500" />
+                                        <span className="text-green-500">Copied</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3 h-3" />
+                                        Copy
+                                      </>
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveToMemory(entry.content)}
+                                    className="text-xs text-slate-400 hover:text-primary flex items-center gap-1 transition-colors"
+                                  >
+                                    <Bookmark className="w-3 h-3" />
+                                    Save to Profile
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3 mt-1.5 ml-1">
-                              <button
-                                type="button"
-                                onClick={() => handleCopyToClipboard(entry.id, entry.content)}
-                                className="text-xs text-slate-400 hover:text-primary flex items-center gap-1 transition-colors"
-                              >
-                                {copiedId === entry.id ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-green-500" />
-                                    <span className="text-green-500">Copied</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3 h-3" />
-                                    Copy
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSaveToMemory(entry.content)}
-                                className="text-xs text-slate-400 hover:text-primary flex items-center gap-1 transition-colors"
-                              >
-                                <Bookmark className="w-3 h-3" />
-                                Save to Profile
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                          );
+                        })()
                       )}
                     </div>
                   ))}
@@ -662,7 +790,7 @@ export function CareerCoachModal() {
               </button>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'skills' ? (
           /* Skills Tab */
           <div className="flex flex-col flex-1 p-4 overflow-hidden">
             {/* Skills Controls */}
@@ -752,7 +880,10 @@ export function CareerCoachModal() {
               </div>
             )}
           </div>
-        )}
+        ) : activeTab === 'projects' ? (
+          /* Projects Tab */
+          <ProjectsTab />
+        ) : null}
       </div>
     </Modal>
   );

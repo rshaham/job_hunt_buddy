@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -131,6 +131,11 @@ interface AppState {
   addSkill: (skill: string, category: SkillCategory) => void;
   removeSkill: (skillName: string) => void;
   updateSkillCategory: (skillName: string, category: SkillCategory) => void;
+
+  // Career project actions
+  addCareerProject: (project: Omit<CareerProject, 'id' | 'createdAt' | 'updatedAt'>) => Promise<CareerProject>;
+  updateCareerProject: (id: string, updates: Partial<CareerProject>) => Promise<void>;
+  deleteCareerProject: (id: string) => Promise<void>;
 
   // Data management
   deleteAllData: () => Promise<void>;
@@ -583,6 +588,34 @@ export const useAppStore = create<AppState>((set, get) => ({
         },
       };
     });
+  },
+
+  // Career project actions
+  addCareerProject: async (project) => {
+    const now = new Date();
+    const newProject: CareerProject = {
+      ...project,
+      id: generateId(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const updatedProjects = [...(get().settings.careerProjects || []), newProject];
+    await get().updateSettings({ careerProjects: updatedProjects });
+    return newProject;
+  },
+
+  updateCareerProject: async (id, updates) => {
+    const projects = get().settings.careerProjects || [];
+    const updatedProjects = projects.map((p) =>
+      p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
+    );
+    await get().updateSettings({ careerProjects: updatedProjects });
+  },
+
+  deleteCareerProject: async (id) => {
+    const projects = get().settings.careerProjects || [];
+    const updatedProjects = projects.filter((p) => p.id !== id);
+    await get().updateSettings({ careerProjects: updatedProjects });
   },
 
   // Data management

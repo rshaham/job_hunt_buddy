@@ -380,7 +380,23 @@ When suggesting skill development:
 When analyzing patterns:
 - Note which job types/levels they're targeting
 - Identify work style preferences (remote/hybrid/onsite patterns)
-- Highlight requirements vs nice-to-haves they're missing`;
+- Highlight requirements vs nice-to-haves they're missing
+
+PROJECT SUGGESTIONS:
+When you suggest a project idea (a concrete side project to build skills), format it like this so the user can save it:
+
+\`\`\`project
+{
+  "title": "Project name",
+  "description": "Short 1-2 sentence summary of what to build",
+  "details": "Full markdown content with:\\n- Technical architecture suggestions\\n- Implementation roadmap/milestones\\n- Strategic positioning (how to talk about it)\\n- Learning resources\\n- Scope control tips",
+  "skills": ["Skill1", "Skill2"]
+}
+\`\`\`
+
+The "details" field should contain all the rich context you'd give about the project - architecture, roadmap, positioning, etc. This gets saved with the project so the user doesn't lose it.
+
+Only use this format for concrete, actionable project ideas - not for general suggestions or learning resources.`;
 
 export const CAREER_COACH_ANALYSIS_PROMPT = `Analyze this job seeker's application history and provide comprehensive career coaching.
 

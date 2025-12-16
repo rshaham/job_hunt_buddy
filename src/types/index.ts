@@ -230,6 +230,34 @@ export interface SavedStory {
   createdAt: Date;
 }
 
+// Career development project types
+export type ProjectStatus = 'idea' | 'in_progress' | 'completed';
+
+export interface CareerProjectSource {
+  type: 'career_coach' | 'job' | 'agent' | 'manual';
+  jobId?: string;
+  jobTitle?: string;
+  company?: string;
+}
+
+export interface CareerProject {
+  id: string;
+  title: string;
+  description: string;
+  details?: string;          // Full markdown with architecture, roadmap, etc.
+  skills: string[];
+  status: ProjectStatus;
+  source?: CareerProjectSource;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  idea: 'Idea',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+};
+
 export interface ContextDocument {
   id: string;
   name: string;           // Original filename
@@ -296,6 +324,7 @@ export interface AppSettings {
   additionalContext: string; // Free-form text about the user beyond their resume
   savedStories: SavedStory[]; // Saved Q&A experiences for AI to reference
   contextDocuments: ContextDocument[]; // Uploaded PDF documents for context
+  careerProjects: CareerProject[]; // Career development projects
 
   // Agent settings
   agentSettings?: AgentSettings;
@@ -428,5 +457,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   additionalContext: '',
   savedStories: [],
   contextDocuments: [],
+  careerProjects: [],
   onboardingCompleted: false,
 };

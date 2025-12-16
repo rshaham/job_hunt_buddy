@@ -41,6 +41,8 @@ export { updateTimelineEventTool } from './updateTimelineEventTool';
 export { deleteTimelineEventTool } from './deleteTimelineEventTool';
 // External job search
 export { findExternalJobsTool } from './findExternalJobsTool';
+// Career projects
+export { suggestProjectTool } from './suggestProjectTool';
 
 // Schemas
 export * from './schemas';
@@ -84,6 +86,7 @@ import { deleteContactTool } from './deleteContactTool';
 import { updateTimelineEventTool } from './updateTimelineEventTool';
 import { deleteTimelineEventTool } from './deleteTimelineEventTool';
 import { findExternalJobsTool } from './findExternalJobsTool';
+import { suggestProjectTool } from './suggestProjectTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -136,6 +139,8 @@ export const allTools: ToolDefinitionBase[] = [
   deleteTimelineEventTool,
   // External job search
   findExternalJobsTool,
+  // Career projects
+  suggestProjectTool,
 ];
 
 /**
@@ -189,4 +194,6 @@ export const writeTools: ToolDefinitionBase[] = [
   deleteContactTool,
   updateTimelineEventTool,
   deleteTimelineEventTool,
+  // Career projects
+  suggestProjectTool,
 ];
