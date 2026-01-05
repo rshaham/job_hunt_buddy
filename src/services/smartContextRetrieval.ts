@@ -22,6 +22,10 @@ import {
 } from './embeddings';
 import { useAppStore } from '../stores/appStore';
 import type { Job, ResumeAnalysis, SavedStory, ContextDocument } from '../types';
+import {
+  gatherCrossJobImprovements,
+  formatImprovementsContext,
+} from './resumeImprovementExtractor';
 
 // ============================================================================
 // Types
@@ -305,7 +309,8 @@ function formatSmartContext(
   stories: SavedStory[],
   documents: ContextDocument[],
   feature: SmartFeatureType,
-  additionalContext?: string
+  additionalContext?: string,
+  improvementsContext?: string
 ): string {
   const sections: string[] = [];
 
@@ -335,6 +340,11 @@ function formatSmartContext(
       })
       .join('\n\n');
     sections.push(`## Reference Documents\n\n${docsText}`);
+  }
+
+  // Add improvements from previous tailoring (for resume tailoring only)
+  if (improvementsContext?.trim()) {
+    sections.push(improvementsContext);
   }
 
   // Add additional context if provided
@@ -395,6 +405,7 @@ export async function buildSmartContext(
   options: SmartRetrievalOptions
 ): Promise<SmartRetrievalResult> {
   const {
+    job,
     feature,
     maxStories = 8,
     maxDocuments = 3,
@@ -405,6 +416,19 @@ export async function buildSmartContext(
   const state = useAppStore.getState();
   const additionalContext = state.settings.additionalContext;
 
+  // For resume tailoring, gather improvements from other tailored resumes
+  let improvementsContext = '';
+  if (feature === 'resumeTailoring' || feature === 'refinement') {
+    const improvements = gatherCrossJobImprovements(
+      job.id,
+      state.jobs,
+      state.settings.defaultResumeText || ''
+    );
+    if (improvements.length > 0) {
+      improvementsContext = formatImprovementsContext(improvements);
+    }
+  }
+
   // Extract queries based on feature
   const queries = extractQueries(options);
 
@@ -412,7 +436,13 @@ export async function buildSmartContext(
   if (!isEmbeddingReady() || queries.length === 0) {
     // Fallback to recent items
     const { stories, documents } = getFallbackContext(maxStories, maxDocuments);
-    const context = formatSmartContext(stories, documents, feature, additionalContext);
+    const context = formatSmartContext(
+      stories,
+      documents,
+      feature,
+      additionalContext,
+      improvementsContext
+    );
 
     return {
       context,
@@ -434,7 +464,13 @@ export async function buildSmartContext(
     const { stories, documents } = processResults(results, maxStories, maxDocuments);
 
     // Format for AI
-    const context = formatSmartContext(stories, documents, feature, additionalContext);
+    const context = formatSmartContext(
+      stories,
+      documents,
+      feature,
+      additionalContext,
+      improvementsContext
+    );
 
     return {
       context,
@@ -446,7 +482,13 @@ export async function buildSmartContext(
   } catch (error) {
     console.warn('[SmartRetrieval] Multi-query search failed, using fallback:', error);
     const { stories, documents } = getFallbackContext(maxStories, maxDocuments);
-    const context = formatSmartContext(stories, documents, feature, additionalContext);
+    const context = formatSmartContext(
+      stories,
+      documents,
+      feature,
+      additionalContext,
+      improvementsContext
+    );
 
     return {
       context,
