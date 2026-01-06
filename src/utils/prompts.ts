@@ -123,6 +123,7 @@ CRITICAL RULES:
 3. Reorder and emphasize relevant experience
 4. Quantify achievements where possible using the candidate's actual experience
 5. Adjust skill descriptions to match JD terminology (if the skill is genuinely equivalent)
+6. When a "Learned Improvements from Previous Tailoring" section is provided in the context, apply relevant improvements - these are proven phrasings that worked well in past tailoring
 
 Also generate 2-3 short, specific follow-up questions (under 60 chars each) that would help gather information to address the remaining gaps. These should be direct questions the user can answer to improve their resume further.
 
@@ -164,6 +165,7 @@ CRITICAL RULES:
 - NEVER fabricate experience - only use what the user tells you
 - When the user provides new information, incorporate it appropriately
 - Each response should include both a conversational reply AND the updated resume
+- When "Learned Improvements from Previous Tailoring" context is provided, apply relevant phrasings that fit naturally
 
 Return ONLY valid JSON:
 {
