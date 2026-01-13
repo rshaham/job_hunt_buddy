@@ -263,6 +263,18 @@ export const suggestProjectSchema = z.object({
 });
 
 // ============================================
+// Batch Job Scanner Schema
+// ============================================
+
+export const scanCareerPagesSchema = z.object({
+  urls: z.array(z.object({
+    url: z.string().describe('Career page URL to scan'),
+    companyHint: z.string().optional().describe('Company name hint to help identify jobs'),
+  })).describe('List of career page URLs to scan for job listings'),
+  maxJobsPerUrl: z.number().default(20).describe('Maximum jobs to extract per URL'),
+});
+
+// ============================================
 // Type exports
 // ============================================
 
@@ -306,3 +318,4 @@ export type UpdateTimelineEventInput = z.infer<typeof updateTimelineEventSchema>
 export type DeleteTimelineEventInput = z.infer<typeof deleteTimelineEventSchema>;
 export type FindExternalJobsInput = z.infer<typeof findExternalJobsSchema>;
 export type SuggestProjectInput = z.infer<typeof suggestProjectSchema>;
+export type ScanCareerPagesInput = z.infer<typeof scanCareerPagesSchema>;

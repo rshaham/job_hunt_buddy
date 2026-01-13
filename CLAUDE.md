@@ -65,18 +65,46 @@ src/
 
 3. **Don't over-engineer** - Only build what's needed now. Avoid speculative features or abstractions for hypothetical future requirements.
 
+## Quick Commands
+
+- `npm run dev` - Start development server (port 5173)
+- `npm run build` - TypeScript check + production build
+- `npm run lint` - ESLint with zero-warning policy
+- `npm run preview` - Preview production build
+
+## Critical Files
+
+- `src/services/ai.ts` - All Claude API integration (43KB, complex)
+- `src/stores/appStore.ts` - Zustand global state
+- `src/utils/prompts.ts` - AI prompt templates (31KB)
+- `src/services/db.ts` - Dexie.js IndexedDB wrapper
+- `src/types/index.ts` - TypeScript interfaces
+
 ## Project-Specific Notes
 
 ### Tech Stack
+
 - React 18 + Vite + TypeScript
 - Tailwind CSS for styling
 - Zustand for state management
 - Claude API for AI features
 
 ### AI Integration
+
 - Use simple model aliases: `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-haiku-4-5`
 - Access settings outside React via `useAppStore.getState()`
 - API key is base64 encoded in storage
+- Prompts are in `src/utils/prompts.ts` - always return JSON format
+- API calls go through `callAI()` in `src/services/ai.ts`
+- Model selection respects user settings (see `getModel()`)
+- Never expose API keys - they're base64 encoded in settings
+
+### Common Patterns
+
+- Use `useAppStore.getState()` outside React components
+- IndexedDB operations are async - always await `db.jobs.put()`
+- Dark mode: use `dark:` Tailwind prefix, controlled by class strategy
+- Use `clsx()` for conditional classes
 
 ### UI Components
 - `@uiw/react-md-editor` for markdown editing (supports dark mode via `data-color-mode`)

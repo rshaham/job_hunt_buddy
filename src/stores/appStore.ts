@@ -72,6 +72,7 @@ interface AppState {
   isFeatureGuideModalOpen: boolean;
   isCareerCoachModalOpen: boolean;
   isJobFinderModalOpen: boolean;
+  isBatchScannerModalOpen: boolean;
 
   // Career Coach State
   careerCoachState: CareerCoachState;
@@ -123,6 +124,8 @@ interface AppState {
   closeCareerCoachModal: () => void;
   openJobFinderModal: () => void;
   closeJobFinderModal: () => void;
+  openBatchScannerModal: () => void;
+  closeBatchScannerModal: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -158,6 +161,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isFeatureGuideModalOpen: false,
   isCareerCoachModalOpen: false,
   isJobFinderModalOpen: false,
+  isBatchScannerModalOpen: false,
   careerCoachState: { history: [] },
 
   // Load initial data
@@ -496,6 +500,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeCareerCoachModal: () => set({ isCareerCoachModalOpen: false }),
   openJobFinderModal: () => set({ isJobFinderModalOpen: true }),
   closeJobFinderModal: () => set({ isJobFinderModalOpen: false }),
+  openBatchScannerModal: () => set({ isBatchScannerModalOpen: true }),
+  closeBatchScannerModal: () => set({ isBatchScannerModalOpen: false }),
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {

@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npx vitest:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Read(src/**)",
+      "Read(docs/**)",
+      "Read(api/**)",
+      "Edit(src/**)",
+      "Edit(api/**)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const path=require('path');const f=JSON.parse(process.env.CLAUDE_TOOL_OUTPUT||'{}').file_path||'';if(f&&/\\.(ts|tsx)$/.test(f)){const{execSync}=require('child_process');try{execSync('npx prettier --write '+JSON.stringify(f),{stdio:'inherit'})}catch(e){}}\""
+          }
+        ]
+      }
+    ]
+  }
+}

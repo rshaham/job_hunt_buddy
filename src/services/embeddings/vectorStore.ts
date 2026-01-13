@@ -42,7 +42,7 @@ import type {
  * In-memory cache of all embeddings for fast similarity search.
  * Kept in sync with IndexedDB.
  */
-let embeddingCache: Map<string, EmbeddingRecord> = new Map();
+const embeddingCache: Map<string, EmbeddingRecord> = new Map();
 
 /**
  * Whether the cache has been loaded from the database.

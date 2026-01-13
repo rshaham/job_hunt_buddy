@@ -11,6 +11,7 @@ import { FeatureGuideModal } from './components/FeatureGuide';
 import { CareerCoachModal } from './components/CareerCoach';
 import { CommandBar } from './components/CommandBar';
 import { JobFinderModal } from './components/JobFinder';
+import { BatchScannerModal } from './components/BatchScanner';
 import { ToastContainer } from './components/ui';
 
 function App() {
@@ -118,6 +119,7 @@ function App() {
       <FeatureGuideModal />
       <CareerCoachModal />
       <JobFinderModal />
+      <BatchScannerModal />
       <CommandBar />
       <ToastContainer />
     </>

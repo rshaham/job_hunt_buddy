@@ -99,7 +99,9 @@ export async function exportData(): Promise<{ jobs: Job[]; settings: ExportedSet
   ) as unknown as Record<ProviderType, Omit<ProviderSettings, 'apiKey'>>;
 
   // Remove legacy apiKey field and replace providers with sanitized version
-  const { apiKey: _apiKey, providers: _providers, ...rest } = settings;
+  const { apiKey, providers, ...rest } = settings;
+  void apiKey;
+  void providers;
 
   return {
     jobs,

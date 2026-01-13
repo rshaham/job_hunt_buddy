@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search, ArrowUpDown, X } from 'lucide-react';
+import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search, ArrowUpDown, X, ListChecks } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
@@ -37,6 +37,7 @@ export function BoardView() {
     openFeatureGuideModal,
     openCareerCoachModal,
     openJobFinderModal,
+    openBatchScannerModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -119,11 +120,12 @@ export function BoardView() {
         case 'title':
           comparison = a.title.localeCompare(b.title);
           break;
-        case 'resumeFit':
+        case 'resumeFit': {
           const aFit = a.resumeAnalysis?.matchPercentage ?? -1;
           const bFit = b.resumeAnalysis?.matchPercentage ?? -1;
           comparison = aFit - bFit;
           break;
+        }
       }
 
       return sortDirection === 'desc' ? -comparison : comparison;
@@ -178,6 +180,10 @@ export function BoardView() {
               Find Jobs
             </Button>
           )}
+          <Button onClick={openBatchScannerModal} size="sm" variant="secondary" title="Scan multiple career pages">
+            <ListChecks className="w-4 h-4 mr-1" />
+            Batch Scan
+          </Button>
           <button
             type="button"
             onClick={() => useCommandBarStore.getState().open()}
