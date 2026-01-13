@@ -56,7 +56,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
   const hasAIConfigured = isAIConfigured(settings);
   const originalResume = job.resumeText || settings.defaultResumeText;
   const tailoredResume = job.tailoredResume || originalResume;
-  const history = job.tailoringHistory || [];
+  const history = useMemo(() => job.tailoringHistory || [], [job.tailoringHistory]);
   const originalAnalysis = job.resumeAnalysis;
   const tailoredAnalysis = job.tailoredResumeAnalysis;
 
@@ -77,7 +77,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
     if (initialKeyword && !userMessage) {
       setUserMessage(`How can I address the missing skill: "${initialKeyword}"?`);
     }
-  }, [initialKeyword]);
+  }, [initialKeyword, userMessage]);
 
   // Get missing keywords from the most recent analysis
   const missingKeywords = job.tailoredResumeAnalysis?.missingKeywords ||

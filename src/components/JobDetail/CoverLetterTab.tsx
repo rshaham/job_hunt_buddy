@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, HelpCircle, Download, ChevronDown, FileText } from 'lucide-react';
 import { Button, Textarea, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -30,7 +30,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
 
   const hasAIConfigured = isAIConfigured(settings);
   const resumeText = job.resumeText || settings.defaultResumeText;
-  const history = job.coverLetterHistory || [];
+  const history = useMemo(() => job.coverLetterHistory || [], [job.coverLetterHistory]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

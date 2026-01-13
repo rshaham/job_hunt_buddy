@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, Mail } from 'lucide-react';
 import { Button, Textarea, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -38,7 +38,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
 
   const hasAIConfigured = isAIConfigured(settings);
   const resumeText = job.resumeText || settings.defaultResumeText;
-  const history = job.emailDraftHistory || [];
+  const history = useMemo(() => job.emailDraftHistory || [], [job.emailDraftHistory]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

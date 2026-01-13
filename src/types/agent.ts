@@ -13,7 +13,6 @@ export type ToolProgressCallback = (message: string) => void;
 
 // Base tool definition interface (for collections/registry)
 // Uses 'any' to allow storing heterogeneous tool types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ToolDefinitionBase {
   name: string;
   description: string;

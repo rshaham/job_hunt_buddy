@@ -318,7 +318,7 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
       await embedBatch(request.id, request.items);
       break;
 
-    default:
+    default: {
       // TypeScript exhaustiveness check
       const _exhaustiveCheck: never = request;
       sendResponse({
@@ -327,6 +327,7 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
         message: 'Unknown request type',
         code: 'UNKNOWN_REQUEST',
       });
+    }
   }
 };
 

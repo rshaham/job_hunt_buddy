@@ -120,11 +120,12 @@ export function BoardView() {
         case 'title':
           comparison = a.title.localeCompare(b.title);
           break;
-        case 'resumeFit':
+        case 'resumeFit': {
           const aFit = a.resumeAnalysis?.matchPercentage ?? -1;
           const bFit = b.resumeAnalysis?.matchPercentage ?? -1;
           comparison = aFit - bFit;
           break;
+        }
       }
 
       return sortDirection === 'desc' ? -comparison : comparison;

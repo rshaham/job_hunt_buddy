@@ -22,7 +22,7 @@ interface PdfExportOptions {
 function sanitizeText(text: string): string {
   return text
     // Remove zero-width characters
-    .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+    .replace(/\u200B|\u200C|\u200D|\uFEFF/g, '')
     // Normalize spaces (non-breaking space to regular)
     .replace(/\u00A0/g, ' ')
     // Smart quotes to ASCII
@@ -136,7 +136,7 @@ export async function exportMarkdownToPdf(
       pdf.setFont('helvetica', 'normal');
     }
     // Bullet points (- or *)
-    else if (line.match(/^[\-\*]\s/)) {
+    else if (line.match(/^[-*]\s/)) {
       ensureSpace(getLineHeight());  // Check BEFORE rendering bullet
       pdf.text('•', margin, y);
       addText(line.slice(2), 12);
@@ -179,5 +179,5 @@ export function generatePdfFilename(company: string, title: string, suffix = 're
   return `${company}-${title}-${suffix}.pdf`
     .toLowerCase()
     .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9\-\.]/g, '');
+    .replace(/[^a-z0-9.-]/g, '');
 }
