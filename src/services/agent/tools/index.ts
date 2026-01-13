@@ -41,6 +41,8 @@ export { updateTimelineEventTool } from './updateTimelineEventTool';
 export { deleteTimelineEventTool } from './deleteTimelineEventTool';
 // External job search
 export { findExternalJobsTool } from './findExternalJobsTool';
+// Batch scanner
+export { scanCareerPagesTool } from './scanCareerPagesTool';
 // Career projects
 export { suggestProjectTool } from './suggestProjectTool';
 
@@ -86,6 +88,7 @@ import { deleteContactTool } from './deleteContactTool';
 import { updateTimelineEventTool } from './updateTimelineEventTool';
 import { deleteTimelineEventTool } from './deleteTimelineEventTool';
 import { findExternalJobsTool } from './findExternalJobsTool';
+import { scanCareerPagesTool } from './scanCareerPagesTool';
 import { suggestProjectTool } from './suggestProjectTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
@@ -139,6 +142,8 @@ export const allTools: ToolDefinitionBase[] = [
   deleteTimelineEventTool,
   // External job search
   findExternalJobsTool,
+  // Batch scanner
+  scanCareerPagesTool,
   // Career projects
   suggestProjectTool,
 ];
@@ -164,6 +169,8 @@ export const readTools: ToolDefinitionBase[] = [
   getStaleJobsTool,
   // External job search
   findExternalJobsTool,
+  // Batch scanner
+  scanCareerPagesTool,
 ];
 
 /**
