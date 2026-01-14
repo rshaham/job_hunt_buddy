@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { useAppStore } from './stores/appStore';
 import { useCommandBarStore } from './stores/commandBarStore';
 import { BoardView } from './components/Board';
@@ -122,6 +123,7 @@ function App() {
       <BatchScannerModal />
       <CommandBar />
       <ToastContainer />
+      <Analytics />
     </>
   );
 }

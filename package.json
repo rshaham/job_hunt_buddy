@@ -43,6 +43,7 @@
     "@uiw/react-md-editor": "^4.0.8",
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.7",
+    "@vercel/analytics": "^1.6.1",
     "@xenova/transformers": "^2.17.2",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
