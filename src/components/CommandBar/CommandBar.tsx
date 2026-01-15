@@ -44,7 +44,7 @@ export function CommandBar() {
     clearHistory,
   } = useCommandBarStore();
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [previewJob, setPreviewJob] = useState<AgentSearchResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -145,6 +145,27 @@ export function CommandBar() {
     }
   }, [chatHistory, toolCalls, agentState?.toolProgress]);
 
+  // Auto-resize textarea as content changes
+  useEffect(() => {
+    if (inputRef.current) {
+      const textarea = inputRef.current;
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    }
+  }, [inputValue]);
+
+  // Handle Enter/Shift+Enter in textarea
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter without Shift = submit
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (state !== 'processing' && inputValue.trim()) {
+        submit();
+      }
+    }
+    // Shift+Enter = allow default behavior (new line)
+  };
+
   // Handle keyboard shortcuts
   useEffect(() => {
     if (!isOpen) return;
@@ -166,14 +187,8 @@ export function CommandBar() {
           e.preventDefault();
           cancelAction();
         }
-        return;
       }
-
-      // Enter to submit (when not processing)
-      if (e.key === 'Enter' && state !== 'processing' && inputValue.trim()) {
-        e.preventDefault();
-        submit();
-      }
+      // Note: Enter to submit is handled by the textarea's onKeyDown
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -420,14 +435,16 @@ export function CommandBar() {
               <span className="text-xl">⌘</span>
             )}
           </span>
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleInputKeyDown}
             placeholder={hasHistory ? "Continue the conversation..." : "Type a command..."}
             disabled={state === 'processing' || state === 'confirming'}
-            className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 outline-none text-lg"
+            rows={1}
+            className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 outline-none text-lg resize-none overflow-hidden"
+            style={{ minHeight: '28px', maxHeight: '200px' }}
           />
           <kbd className="hidden sm:inline-block px-2 py-1 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 rounded">
             Esc
