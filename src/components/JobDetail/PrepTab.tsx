@@ -254,6 +254,24 @@ export function PrepTab({ job }: PrepTabProps) {
     }
   };
 
+  const handleSavePrepMaterial = async () => {
+    if (!prepMaterial) return;
+
+    const newMaterial = {
+      id: generateId(),
+      title: `Interview Prep - ${format(new Date(), 'MMM d, yyyy')}`,
+      content: prepMaterial,
+      type: 'research' as const,
+    };
+
+    await updateJob(job.id, {
+      prepMaterials: [...(job.prepMaterials || []), newMaterial],
+    });
+
+    setPrepMaterial(''); // Clear the temporary state
+    showToast('Prep material saved', 'success');
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -544,10 +562,21 @@ export function PrepTab({ job }: PrepTabProps) {
           {/* Generated Interview Prep */}
           {prepMaterial && (
             <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20">
-              <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Interview Prep
-              </h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold text-primary uppercase tracking-wide flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Interview Prep
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSavePrepMaterial}
+                  className="text-xs"
+                >
+                  <Bookmark className="w-3.5 h-3.5 mr-1" />
+                  Save
+                </Button>
+              </div>
               <MarkdownContent content={prepMaterial} />
             </div>
           )}
