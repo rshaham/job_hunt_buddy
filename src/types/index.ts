@@ -32,6 +32,7 @@ export interface Job {
   timeline: TimelineEvent[];
   prepMaterials: PrepMaterial[];
   qaHistory: QAEntry[];
+  savedPrepConversations?: SavedPrepConversation[];
   learningTasks: LearningTask[];
 
   // Resume tailoring
@@ -164,6 +165,13 @@ export interface QAEntry {
   question: string;
   answer: string | null; // null while waiting for AI response
   timestamp: Date;
+}
+
+export interface SavedPrepConversation {
+  id: string;
+  name: string;
+  entries: QAEntry[];
+  savedAt: Date;
 }
 
 export interface TailoringEntry {

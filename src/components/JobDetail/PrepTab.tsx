@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle, Download } from 'lucide-react';
-import { Button, ConfirmModal, ThinkingBubble } from '../ui';
+import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle, Download, FolderOpen, Upload } from 'lucide-react';
+import { Button, ConfirmModal, Modal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
@@ -9,7 +9,7 @@ import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Job, QAEntry, SavedStory } from '../../types';
+import type { Job, QAEntry, SavedStory, SavedPrepConversation } from '../../types';
 
 interface PrepTabProps {
   job: Job;
@@ -115,6 +115,12 @@ export function PrepTab({ job }: PrepTabProps) {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [selectedInterviewerId, setSelectedInterviewerId] = useState<string | null>(null);
   const [showInterviewerDropdown, setShowInterviewerDropdown] = useState(false);
+
+  // Save/load conversation state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [showLoadWarning, setShowLoadWarning] = useState(false);
+  const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
 
   // Get contacts with interviewer intel
   const contactsWithIntel = job.contacts.filter((c) => c.interviewerIntel);
@@ -272,6 +278,54 @@ export function PrepTab({ job }: PrepTabProps) {
     showToast('Prep material saved', 'success');
   };
 
+  // Save current chat conversation
+  const handleSaveChat = async () => {
+    if (!job.qaHistory.length) return;
+
+    const newSaved: SavedPrepConversation = {
+      id: generateId(),
+      name: saveName || `Chat ${format(new Date(), 'MMM d, h:mm a')}`,
+      entries: [...job.qaHistory],
+      savedAt: new Date(),
+    };
+
+    await updateJob(job.id, {
+      savedPrepConversations: [...(job.savedPrepConversations || []), newSaved],
+    });
+
+    setShowSaveModal(false);
+    setSaveName('');
+    showToast('Chat saved', 'success');
+  };
+
+  // Load saved chat (with warning check)
+  const handleLoadChat = (savedId: string) => {
+    if (job.qaHistory.length > 0) {
+      setPendingLoadId(savedId);
+      setShowLoadWarning(true);
+    } else {
+      doLoadChat(savedId);
+    }
+  };
+
+  // Actually load the chat
+  const doLoadChat = async (savedId: string) => {
+    const saved = job.savedPrepConversations?.find(s => s.id === savedId);
+    if (saved) {
+      await updateJob(job.id, { qaHistory: [...saved.entries] });
+      showToast(`Loaded: ${saved.name}`, 'success');
+    }
+    setShowLoadWarning(false);
+    setPendingLoadId(null);
+  };
+
+  // Delete saved chat
+  const handleDeleteSavedChat = async (savedId: string) => {
+    const updated = (job.savedPrepConversations || []).filter(s => s.id !== savedId);
+    await updateJob(job.id, { savedPrepConversations: updated });
+    showToast('Saved chat deleted', 'success');
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -288,7 +342,7 @@ export function PrepTab({ job }: PrepTabProps) {
   ];
 
   // Check if we have any prep content to show in the right panel
-  const hasPrepContent = prepMaterial || (job.prepMaterials && job.prepMaterials.length > 0) || contactsWithIntel.length > 0;
+  const hasPrepContent = prepMaterial || (job.prepMaterials && job.prepMaterials.length > 0) || (job.savedPrepConversations && job.savedPrepConversations.length > 0) || contactsWithIntel.length > 0;
 
   return (
     <div className="flex h-[calc(100vh-180px)] gap-4">
@@ -299,6 +353,60 @@ export function PrepTab({ job }: PrepTabProps) {
         title="Clear Chat History"
         message="Clear all chat history for this job? This cannot be undone."
         confirmText="Clear"
+        variant="warning"
+      />
+
+      {/* Save Chat Modal */}
+      <Modal
+        isOpen={showSaveModal}
+        onClose={() => {
+          setShowSaveModal(false);
+          setSaveName('');
+        }}
+        title="Save Chat"
+        size="sm"
+      >
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Save this conversation to reload later.
+          </p>
+          <input
+            type="text"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder={`Chat ${format(new Date(), 'MMM d, h:mm a')}`}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowSaveModal(false);
+                setSaveName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSaveChat}>
+              Save
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Load Warning Modal */}
+      <ConfirmModal
+        isOpen={showLoadWarning}
+        onClose={() => {
+          setShowLoadWarning(false);
+          setPendingLoadId(null);
+        }}
+        onConfirm={() => pendingLoadId && doLoadChat(pendingLoadId)}
+        title="Load Saved Chat"
+        message="Your current chat has unsaved messages. Loading will replace them. Continue?"
+        confirmText="Load"
         variant="warning"
       />
 
@@ -327,10 +435,16 @@ export function PrepTab({ job }: PrepTabProps) {
             </Button>
           )}
           {job.qaHistory.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
-              <Trash2 className="w-4 h-4 mr-1" />
-              Clear Chat
-            </Button>
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setShowSaveModal(true)}>
+                <Bookmark className="w-4 h-4 mr-1" />
+                Save Chat
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setIsClearModalOpen(true)}>
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear Chat
+              </Button>
+            </>
           )}
           <span className="group relative ml-1">
             <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
@@ -616,6 +730,51 @@ export function PrepTab({ job }: PrepTabProps) {
                         onClick={() => handleDeletePrepMaterial(material.id)}
                         className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-all"
                         title="Delete research"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Saved Chats */}
+          {job.savedPrepConversations && job.savedPrepConversations.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <FolderOpen className="w-3.5 h-3.5" />
+                Saved Chats ({job.savedPrepConversations.length})
+              </h4>
+              {job.savedPrepConversations.map((saved) => (
+                <div
+                  key={saved.id}
+                  className="group p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {saved.name}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {saved.entries.length} messages · {format(new Date(saved.savedAt), 'MMM d, h:mm a')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadChat(saved.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded text-slate-400 hover:text-blue-500 transition-all"
+                        title="Load this chat"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSavedChat(saved.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-all"
+                        title="Delete saved chat"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
