@@ -5,6 +5,7 @@
  * Displays per-URL status and overall progress bars.
  */
 
+import { useMemo } from 'react';
 import {
   Loader2,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   Clock,
   Globe,
   Briefcase,
+  AlertTriangle,
 } from 'lucide-react';
 import type { ScannedUrl, BatchScanProgress, ScoringProgress } from '../../types/batchScanner';
 
@@ -33,6 +35,12 @@ export function ScanProgressPanel({
   const scanPercent = scanProgress.urlsTotal > 0
     ? Math.round((scanProgress.urlsComplete / scanProgress.urlsTotal) * 100)
     : 0;
+
+  // Track failed URLs for error summary
+  const failedUrls = useMemo(
+    () => scannedUrls.filter(u => u.status === 'error'),
+    [scannedUrls]
+  );
 
   const scorePercent = scoringProgress.total > 0
     ? Math.round((scoringProgress.completed / scoringProgress.total) * 100)
@@ -97,6 +105,32 @@ export function ScanProgressPanel({
           <span>{scanProgress.jobsFound} jobs found so far</span>
         </div>
       </div>
+
+      {/* Error Summary - persists after scanning */}
+      {failedUrls.length > 0 && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/50">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <span className="text-sm font-medium text-red-700 dark:text-red-400">
+              {failedUrls.length} URL{failedUrls.length > 1 ? 's' : ''} failed
+            </span>
+          </div>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {failedUrls.map((url) => {
+              const hostname = new URL(url.original.url).hostname;
+              return (
+                <div key={url.id} className="text-xs text-red-600 dark:text-red-400">
+                  <span className="font-medium">{url.original.companyHint || hostname}:</span>{' '}
+                  <span className="text-red-500 dark:text-red-500">{url.error}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-red-500 dark:text-red-400 italic">
+            Some sites block automated access. Try visiting manually.
+          </p>
+        </div>
+      )}
 
       {/* Per-URL Status */}
       <div>
