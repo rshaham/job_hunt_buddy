@@ -45,6 +45,7 @@ export const addPrepMaterialTool: ToolDefinition<AddPrepMaterialInput, AddPrepMa
 
       return {
         success: true,
+        description: `Added "${input.title}" to ${job.company}`,
         data: {
           materialId: newMaterial.id,
           jobId: job.id,

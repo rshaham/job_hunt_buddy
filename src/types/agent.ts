@@ -5,8 +5,8 @@ export type ToolCategory = 'read' | 'write';
 
 // Tool execution result
 export type ToolResult<T = unknown> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+  | { success: true; data: T; description?: string }
+  | { success: false; error: string; description?: string };
 
 // Progress callback for tools to report their progress
 export type ToolProgressCallback = (message: string) => void;
@@ -98,6 +98,13 @@ export interface AgentExecutionState {
   toolsExecuted: string[];
   pendingConfirmation?: ConfirmationRequest;
   error?: string;
+  /** Result of the last tool execution (for tracking success/failure) */
+  lastToolResult?: {
+    toolName: string;
+    success: boolean;
+    error?: string;
+    description?: string;
+  };
 }
 
 export interface ConfirmationRequest {
@@ -117,7 +124,7 @@ export interface AgentSettings {
 
 export const DEFAULT_AGENT_SETTINGS: AgentSettings = {
   requireConfirmation: 'write-only',
-  maxIterations: 7,
+  maxIterations: 15,
 };
 
 // Helper type to extract input type from a tool definition

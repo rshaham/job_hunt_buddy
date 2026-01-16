@@ -303,6 +303,32 @@ export function CommandBar() {
                         </ReactMarkdown>
                       </div>
                     )}
+                    {/* Tool execution history for this message */}
+                    {msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Tools executed:
+                        </div>
+                        <div className="space-y-1">
+                          {msg.toolCalls.map((tc) => (
+                            <div key={tc.id} className="flex items-start gap-2 text-xs">
+                              <span className={tc.status === 'error' ? 'text-red-500' : 'text-green-500'}>
+                                {tc.status === 'error' ? '✗' : '✓'}
+                              </span>
+                              <div>
+                                <span className="text-gray-600 dark:text-gray-300">{tc.name}</span>
+                                {tc.description && (
+                                  <span className="text-gray-500 dark:text-gray-400">: {tc.description}</span>
+                                )}
+                                {tc.status === 'error' && tc.errorMessage && (
+                                  <div className="text-red-500 mt-0.5">{tc.errorMessage}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

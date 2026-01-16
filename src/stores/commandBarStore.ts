@@ -3,6 +3,7 @@ import { AgentExecutor } from '../services/agent';
 import type { AgentExecutionState, ConfirmationRequest, AIMessageWithTools } from '../types/agent';
 import type { PreviewJob } from '../components/JobFinder';
 import type { AppSettings } from '../types';
+import { generateId } from '../utils/helpers';
 
 /** Search result from agent's find_external_jobs tool */
 export interface AgentSearchResult extends PreviewJob {
@@ -14,11 +15,14 @@ interface ToolCallEntry {
   name: string;
   status: 'pending' | 'executing' | 'complete' | 'error' | 'declined';
   result?: string;
+  errorMessage?: string;
+  description?: string;
 }
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  toolCalls?: ToolCallEntry[];
 }
 
 type CommandBarState = 'empty' | 'typing' | 'processing' | 'confirming' | 'complete' | 'error';
@@ -169,18 +173,24 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
             return {
               toolCalls: [
                 ...state.toolCalls,
-                { id: Date.now().toString(), name: agentState.currentTool!, status: 'executing' as const },
+                { id: generateId(), name: agentState.currentTool!, status: 'executing' as const },
               ],
             };
           });
         }
 
-        // Mark completed tools
-        if (agentState.toolsExecuted.length > 0) {
+        // Mark completed tools with their results
+        if (agentState.lastToolResult) {
+          const result = agentState.lastToolResult;
           set((state) => ({
             toolCalls: state.toolCalls.map((tc) =>
-              agentState.toolsExecuted.includes(tc.name) && tc.status === 'executing'
-                ? { ...tc, status: 'complete' as const }
+              tc.name === result.toolName && tc.status === 'executing'
+                ? {
+                    ...tc,
+                    status: result.success ? ('complete' as const) : ('error' as const),
+                    errorMessage: result.success ? undefined : result.error,
+                    description: result.description,
+                  }
                 : tc
             ),
           }));
@@ -210,7 +220,14 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
         pendingConfirmation: null,
         confirmationResolver: null,
         agentMessages: newAgentMessages,
-        chatHistory: [...state.chatHistory, { role: 'assistant' as const, content: response }],
+        chatHistory: [
+          ...state.chatHistory,
+          {
+            role: 'assistant' as const,
+            content: response,
+            toolCalls: state.toolCalls.length > 0 ? [...state.toolCalls] : undefined,
+          },
+        ],
       }));
 
       // Persist chat to settings
@@ -273,14 +290,62 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
 
   initializeFromSettings: (settings) => {
     if (settings.agentChatHistory || settings.agentMessages) {
+      // Sanitize messages when restoring to remove any incomplete tool call sequences
+      const sanitizedMessages = settings.agentMessages
+        ? sanitizeAgentMessages(settings.agentMessages)
+        : [];
+
       set({
         chatHistory: settings.agentChatHistory || [],
-        agentMessages: settings.agentMessages || [],
+        agentMessages: sanitizedMessages,
         state: settings.agentChatHistory?.length ? 'complete' : 'empty',
       });
     }
   },
 }));
+
+/**
+ * Sanitize agent messages to remove incomplete tool call sequences.
+ * Ensures every tool_use block has a corresponding tool_result.
+ * This prevents API errors when persisting/restoring conversation state.
+ */
+function sanitizeAgentMessages(messages: AIMessageWithTools[]): AIMessageWithTools[] {
+  if (messages.length === 0) return messages;
+
+  const sanitized: AIMessageWithTools[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
+    // Check if this is an assistant message with tool_use blocks
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      const hasToolUse = msg.content.some(
+        (block) => typeof block === 'object' && 'type' in block && block.type === 'tool_use'
+      );
+
+      if (hasToolUse) {
+        // Check if next message is a user message with tool_result blocks
+        const nextMsg = messages[i + 1];
+        const hasToolResult =
+          nextMsg?.role === 'user' &&
+          Array.isArray(nextMsg.content) &&
+          nextMsg.content.some(
+            (block) => typeof block === 'object' && 'type' in block && block.type === 'tool_result'
+          );
+
+        if (!hasToolResult) {
+          // Skip this message - incomplete tool call sequence
+          console.warn('[CommandBar] Removing incomplete tool_use message from history');
+          continue;
+        }
+      }
+    }
+
+    sanitized.push(msg);
+  }
+
+  return sanitized;
+}
 
 // Helper to persist agent chat to settings
 const saveAgentChatToSettings = async () => {
@@ -288,9 +353,13 @@ const saveAgentChatToSettings = async () => {
   // Dynamic import to avoid circular dependency
   const { useAppStore } = await import('./appStore');
   const { updateSettings } = useAppStore.getState();
+
+  // Sanitize messages before persisting to remove incomplete tool call sequences
+  const sanitizedMessages = sanitizeAgentMessages(agentMessages);
+
   await updateSettings({
     agentChatHistory: chatHistory,
-    agentMessages: agentMessages,
+    agentMessages: sanitizedMessages,
   });
 };
 

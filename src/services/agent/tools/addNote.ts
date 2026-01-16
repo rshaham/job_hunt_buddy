@@ -45,6 +45,7 @@ export const addNoteTool: ToolDefinition<AddNoteInput, AddNoteResult> = {
 
       return {
         success: true,
+        description: `Added note to ${job.company}`,
         data: {
           noteId: newNote.id,
           jobId: job.id,

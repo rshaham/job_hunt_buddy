@@ -12,6 +12,7 @@ import { isFeatureAvailable } from '../../../utils/featureFlags';
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import type { PrepMaterial } from '../../../types';
 import { webResearchSchema, type WebResearchInput } from './schemas';
+import { generateId } from '../../../utils/helpers';
 
 interface WebResearchResult {
   jobId: string;
@@ -114,7 +115,7 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
 
       // Save as prep material
       const prepMaterial: PrepMaterial = {
-        id: Date.now().toString(),
+        id: generateId(),
         title: `Research: ${input.topics}${webSearchUsed ? ' (with web search)' : ''}`,
         content: finalContent,
         type: 'research',
@@ -128,6 +129,7 @@ export const webResearchTool: ToolDefinition<WebResearchInput, WebResearchResult
 
       return {
         success: true,
+        description: `Researched "${input.topics}" for ${job.company}`,
         data: {
           jobId: job.id,
           company: job.company,

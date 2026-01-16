@@ -12,6 +12,7 @@ import {
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import type { PrepMaterial } from '../../../types';
 import { companyAnalysisSchema, type CompanyAnalysisInput } from './schemas';
+import { generateId } from '../../../utils/helpers';
 
 interface CompanyAnalysisResult {
   jobId: string;
@@ -102,7 +103,7 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
 
       // Save as prep material
       const prepMaterial: PrepMaterial = {
-        id: Date.now().toString(),
+        id: generateId(),
         title: `Company Analysis: ${job.company}${webSearchUsed ? ' (with web search)' : ''}`,
         content: finalContent,
         type: 'research',
@@ -116,6 +117,7 @@ export const companyAnalysisTool: ToolDefinition<CompanyAnalysisInput, CompanyAn
 
       return {
         success: true,
+        description: `Analyzed ${job.company}${webSearchUsed ? ' (with web search)' : ''}`,
         data: {
           jobId: job.id,
           company: job.company,
