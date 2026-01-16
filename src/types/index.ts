@@ -1,7 +1,7 @@
-import type { AgentSettings } from './agent';
+import type { AgentSettings, AIMessageWithTools } from './agent';
 
 // Re-export agent types for convenience
-export type { AgentSettings, ToolCategory, ToolResult, ToolDefinition, ToolDefinitionBase, AgentStatus, AgentExecutionState, ConfirmationRequest, ConfirmationLevel } from './agent';
+export type { AgentSettings, ToolCategory, ToolResult, ToolDefinition, ToolDefinitionBase, AgentStatus, AgentExecutionState, ConfirmationRequest, ConfirmationLevel, AIMessageWithTools } from './agent';
 export { DEFAULT_AGENT_SETTINGS } from './agent';
 
 // Core Job entity
@@ -140,6 +140,12 @@ export interface LearningTaskPrepSession {
   savedToBank?: boolean;
   webSourcesUsed?: string[];
   createdAt: Date;
+}
+
+// Agent chat message for CommandBar persistence
+export interface AgentChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 export interface LearningTask {
@@ -336,6 +342,10 @@ export interface AppSettings {
 
   // Agent settings
   agentSettings?: AgentSettings;
+
+  // Agent chat persistence (CommandBar)
+  agentChatHistory?: AgentChatMessage[];
+  agentMessages?: AIMessageWithTools[];
 
   // Onboarding
   onboardingCompleted: boolean;

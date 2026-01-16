@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
 import { useEmbeddingStore } from '../services/embeddings';
+import { useCommandBarStore } from './commandBarStore';
 
 // ============================================================================
 // Embedding Integration Helpers
@@ -189,6 +190,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       set({ jobs, settings, isLoading: false });
+
+      // Initialize agent chat from persisted settings
+      if (settings.agentChatHistory || settings.agentMessages) {
+        useCommandBarStore.getState().initializeFromSettings(settings);
+      }
 
       // Auto-initialize embeddings in the background
       // Non-blocking - app is functional while embeddings load

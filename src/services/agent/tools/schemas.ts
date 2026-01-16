@@ -55,6 +55,15 @@ export const addNoteSchema = z.object({
   content: z.string().describe('The note content (supports markdown)'),
 });
 
+export const addPrepMaterialSchema = z.object({
+  jobId: z.string().describe('The ID of the job to add prep material to'),
+  title: z.string().describe('Title for the prep material'),
+  content: z.string().describe('The prep material content (supports markdown)'),
+  type: z.enum(['question', 'answer', 'research', 'other'])
+    .default('other')
+    .describe('Category of prep material'),
+});
+
 export const addTimelineEventSchema = z.object({
   jobId: z.string().describe('The ID of the job to add an event to'),
   type: z.string().describe('Event type (e.g., "Applied", "Phone Screen", "Interview")'),
@@ -288,6 +297,7 @@ export type GetResumeAnalysisInput = z.infer<typeof getResumeAnalysisSchema>;
 export type ListTimelineInput = z.infer<typeof listTimelineSchema>;
 export type UpdateJobStatusInput = z.infer<typeof updateJobStatusSchema>;
 export type AddNoteInput = z.infer<typeof addNoteSchema>;
+export type AddPrepMaterialInput = z.infer<typeof addPrepMaterialSchema>;
 export type AddTimelineEventInput = z.infer<typeof addTimelineEventSchema>;
 export type AddContactInput = z.infer<typeof addContactSchema>;
 export type DeleteJobInput = z.infer<typeof deleteJobSchema>;

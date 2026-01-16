@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { AgentExecutor } from '../services/agent';
 import type { AgentExecutionState, ConfirmationRequest, AIMessageWithTools } from '../types/agent';
 import type { PreviewJob } from '../components/JobFinder';
+import type { AppSettings } from '../types';
 
 /** Search result from agent's find_external_jobs tool */
 export interface AgentSearchResult extends PreviewJob {
@@ -53,6 +54,7 @@ interface CommandBarStore {
   confirmAction: () => void;
   cancelAction: () => void;
   setSearchResults: (results: AgentSearchResult[]) => void;
+  initializeFromSettings: (settings: AppSettings) => void;
 }
 
 export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
@@ -103,18 +105,22 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
     // Keep chatHistory and agentMessages for continuing conversation
   }),
 
-  clearHistory: () => set({
-    state: 'empty',
-    inputValue: '',
-    toolCalls: [],
-    response: null,
-    error: null,
-    agentState: null,
-    pendingConfirmation: null,
-    confirmationResolver: null,
-    chatHistory: [],
-    agentMessages: [],
-  }),
+  clearHistory: () => {
+    set({
+      state: 'empty',
+      inputValue: '',
+      toolCalls: [],
+      response: null,
+      error: null,
+      agentState: null,
+      pendingConfirmation: null,
+      confirmationResolver: null,
+      chatHistory: [],
+      agentMessages: [],
+    });
+    // Persist cleared state
+    saveAgentChatToSettings();
+  },
 
   setInput: (value: string) => {
     const { chatHistory } = get();
@@ -206,6 +212,9 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
         agentMessages: newAgentMessages,
         chatHistory: [...state.chatHistory, { role: 'assistant' as const, content: response }],
       }));
+
+      // Persist chat to settings
+      saveAgentChatToSettings();
     } catch (error) {
       set({
         state: 'error',
@@ -261,4 +270,29 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   },
 
   setSearchResults: (results) => set({ searchResults: results }),
+
+  initializeFromSettings: (settings) => {
+    if (settings.agentChatHistory || settings.agentMessages) {
+      set({
+        chatHistory: settings.agentChatHistory || [],
+        agentMessages: settings.agentMessages || [],
+        state: settings.agentChatHistory?.length ? 'complete' : 'empty',
+      });
+    }
+  },
 }));
+
+// Helper to persist agent chat to settings
+const saveAgentChatToSettings = async () => {
+  const { chatHistory, agentMessages } = useCommandBarStore.getState();
+  // Dynamic import to avoid circular dependency
+  const { useAppStore } = await import('./appStore');
+  const { updateSettings } = useAppStore.getState();
+  await updateSettings({
+    agentChatHistory: chatHistory,
+    agentMessages: agentMessages,
+  });
+};
+
+// Export for use in store actions
+export { saveAgentChatToSettings };
