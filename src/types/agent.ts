@@ -91,6 +91,8 @@ export type AgentStatus =
 export interface AgentExecutionState {
   status: AgentStatus;
   currentTool?: string;
+  /** Unique ID for the current tool call (from API tool_use block) */
+  currentToolId?: string;
   /** Progress message from the currently executing tool */
   toolProgress?: string;
   iterationCount: number;
@@ -101,6 +103,8 @@ export interface AgentExecutionState {
   /** Result of the last tool execution (for tracking success/failure) */
   lastToolResult?: {
     toolName: string;
+    /** Unique ID to match against the tool call entry */
+    toolId: string;
     success: boolean;
     error?: string;
     description?: string;

@@ -229,6 +229,7 @@ export class AgentExecutor {
       this.updateState({
         status: 'executing_tool',
         currentTool: call.name,
+        currentToolId: call.id,
         toolProgress: undefined,
         pendingConfirmation: undefined,
       });
@@ -243,6 +244,7 @@ export class AgentExecutor {
         toolProgress: undefined,
         lastToolResult: {
           toolName: call.name,
+          toolId: call.id,
           success: result.success,
           error: result.success ? undefined : result.error,
           description: result.description,
@@ -258,7 +260,7 @@ export class AgentExecutor {
     }
 
     // Return to thinking state after tool execution
-    this.updateState({ status: 'thinking', currentTool: undefined });
+    this.updateState({ status: 'thinking', currentTool: undefined, currentToolId: undefined });
 
     return results;
   }

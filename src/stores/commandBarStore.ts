@@ -12,6 +12,8 @@ export interface AgentSearchResult extends PreviewJob {
 
 interface ToolCallEntry {
   id: string;
+  /** API tool_use_id for matching tool results */
+  toolId: string;
   name: string;
   status: 'pending' | 'executing' | 'complete' | 'error' | 'declined';
   result?: string;
@@ -155,36 +157,47 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
       onStateChange: (agentState) => {
         set({ agentState });
 
-        // Track tool calls
-        if (agentState.currentTool && agentState.status === 'executing_tool') {
+        // Track tool calls - match by unique toolId to avoid duplicates
+        if (agentState.currentTool && agentState.currentToolId && agentState.status === 'executing_tool') {
           set((state) => {
+            // Check if we already have an entry for this specific tool call
             const existingCall = state.toolCalls.find(
-              (tc) => tc.name === agentState.currentTool && tc.status === 'pending'
+              (tc) => tc.toolId === agentState.currentToolId
             );
             if (existingCall) {
-              return {
-                toolCalls: state.toolCalls.map((tc) =>
-                  tc.name === agentState.currentTool && tc.status === 'pending'
-                    ? { ...tc, status: 'executing' as const }
-                    : tc
-                ),
-              };
+              // Already tracking this tool call, just update status if needed
+              if (existingCall.status === 'pending') {
+                return {
+                  toolCalls: state.toolCalls.map((tc) =>
+                    tc.toolId === agentState.currentToolId
+                      ? { ...tc, status: 'executing' as const }
+                      : tc
+                  ),
+                };
+              }
+              return {}; // No changes needed
             }
+            // New tool call - add it
             return {
               toolCalls: [
                 ...state.toolCalls,
-                { id: generateId(), name: agentState.currentTool!, status: 'executing' as const },
+                {
+                  id: generateId(),
+                  toolId: agentState.currentToolId!,
+                  name: agentState.currentTool!,
+                  status: 'executing' as const,
+                },
               ],
             };
           });
         }
 
-        // Mark completed tools with their results
+        // Mark completed tools with their results - match by unique toolId
         if (agentState.lastToolResult) {
           const result = agentState.lastToolResult;
           set((state) => ({
             toolCalls: state.toolCalls.map((tc) =>
-              tc.name === result.toolName && tc.status === 'executing'
+              tc.toolId === result.toolId && tc.status === 'executing'
                 ? {
                     ...tc,
                     status: result.success ? ('complete' as const) : ('error' as const),
@@ -245,11 +258,11 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   confirmAction: () => {
     const { confirmationResolver, pendingConfirmation } = get();
     if (confirmationResolver) {
-      // Mark the tool as executing
+      // Mark the tool as executing - match by toolId
       if (pendingConfirmation) {
         set((state) => ({
           toolCalls: state.toolCalls.map((tc) =>
-            tc.name === pendingConfirmation.toolName && tc.status === 'pending'
+            tc.toolId === pendingConfirmation.toolId && tc.status === 'pending'
               ? { ...tc, status: 'executing' as const }
               : tc
           ),
@@ -267,11 +280,11 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   cancelAction: () => {
     const { confirmationResolver, pendingConfirmation } = get();
     if (confirmationResolver) {
-      // Mark the tool as declined
+      // Mark the tool as declined - match by toolId
       if (pendingConfirmation) {
         set((state) => ({
           toolCalls: state.toolCalls.map((tc) =>
-            tc.name === pendingConfirmation.toolName && tc.status === 'pending'
+            tc.toolId === pendingConfirmation.toolId && tc.status === 'pending'
               ? { ...tc, status: 'declined' as const }
               : tc
           ),
