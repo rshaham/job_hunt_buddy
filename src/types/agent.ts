@@ -128,7 +128,7 @@ export interface AgentSettings {
 
 export const DEFAULT_AGENT_SETTINGS: AgentSettings = {
   requireConfirmation: 'write-only',
-  maxIterations: 15,
+  maxIterations: 50,
 };
 
 // Helper type to extract input type from a tool definition
