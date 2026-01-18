@@ -123,7 +123,7 @@ export function OverviewTab({ job }: OverviewTabProps) {
           <button
             type="button"
             onClick={handleStartEdit}
-            className="flex items-center gap-1 text-slate-500 hover:text-primary transition-colors"
+            className="flex items-center gap-1 text-muted hover:text-primary transition-colors"
             title="Edit job details"
           >
             <Pencil className="w-4 h-4" />
@@ -153,24 +153,24 @@ export function OverviewTab({ job }: OverviewTabProps) {
           {/* Quick Info */}
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-slate-400" />
-              <span className="text-sm capitalize">{summary.jobType}</span>
+              <MapPin className="w-4 h-4 text-tertiary" />
+              <span className="text-sm text-slate-700 dark:text-slate-300 capitalize">{summary.jobType}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-slate-400" />
-              <span className="text-sm">{summary.level}</span>
+              <Briefcase className="w-4 h-4 text-tertiary" />
+              <span className="text-sm text-slate-700 dark:text-slate-300">{summary.level}</span>
             </div>
             {summary.salary && (
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-slate-400" />
-                <span className="text-sm">{summary.salary}</span>
+                <DollarSign className="w-4 h-4 text-tertiary" />
+                <span className="text-sm text-slate-700 dark:text-slate-300">{summary.salary}</span>
               </div>
             )}
           </div>
 
           {/* Description */}
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Summary</h4>
+            <h4 className="text-label mb-2">Summary</h4>
             <p className="text-sm text-slate-700 dark:text-slate-300">
               {summary.shortDescription}
             </p>
@@ -178,7 +178,7 @@ export function OverviewTab({ job }: OverviewTabProps) {
 
           {/* Key Skills */}
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Key Skills</h4>
+            <h4 className="text-label mb-2">Key Skills</h4>
             <div className="flex flex-wrap gap-1.5">
               {summary.keySkills.map((skill, i) => (
                 <Badge key={i} color="#6366f1">
@@ -190,7 +190,7 @@ export function OverviewTab({ job }: OverviewTabProps) {
 
           {/* Requirements */}
           <div>
-            <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Requirements</h4>
+            <h4 className="text-label mb-2">Requirements</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
               {summary.requirements.map((req, i) => (
                 <li key={i}>{req}</li>
@@ -201,7 +201,7 @@ export function OverviewTab({ job }: OverviewTabProps) {
           {/* Nice to Haves */}
           {summary.niceToHaves.length > 0 && (
             <div>
-              <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Nice to Have</h4>
+              <h4 className="text-label mb-2">Nice to Have</h4>
               <ul className="list-disc list-inside space-y-1 text-sm text-slate-600 dark:text-slate-400">
                 {summary.niceToHaves.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -214,8 +214,8 @@ export function OverviewTab({ job }: OverviewTabProps) {
 
       {/* Raw JD */}
       <div>
-        <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Full Job Description</h4>
-        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg max-h-64 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+        <h4 className="text-label mb-2">Full Job Description</h4>
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg max-h-64 overflow-y-auto prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {htmlToMarkdown(job.jdText) || 'No job description available'}
           </ReactMarkdown>

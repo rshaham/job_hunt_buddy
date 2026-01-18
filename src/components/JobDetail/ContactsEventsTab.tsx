@@ -360,7 +360,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
               onChange={(e) => setContactLinkedIn(e.target.value)}
             />
             <div>
-              <label className="text-xs text-slate-500 mb-1 block">LinkedIn Bio (for AI analysis)</label>
+              <label className="text-xs text-muted mb-1 block">LinkedIn Bio (for AI analysis)</label>
               <textarea
                 placeholder="Paste their LinkedIn About section or bio here..."
                 value={contactLinkedInBio}
@@ -387,8 +387,8 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
               <div className="w-10 h-10 mx-auto mb-2 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                 <Users className="w-5 h-5 text-blue-500" />
               </div>
-              <p className="text-sm text-slate-500">No contacts yet</p>
-              <p className="text-xs text-slate-400 mt-1">Track recruiters and hiring managers</p>
+              <p className="text-sm text-muted">No contacts yet</p>
+              <p className="text-xs text-tertiary mt-1">Track recruiters and hiring managers</p>
             </div>
           ) : (
             job.contacts.map((contact) => (
@@ -464,7 +464,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                       <div>
                         <p className="font-medium text-slate-800 dark:text-slate-200">{contact.name}</p>
                         {contact.role && (
-                          <p className="text-sm text-slate-500">{contact.role}</p>
+                          <p className="text-sm text-muted">{contact.role}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -491,7 +491,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                     <div className="flex flex-wrap gap-2 mt-2">
                       {contact.email && (
                         <div className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg">
-                          <Mail className="w-3 h-3 text-slate-400" />
+                          <Mail className="w-3 h-3 text-tertiary" />
                           <span className="text-slate-600 dark:text-slate-400 truncate max-w-[120px]">
                             {contact.email}
                           </span>
@@ -504,7 +504,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                             {copiedEmail === contact.id ? (
                               <span className="text-green-500 text-xs">✓</span>
                             ) : (
-                              <Copy className="w-3 h-3 text-slate-400" />
+                              <Copy className="w-3 h-3 text-tertiary" />
                             )}
                           </button>
                         </div>
@@ -536,7 +536,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                     <div className="mt-3 pt-3 border-t border-blue-100 dark:border-blue-800/30">
                       {editingBioContactId === contact.id ? (
                         <div className="space-y-2">
-                          <label className="text-xs text-slate-500 block">LinkedIn Bio</label>
+                          <label className="text-xs text-muted block">LinkedIn Bio</label>
                           <textarea
                             value={editingBioText}
                             onChange={(e) => setEditingBioText(e.target.value)}
@@ -564,7 +564,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                       ) : contact.linkedInBio ? (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-slate-500">LinkedIn Bio</span>
+                            <span className="text-xs text-muted">LinkedIn Bio</span>
                             <button
                               type="button"
                               onClick={() => {
@@ -651,7 +651,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                                       type="button"
                                       onClick={() => handleAnalyzeInterviewer(contact)}
                                       disabled={analyzingContactId === contact.id || webSearchingContactId === contact.id}
-                                      className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-500"
+                                      className="flex items-center gap-1 text-xs text-muted hover:text-blue-500"
                                     >
                                       {analyzingContactId === contact.id ? (
                                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -696,7 +696,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           </button>
                           {webSearchAvailable && (
                             <>
-                              <span className="text-xs text-slate-400">or</span>
+                              <span className="text-xs text-tertiary">or</span>
                               <button
                                 type="button"
                                 onClick={() => handleAnalyzeWithWebSearch(contact)}
@@ -750,7 +750,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
           <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl mb-4 space-y-3 border border-purple-100 dark:border-purple-800/30">
             {/* Event Type Quick Select */}
             <div>
-              <label className="text-xs text-slate-500 mb-1.5 block">Event Type</label>
+              <label className="text-xs text-muted mb-1.5 block">Event Type</label>
               <div className="flex flex-wrap gap-1.5">
                 {eventTypes.map((type) => (
                   <button
@@ -798,8 +798,8 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
               <div className="w-10 h-10 mx-auto mb-2 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
                 <Clock className="w-5 h-5 text-purple-500" />
               </div>
-              <p className="text-sm text-slate-500">No events yet</p>
-              <p className="text-xs text-slate-400 mt-1">Track calls, interviews, and milestones</p>
+              <p className="text-sm text-muted">No events yet</p>
+              <p className="text-xs text-tertiary mt-1">Track calls, interviews, and milestones</p>
             </div>
           ) : (
             <div className="space-y-0">
@@ -829,7 +829,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                             {event.type}
                           </span>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-tertiary">
                               {formatDateOnly(event.date)}
                             </span>
                             <button

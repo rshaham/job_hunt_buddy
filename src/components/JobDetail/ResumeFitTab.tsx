@@ -133,7 +133,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
             <FileText className="w-8 h-8 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium">Job-specific resume</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 {job.resumeText.length.toLocaleString()} characters
               </p>
             </div>
@@ -189,10 +189,10 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
           </div>
         ) : settings.defaultResumeText ? (
           <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-slate-400" />
+            <FileText className="w-8 h-8 text-tertiary" />
             <div className="flex-1">
               <p className="text-sm font-medium">Using default resume</p>
-              <p className="text-xs text-slate-500">{settings.defaultResumeName}</p>
+              <p className="text-xs text-muted">{settings.defaultResumeName}</p>
             </div>
             <input
               ref={fileInputRef}
@@ -231,7 +231,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               )}
               Upload Resume (PDF)
             </Button>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted mt-2">
               Or set a default resume in Settings
             </p>
           </div>
@@ -275,7 +275,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
                 Match Score
                 <span className="group relative">
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
                   <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                     Based on job requirements match
                   </span>
@@ -373,14 +373,14 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                 className="w-full text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
               >
                 {keywordsExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                  <ChevronDown className="w-4 h-4 text-tertiary" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <ChevronRight className="w-4 h-4 text-tertiary" />
                 )}
                 <Tag className="w-4 h-4 text-primary" />
                 Keywords
                 {job.resumeAnalysis.matchedKeywords && job.resumeAnalysis.missingKeywords && (
-                  <span className="ml-2 text-xs font-normal text-slate-500">
+                  <span className="ml-2 text-xs font-normal text-muted">
                     ({job.resumeAnalysis.matchedKeywords.length} of {job.resumeAnalysis.matchedKeywords.length + job.resumeAnalysis.missingKeywords.length} matched)
                   </span>
                 )}
@@ -414,7 +414,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                         <XCircle className="w-3 h-3 text-red-500" />
                         Missing
-                        <span className="text-slate-400 dark:text-slate-500">- click to address in Resume Tailoring</span>
+                        <span className="text-tertiary">- click to address in Resume Tailoring</span>
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {job.resumeAnalysis.missingKeywords.map((keyword, i) => (

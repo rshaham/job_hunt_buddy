@@ -232,7 +232,7 @@ export function CommandBar() {
           {/* Suggestions (when empty and no history) */}
           {state === 'empty' && !hasHistory && (
             <div className="p-2">
-              <div className="px-3 py-2 text-xs font-medium text-gray-400 uppercase tracking-wide">
+              <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Suggested
               </div>
               {SUGGESTED_COMMANDS.map((suggestion, index) => (
@@ -376,12 +376,12 @@ export function CommandBar() {
                         <span className="text-yellow-500">○</span>
                       )}
                       {!hasExecuting && !allComplete && !hasError && !hasDeclined && (
-                        <span className="text-gray-400">○</span>
+                        <span className="text-gray-500 dark:text-gray-400">○</span>
                       )}
                       <span className="font-mono">
                         {name.replace(/_/g, ' ')}
                         {count > 1 && (
-                          <span className="ml-1 text-xs text-gray-400">(×{count})</span>
+                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">(×{count})</span>
                         )}
                       </span>
                     </div>
@@ -451,7 +451,7 @@ export function CommandBar() {
 
         {/* Input Section */}
         <div className="flex items-center px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <span className="text-gray-400 mr-3">
+          <span className="text-gray-500 dark:text-gray-400 mr-3">
             {state === 'processing' ? (
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -472,7 +472,7 @@ export function CommandBar() {
             className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 outline-none text-lg resize-none overflow-hidden"
             style={{ minHeight: '28px', maxHeight: '200px' }}
           />
-          <kbd className="hidden sm:inline-block px-2 py-1 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 rounded">
+          <kbd className="hidden sm:inline-block px-2 py-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded">
             Esc
           </kbd>
         </div>

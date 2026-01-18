@@ -52,7 +52,7 @@ export function EmbeddingStatus() {
     if (status.isReady) {
       return <Check className="w-4 h-4 text-green-500" />;
     }
-    return <Brain className="w-4 h-4 text-slate-400" />;
+    return <Brain className="w-4 h-4 text-slate-400 dark:text-slate-500" />;
   };
 
   // Status label

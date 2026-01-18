@@ -229,7 +229,7 @@ export function BoardView() {
       <div className="flex items-center gap-4 px-6 py-2 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         {/* Search */}
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={searchQuery}
@@ -242,7 +242,7 @@ export function BoardView() {
 
         {/* Sort */}
         <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-4 h-4 text-slate-400" />
+          <ArrowUpDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -319,12 +319,12 @@ export function BoardView() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
             <div className="w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-slate-400" />
+              <Plus className="w-8 h-8 text-slate-400 dark:text-slate-500" />
             </div>
             <h2 className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">
               No jobs yet
             </h2>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
               Add your first job to start tracking
             </p>
             <Button onClick={openAddJobModal} className="pointer-events-auto">

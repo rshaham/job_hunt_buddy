@@ -470,7 +470,7 @@ export function SettingsModal() {
                       {testStatus === 'error' && 'Invalid'}
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-muted mt-2">
                     Get your API key from the{' '}
                     <a
                       href="https://console.anthropic.com/settings/keys"
@@ -512,7 +512,7 @@ export function SettingsModal() {
                       />
                     )}
 
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted">
                       Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
                     </p>
                   </div>
@@ -535,7 +535,7 @@ export function SettingsModal() {
                     }}
                     className="max-w-xl"
                   />
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-muted mt-2">
                     Default Ollama URL: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">http://localhost:11434/v1</code>
                   </p>
                 </section>
@@ -551,7 +551,7 @@ export function SettingsModal() {
                     onChange={(e) => handleApiKeyChange(e.target.value)}
                     className="max-w-xl"
                   />
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-muted mt-2">
                     Only needed for remote endpoints that require authentication.
                   </p>
                 </section>
@@ -630,7 +630,7 @@ export function SettingsModal() {
                       {testStatus === 'error' && 'Invalid'}
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-muted mt-2">
                     Get your API key from{' '}
                     <a
                       href="https://aistudio.google.com/apikey"
@@ -672,7 +672,7 @@ export function SettingsModal() {
                       />
                     )}
 
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted">
                       Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
                     </p>
                   </div>
@@ -695,7 +695,7 @@ export function SettingsModal() {
                       <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         {settings.defaultResumeName}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted">
                         {settings.defaultResumeText.length.toLocaleString()} characters
                       </p>
                     </div>
@@ -779,7 +779,7 @@ export function SettingsModal() {
                   </Button>
                 </div>
               )}
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 This resume will be used as the default for resume grading and cover letter generation.
               </p>
             </section>
@@ -825,7 +825,7 @@ export function SettingsModal() {
                           <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                             {doc.name}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-muted">
                             {doc.wordCount.toLocaleString()} words
                             {doc.summary && ` • Summary: ${doc.summaryWordCount?.toLocaleString()} words`}
                           </p>
@@ -906,7 +906,7 @@ export function SettingsModal() {
                   {isUploadingDoc ? 'Parsing PDF...' : 'Upload PDF'}
                 </Button>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Upload PDFs (portfolios, project docs) to add to your AI context. Documents over 500 words can be summarized.
               </p>
             </section>
@@ -916,7 +916,7 @@ export function SettingsModal() {
               <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
                 Additional Context
                 <span className="group relative">
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
                   <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                     AI uses this when grading and generating content
                   </span>
@@ -930,7 +930,7 @@ export function SettingsModal() {
                 rows={10}
                 className="text-sm max-w-2xl"
               />
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 This context is included when grading resumes, tailoring, and generating cover letters.
               </p>
             </section>
@@ -940,7 +940,7 @@ export function SettingsModal() {
               <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
                 Saved Stories ({settings.savedStories?.length || 0})
                 <span className="group relative">
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
                   <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                     Answers saved from Prep chats for reuse
                   </span>
@@ -1000,7 +1000,7 @@ export function SettingsModal() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted">
                   No saved stories yet. Save answers from Prep chats or Resume Tailoring to build your profile.
                 </p>
               )}
@@ -1045,7 +1045,7 @@ export function SettingsModal() {
                   <li>Click "Load unpacked"</li>
                   <li>Select the <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">browser-extension</code> folder</li>
                 </ol>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   The extension is included in the app directory.
                 </p>
               </div>
@@ -1080,7 +1080,7 @@ export function SettingsModal() {
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Export as JSON for full backup or CSV for spreadsheets.
               </p>
             </section>
@@ -1094,7 +1094,7 @@ export function SettingsModal() {
                 <Trash2 className="w-4 h-4 mr-1" />
                 Delete All Data
               </Button>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Permanently delete all jobs, settings, API keys, and resume data.
               </p>
             </section>
@@ -1125,7 +1125,7 @@ export function SettingsModal() {
                 <option value="destructive-only">Destructive Only - Confirm deletions/status changes</option>
                 <option value="never">Never - Auto-execute all tools</option>
               </select>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Control when the Command Bar (Ctrl+K) asks for confirmation before executing tools.
               </p>
             </section>
@@ -1135,7 +1135,7 @@ export function SettingsModal() {
               <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
                 Max Agent Iterations
                 <span className="group relative">
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
                   <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                     How many tool calls the agent can make per request
                   </span>
@@ -1158,7 +1158,7 @@ export function SettingsModal() {
                 }}
                 className="max-w-[120px]"
               />
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Limits how many tool calls the AI can make to complete a request. Higher = more complex tasks possible. Default: 7
               </p>
             </section>
@@ -1229,7 +1229,7 @@ export function SettingsModal() {
                           Your key — uses your quota, no rate limits
                         </p>
                       ) : (
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-xs text-muted mt-0.5">
                           Find job listings via SerApi. <span className="text-amber-600 dark:text-amber-400">Sends:</span> search query, location.
                         </p>
                       )}
@@ -1252,7 +1252,7 @@ export function SettingsModal() {
                       placeholder="Enter your SerApi key..."
                       className="text-sm"
                     />
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-muted mt-1">
                       Get a free key at{' '}
                       <a href="https://serpapi.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                         serpapi.com
@@ -1287,7 +1287,7 @@ export function SettingsModal() {
                           Direct mode — searches stay in your browser
                         </p>
                       ) : (
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <p className="text-xs text-muted mt-0.5">
                           Research companies and people via Tavily. <span className="text-amber-600 dark:text-amber-400">Sends:</span> company name, person name, research topic.
                         </p>
                       )}
@@ -1310,7 +1310,7 @@ export function SettingsModal() {
                       placeholder="Enter your Tavily key..."
                       className="text-sm"
                     />
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-muted mt-1">
                       Get a free key at{' '}
                       <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                         tavily.com
@@ -1412,7 +1412,7 @@ export function SettingsModal() {
               ) : (
                 <div className="text-center py-8">
                   <Bot className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                  <p className="text-slate-500 mb-4">No summary yet.</p>
+                  <p className="text-muted mb-4">No summary yet.</p>
                   <Button
                     onClick={() => handleSummarizeDocument(viewingDocument)}
                     disabled={isSummarizing === viewingDocument.id}
