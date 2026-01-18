@@ -77,6 +77,7 @@ export const generateInterviewPrepTool: ToolDefinition<GenerateInterviewPrepInpu
 
       return {
         success: true,
+        description: `Generated interview prep for ${job.company}`,
         data: {
           jobId: job.id,
           company: job.company,

@@ -8,6 +8,7 @@ export { getResumeAnalysisTool } from './getResumeAnalysis';
 export { listTimelineTool } from './listTimeline';
 export { updateJobStatusTool } from './updateJobStatus';
 export { addNoteTool } from './addNote';
+export { addPrepMaterialTool } from './addPrepMaterial';
 export { addContactTool } from './addContact';
 export { addTimelineEventTool } from './addTimelineEvent';
 export { deleteJobTool } from './deleteJob';
@@ -59,6 +60,7 @@ import { getResumeAnalysisTool } from './getResumeAnalysis';
 import { listTimelineTool } from './listTimeline';
 import { updateJobStatusTool } from './updateJobStatus';
 import { addNoteTool } from './addNote';
+import { addPrepMaterialTool } from './addPrepMaterial';
 import { addContactTool } from './addContact';
 import { addTimelineEventTool } from './addTimelineEvent';
 import { deleteJobTool } from './deleteJob';
@@ -107,6 +109,7 @@ export const allTools: ToolDefinitionBase[] = [
   // WRITE tools
   updateJobStatusTool,
   addNoteTool,
+  addPrepMaterialTool,
   addContactTool,
   addTimelineEventTool,
   deleteJobTool,
@@ -179,6 +182,7 @@ export const readTools: ToolDefinitionBase[] = [
 export const writeTools: ToolDefinitionBase[] = [
   updateJobStatusTool,
   addNoteTool,
+  addPrepMaterialTool,
   addContactTool,
   addTimelineEventTool,
   deleteJobTool,

@@ -2,6 +2,7 @@ import { useAppStore } from '../../../stores/appStore';
 import { generateCoverLetter } from '../../ai';
 import type { ToolDefinition, ToolResult } from '../../../types/agent';
 import { generateCoverLetterSchema, type GenerateCoverLetterInput } from './schemas';
+import { generateId } from '../../../utils/helpers';
 
 interface GenerateCoverLetterResult {
   jobId: string;
@@ -62,7 +63,7 @@ export const generateCoverLetterTool: ToolDefinition<GenerateCoverLetterInput, G
         coverLetter,
         coverLetterHistory: [
           {
-            id: Date.now().toString(),
+            id: generateId(),
             role: 'assistant',
             content: 'Generated initial cover letter.',
             letterSnapshot: coverLetter,

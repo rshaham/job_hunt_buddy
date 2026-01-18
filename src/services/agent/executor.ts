@@ -33,8 +33,21 @@ When a user asks you to do something:
 2. Call the appropriate tools to get information or make changes
 3. Provide a helpful response based on the results
 
+EFFICIENCY: You can call multiple tools in parallel in a single response. When gathering information (e.g., job details, resume, timeline, contacts), batch independent read operations together. When writing multiple items (e.g., adding several prep materials), you can call add_prep_material multiple times in one response.
+
 Be conversational and helpful. If you need to make changes, explain what you're doing.
 If something fails, explain the error and suggest alternatives.
+
+RESPONSE GUIDELINES:
+- Keep final summaries concise - just confirm what was done
+- Don't repeat content that was saved to the database (prep materials, notes, cover letters, etc.)
+- For multi-job operations, use a brief list format showing what was completed
+- Users can view saved content in the app's UI
+
+CRITICAL: When creating prep materials, cover letters, or notes:
+- Use the appropriate tool (add_prep_material, add_note, etc.) to save content
+- NEVER write long-form content directly in your response - always save it using tools
+- After saving, just confirm what was created (e.g., "Created 6 prep materials for your interviews")
 
 IMPORTANT: When tool results include source URLs or a "Sources" section (from web research or analysis tools), you MUST include these sources in your response. Display them as clickable markdown links. Never omit or summarize away the source links - users need these for verification.
 
@@ -104,8 +117,17 @@ export class AgentExecutor {
           return this.extractText(response.content);
         }
 
-        // 4. Handle max tokens (shouldn't happen with 4096, but just in case)
+        // 4. Handle max tokens - try to recover by processing any complete tool calls
         if (response.stop_reason === 'max_tokens') {
+          const toolCalls = this.extractToolCalls(response.content);
+          if (toolCalls.length > 0) {
+            // We have tool calls - execute them and continue the loop
+            // The model can continue its work in the next iteration
+            const results = await this.executeTools(toolCalls);
+            this.messages.push({ role: 'user', content: results });
+            continue; // Continue the loop instead of returning
+          }
+          // No tool calls found - truly truncated, give up
           this.updateState({ status: 'error', error: 'Response exceeded maximum length' });
           return this.extractText(response.content) + '\n\n(Response was truncated)';
         }
@@ -223,6 +245,7 @@ export class AgentExecutor {
       this.updateState({
         status: 'executing_tool',
         currentTool: call.name,
+        currentToolId: call.id,
         toolProgress: undefined,
         pendingConfirmation: undefined,
       });
@@ -231,9 +254,17 @@ export class AgentExecutor {
         this.updateState({ toolProgress: message });
       });
 
+      // Notify about tool result (for tracking success/failure in UI)
       this.updateState({
         toolsExecuted: [...this.state.toolsExecuted, call.name],
         toolProgress: undefined,
+        lastToolResult: {
+          toolName: call.name,
+          toolId: call.id,
+          success: result.success,
+          error: result.success ? undefined : result.error,
+          description: result.description,
+        },
       });
 
       results.push({
@@ -245,7 +276,7 @@ export class AgentExecutor {
     }
 
     // Return to thinking state after tool execution
-    this.updateState({ status: 'thinking', currentTool: undefined });
+    this.updateState({ status: 'thinking', currentTool: undefined, currentToolId: undefined });
 
     return results;
   }

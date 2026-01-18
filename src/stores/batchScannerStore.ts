@@ -268,7 +268,10 @@ export const useBatchScannerStore = create<BatchScannerState>((set, get) => ({
             },
           }));
         } else {
-          // Extraction failed
+          // Extraction failed - log error for debugging
+          const errorMsg = result.error || 'Failed to extract jobs';
+          console.warn(`[BatchScanner] Failed: ${urlEntry.url} - ${errorMsg}`);
+
           set(state => ({
             scannedUrls: state.scannedUrls.map(u =>
               u.id === urlEntry.id
@@ -276,7 +279,7 @@ export const useBatchScannerStore = create<BatchScannerState>((set, get) => ({
                     ...u,
                     status: 'error',
                     finalUrl: result.finalUrl,
-                    error: result.error || 'Failed to extract jobs',
+                    error: errorMsg,
                   }
                 : u
             ),

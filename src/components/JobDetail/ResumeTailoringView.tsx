@@ -16,6 +16,7 @@ import {
   X,
   HelpCircle,
   ChevronDown,
+  ChevronRight,
   FileText,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -49,6 +50,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
   const [error, setError] = useState('');
   const [userMessage, setUserMessage] = useState('');
   const [viewMode, setViewMode] = useState<'tailored' | 'compare' | 'diff'>('tailored');
+  const [keywordsExpanded, setKeywordsExpanded] = useState(true);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -472,21 +474,35 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
           {/* Missing Keywords */}
           {missingKeywords.length > 0 && (
             <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-red-50 dark:bg-red-900/10">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">
-                Missing keywords - click to ask AI for help:
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {missingKeywords.map((keyword, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleKeywordClick(keyword)}
-                    className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
-                  >
-                    {keyword}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setKeywordsExpanded(!keywordsExpanded)}
+                className="w-full text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+              >
+                {keywordsExpanded ? (
+                  <ChevronDown className="w-3 h-3" />
+                ) : (
+                  <ChevronRight className="w-3 h-3" />
+                )}
+                Missing keywords ({missingKeywords.length})
+                {!keywordsExpanded && (
+                  <span className="text-slate-400 dark:text-slate-500 ml-1">- click to expand</span>
+                )}
+              </button>
+              {keywordsExpanded && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {missingKeywords.map((keyword, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleKeywordClick(keyword)}
+                      className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                    >
+                      {keyword}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

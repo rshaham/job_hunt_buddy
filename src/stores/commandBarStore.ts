@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { AgentExecutor } from '../services/agent';
 import type { AgentExecutionState, ConfirmationRequest, AIMessageWithTools } from '../types/agent';
 import type { PreviewJob } from '../components/JobFinder';
+import type { AppSettings } from '../types';
+import { generateId } from '../utils/helpers';
 
 /** Search result from agent's find_external_jobs tool */
 export interface AgentSearchResult extends PreviewJob {
@@ -10,14 +12,19 @@ export interface AgentSearchResult extends PreviewJob {
 
 interface ToolCallEntry {
   id: string;
+  /** API tool_use_id for matching tool results */
+  toolId: string;
   name: string;
   status: 'pending' | 'executing' | 'complete' | 'error' | 'declined';
   result?: string;
+  errorMessage?: string;
+  description?: string;
 }
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  toolCalls?: ToolCallEntry[];
 }
 
 type CommandBarState = 'empty' | 'typing' | 'processing' | 'confirming' | 'complete' | 'error';
@@ -53,6 +60,7 @@ interface CommandBarStore {
   confirmAction: () => void;
   cancelAction: () => void;
   setSearchResults: (results: AgentSearchResult[]) => void;
+  initializeFromSettings: (settings: AppSettings) => void;
 }
 
 export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
@@ -103,18 +111,22 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
     // Keep chatHistory and agentMessages for continuing conversation
   }),
 
-  clearHistory: () => set({
-    state: 'empty',
-    inputValue: '',
-    toolCalls: [],
-    response: null,
-    error: null,
-    agentState: null,
-    pendingConfirmation: null,
-    confirmationResolver: null,
-    chatHistory: [],
-    agentMessages: [],
-  }),
+  clearHistory: () => {
+    set({
+      state: 'empty',
+      inputValue: '',
+      toolCalls: [],
+      response: null,
+      error: null,
+      agentState: null,
+      pendingConfirmation: null,
+      confirmationResolver: null,
+      chatHistory: [],
+      agentMessages: [],
+    });
+    // Persist cleared state
+    saveAgentChatToSettings();
+  },
 
   setInput: (value: string) => {
     const { chatHistory } = get();
@@ -145,36 +157,53 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
       onStateChange: (agentState) => {
         set({ agentState });
 
-        // Track tool calls
-        if (agentState.currentTool && agentState.status === 'executing_tool') {
+        // Track tool calls - match by unique toolId to avoid duplicates
+        if (agentState.currentTool && agentState.currentToolId && agentState.status === 'executing_tool') {
           set((state) => {
+            // Check if we already have an entry for this specific tool call
             const existingCall = state.toolCalls.find(
-              (tc) => tc.name === agentState.currentTool && tc.status === 'pending'
+              (tc) => tc.toolId === agentState.currentToolId
             );
             if (existingCall) {
-              return {
-                toolCalls: state.toolCalls.map((tc) =>
-                  tc.name === agentState.currentTool && tc.status === 'pending'
-                    ? { ...tc, status: 'executing' as const }
-                    : tc
-                ),
-              };
+              // Already tracking this tool call, just update status if needed
+              if (existingCall.status === 'pending') {
+                return {
+                  toolCalls: state.toolCalls.map((tc) =>
+                    tc.toolId === agentState.currentToolId
+                      ? { ...tc, status: 'executing' as const }
+                      : tc
+                  ),
+                };
+              }
+              return {}; // No changes needed
             }
+            // New tool call - add it
             return {
               toolCalls: [
                 ...state.toolCalls,
-                { id: Date.now().toString(), name: agentState.currentTool!, status: 'executing' as const },
+                {
+                  id: generateId(),
+                  toolId: agentState.currentToolId!,
+                  name: agentState.currentTool!,
+                  status: 'executing' as const,
+                },
               ],
             };
           });
         }
 
-        // Mark completed tools
-        if (agentState.toolsExecuted.length > 0) {
+        // Mark completed tools with their results - match by unique toolId
+        if (agentState.lastToolResult) {
+          const result = agentState.lastToolResult;
           set((state) => ({
             toolCalls: state.toolCalls.map((tc) =>
-              agentState.toolsExecuted.includes(tc.name) && tc.status === 'executing'
-                ? { ...tc, status: 'complete' as const }
+              tc.toolId === result.toolId && tc.status === 'executing'
+                ? {
+                    ...tc,
+                    status: result.success ? ('complete' as const) : ('error' as const),
+                    errorMessage: result.success ? undefined : result.error,
+                    description: result.description,
+                  }
                 : tc
             ),
           }));
@@ -204,8 +233,18 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
         pendingConfirmation: null,
         confirmationResolver: null,
         agentMessages: newAgentMessages,
-        chatHistory: [...state.chatHistory, { role: 'assistant' as const, content: response }],
+        chatHistory: [
+          ...state.chatHistory,
+          {
+            role: 'assistant' as const,
+            content: response,
+            toolCalls: state.toolCalls.length > 0 ? [...state.toolCalls] : undefined,
+          },
+        ],
       }));
+
+      // Persist chat to settings
+      saveAgentChatToSettings();
     } catch (error) {
       set({
         state: 'error',
@@ -219,11 +258,11 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   confirmAction: () => {
     const { confirmationResolver, pendingConfirmation } = get();
     if (confirmationResolver) {
-      // Mark the tool as executing
+      // Mark the tool as executing - match by toolId
       if (pendingConfirmation) {
         set((state) => ({
           toolCalls: state.toolCalls.map((tc) =>
-            tc.name === pendingConfirmation.toolName && tc.status === 'pending'
+            tc.toolId === pendingConfirmation.toolId && tc.status === 'pending'
               ? { ...tc, status: 'executing' as const }
               : tc
           ),
@@ -241,11 +280,11 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   cancelAction: () => {
     const { confirmationResolver, pendingConfirmation } = get();
     if (confirmationResolver) {
-      // Mark the tool as declined
+      // Mark the tool as declined - match by toolId
       if (pendingConfirmation) {
         set((state) => ({
           toolCalls: state.toolCalls.map((tc) =>
-            tc.name === pendingConfirmation.toolName && tc.status === 'pending'
+            tc.toolId === pendingConfirmation.toolId && tc.status === 'pending'
               ? { ...tc, status: 'declined' as const }
               : tc
           ),
@@ -261,4 +300,81 @@ export const useCommandBarStore = create<CommandBarStore>((set, get) => ({
   },
 
   setSearchResults: (results) => set({ searchResults: results }),
+
+  initializeFromSettings: (settings) => {
+    if (settings.agentChatHistory || settings.agentMessages) {
+      // Sanitize messages when restoring to remove any incomplete tool call sequences
+      const sanitizedMessages = settings.agentMessages
+        ? sanitizeAgentMessages(settings.agentMessages)
+        : [];
+
+      set({
+        chatHistory: settings.agentChatHistory || [],
+        agentMessages: sanitizedMessages,
+        state: settings.agentChatHistory?.length ? 'complete' : 'empty',
+      });
+    }
+  },
 }));
+
+/**
+ * Sanitize agent messages to remove incomplete tool call sequences.
+ * Ensures every tool_use block has a corresponding tool_result.
+ * This prevents API errors when persisting/restoring conversation state.
+ */
+function sanitizeAgentMessages(messages: AIMessageWithTools[]): AIMessageWithTools[] {
+  if (messages.length === 0) return messages;
+
+  const sanitized: AIMessageWithTools[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
+    // Check if this is an assistant message with tool_use blocks
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      const hasToolUse = msg.content.some(
+        (block) => typeof block === 'object' && 'type' in block && block.type === 'tool_use'
+      );
+
+      if (hasToolUse) {
+        // Check if next message is a user message with tool_result blocks
+        const nextMsg = messages[i + 1];
+        const hasToolResult =
+          nextMsg?.role === 'user' &&
+          Array.isArray(nextMsg.content) &&
+          nextMsg.content.some(
+            (block) => typeof block === 'object' && 'type' in block && block.type === 'tool_result'
+          );
+
+        if (!hasToolResult) {
+          // Skip this message - incomplete tool call sequence
+          console.warn('[CommandBar] Removing incomplete tool_use message from history');
+          continue;
+        }
+      }
+    }
+
+    sanitized.push(msg);
+  }
+
+  return sanitized;
+}
+
+// Helper to persist agent chat to settings
+const saveAgentChatToSettings = async () => {
+  const { chatHistory, agentMessages } = useCommandBarStore.getState();
+  // Dynamic import to avoid circular dependency
+  const { useAppStore } = await import('./appStore');
+  const { updateSettings } = useAppStore.getState();
+
+  // Sanitize messages before persisting to remove incomplete tool call sequences
+  const sanitizedMessages = sanitizeAgentMessages(agentMessages);
+
+  await updateSettings({
+    agentChatHistory: chatHistory,
+    agentMessages: sanitizedMessages,
+  });
+};
+
+// Export for use in store actions
+export { saveAgentChatToSettings };
