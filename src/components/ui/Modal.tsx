@@ -41,7 +41,7 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
       {/* Modal */}
       <div
         className={cn(
-          'relative bg-white dark:bg-slate-800 rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col',
+          'relative bg-surface rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col',
           {
             'w-full max-w-sm': size === 'sm',
             'w-full max-w-md': size === 'md',
@@ -54,13 +54,13 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
             <button
               onClick={onClose}
               className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
-              <X className="w-5 h-5 text-slate-500" />
+              <X className="w-5 h-5 text-foreground-muted" />
             </button>
           </div>
         )}

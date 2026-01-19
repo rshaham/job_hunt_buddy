@@ -1,41 +1,52 @@
+/* CSS Custom Properties for automatic dark mode */
+:root {
+  /* Text colors */
+  --color-foreground: 15 23 42;          /* slate-900 */
+  --color-foreground-muted: 100 116 139; /* slate-500 */
+  --color-foreground-subtle: 148 163 184; /* slate-400 */
+
+  /* Background colors */
+  --color-background: 255 255 255;       /* white */
+  --color-surface: 248 250 252;          /* slate-50 */
+  --color-surface-raised: 241 245 249;   /* slate-100 */
+
+  /* Border colors */
+  --color-border: 226 232 240;           /* slate-200 */
+  --color-border-muted: 203 213 225;     /* slate-300 */
+}
+
+.dark {
+  /* Text colors */
+  --color-foreground: 248 250 252;       /* slate-50 */
+  --color-foreground-muted: 148 163 184; /* slate-400 */
+  --color-foreground-subtle: 203 213 225; /* slate-300 */
+
+  /* Background colors */
+  --color-background: 15 23 42;          /* slate-900 */
+  --color-surface: 30 41 59;             /* slate-800 */
+  --color-surface-raised: 51 65 85;      /* slate-700 */
+
+  /* Border colors */
+  --color-border: 51 65 85;              /* slate-700 */
+  --color-border-muted: 71 85 105;       /* slate-600 */
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer components {
-  /* Text colors with proper dark mode contrast */
+  /* Text utility classes (shorthand aliases) */
   .text-muted {
-    @apply text-slate-500 dark:text-slate-400;
+    @apply text-foreground-muted;
   }
 
   .text-tertiary {
-    @apply text-slate-400 dark:text-slate-300;
+    @apply text-foreground-subtle;
   }
 
   .text-label {
-    @apply text-slate-500 dark:text-slate-400 text-xs font-medium uppercase;
-  }
-
-  /* Background colors */
-  .bg-surface {
-    @apply bg-white dark:bg-slate-800;
-  }
-
-  .bg-surface-raised {
-    @apply bg-slate-50 dark:bg-slate-800/50;
-  }
-
-  .bg-surface-sunken {
-    @apply bg-slate-100 dark:bg-slate-900;
-  }
-
-  /* Border colors */
-  .border-default {
-    @apply border-slate-200 dark:border-slate-700;
-  }
-
-  .divide-default {
-    @apply divide-slate-200 dark:divide-slate-700;
+    @apply text-foreground-muted text-xs font-medium uppercase;
   }
 }
 

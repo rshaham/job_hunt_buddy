@@ -425,7 +425,7 @@ export function SettingsModal() {
           <TabsContent value="api" className="space-y-6">
             {/* Provider Selection */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <Server className="w-4 h-4" />
                 AI Provider
               </h3>
@@ -433,7 +433,7 @@ export function SettingsModal() {
                 aria-label="Select AI provider"
                 value={activeProvider}
                 onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
-                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="anthropic">Anthropic (Claude)</option>
                 <option value="openai-compatible">Local / OpenAI-Compatible (Ollama, LM Studio)</option>
@@ -445,7 +445,7 @@ export function SettingsModal() {
             {activeProvider === 'anthropic' && (
               <>
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  <h3 className="text-sm font-medium text-foreground mb-3">
                     Anthropic API Key
                   </h3>
                   <div className="flex gap-2 max-w-xl">
@@ -485,7 +485,7 @@ export function SettingsModal() {
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                     <Bot className="w-4 h-4" />
                     Claude Model
                   </h3>
@@ -494,7 +494,7 @@ export function SettingsModal() {
                       aria-label="Select Claude model"
                       value={isCustomModel ? 'custom' : modelInput}
                       onChange={(e) => handleModelChange(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       {currentModels.map((model) => (
                         <option key={model.id} value={model.id}>
@@ -513,7 +513,7 @@ export function SettingsModal() {
                     )}
 
                     <p className="text-xs text-muted">
-                      Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
+                      Current model: <code className="bg-surface px-1 rounded">{modelInput}</code>
                     </p>
                   </div>
                 </section>
@@ -523,7 +523,7 @@ export function SettingsModal() {
             {activeProvider === 'openai-compatible' && (
               <>
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  <h3 className="text-sm font-medium text-foreground mb-3">
                     Server URL
                   </h3>
                   <Input
@@ -536,12 +536,12 @@ export function SettingsModal() {
                     className="max-w-xl"
                   />
                   <p className="text-xs text-muted mt-2">
-                    Default Ollama URL: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">http://localhost:11434/v1</code>
+                    Default Ollama URL: <code className="bg-surface px-1 rounded">http://localhost:11434/v1</code>
                   </p>
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  <h3 className="text-sm font-medium text-foreground mb-3">
                     API Key (Optional)
                   </h3>
                   <Input
@@ -557,7 +557,7 @@ export function SettingsModal() {
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                     <Bot className="w-4 h-4" />
                     Model
                   </h3>
@@ -566,7 +566,7 @@ export function SettingsModal() {
                       aria-label="Select model"
                       value={isCustomModel ? 'custom' : modelInput}
                       onChange={(e) => handleModelChange(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       {currentModels.map((model) => (
                         <option key={model.id} value={model.id}>
@@ -605,7 +605,7 @@ export function SettingsModal() {
             {activeProvider === 'gemini' && (
               <>
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  <h3 className="text-sm font-medium text-foreground mb-3">
                     Google API Key
                   </h3>
                   <div className="flex gap-2 max-w-xl">
@@ -645,7 +645,7 @@ export function SettingsModal() {
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                     <Bot className="w-4 h-4" />
                     Gemini Model
                   </h3>
@@ -654,7 +654,7 @@ export function SettingsModal() {
                       aria-label="Select Gemini model"
                       value={isCustomModel ? 'custom' : modelInput}
                       onChange={(e) => handleModelChange(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       {currentModels.map((model) => (
                         <option key={model.id} value={model.id}>
@@ -673,7 +673,7 @@ export function SettingsModal() {
                     )}
 
                     <p className="text-xs text-muted">
-                      Current model: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{modelInput}</code>
+                      Current model: <code className="bg-surface px-1 rounded">{modelInput}</code>
                     </p>
                   </div>
                 </section>
@@ -684,15 +684,15 @@ export function SettingsModal() {
           {/* Resume Tab */}
           <TabsContent value="resume" className="space-y-6">
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Default Resume
               </h3>
               {settings.defaultResumeName ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
+                  <div className="flex items-center gap-3 p-3 bg-surface rounded-lg max-w-xl">
                     <FileText className="w-8 h-8 text-primary" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      <p className="text-sm font-medium text-foreground">
                         {settings.defaultResumeName}
                       </p>
                       <p className="text-xs text-muted">
@@ -724,7 +724,7 @@ export function SettingsModal() {
 
                   {/* Resume Preview */}
                   {showResumePreview && (
-                    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 max-h-[50vh] overflow-y-auto">
+                    <div className="border border-border rounded-lg p-4 bg-background max-h-[50vh] overflow-y-auto">
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <ReactMarkdown skipHtml>{settings.defaultResumeText}</ReactMarkdown>
                       </div>
@@ -788,12 +788,12 @@ export function SettingsModal() {
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
             {/* Total Context Word Count Banner */}
-            <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg max-w-2xl">
+            <div className="p-3 bg-surface rounded-lg max-w-2xl">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
+                <span className="text-sm text-foreground-muted">
                   Total context being sent to AI:
                 </span>
-                <span className={`text-sm font-medium ${calculateTotalContextWords() > 3000 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                <span className={`text-sm font-medium ${calculateTotalContextWords() > 3000 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
                   {calculateTotalContextWords().toLocaleString()} words
                 </span>
               </div>
@@ -807,7 +807,7 @@ export function SettingsModal() {
 
             {/* Context Documents Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Context Documents ({settings.contextDocuments?.length || 0})
               </h3>
 
@@ -817,12 +817,12 @@ export function SettingsModal() {
                   {settings.contextDocuments.map((doc) => (
                     <div
                       key={doc.id}
-                      className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                      className="p-3 bg-surface rounded-lg border border-border"
                     >
                       <div className="flex items-start gap-3">
                         <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          <p className="text-sm font-medium text-foreground truncate">
                             {doc.name}
                           </p>
                           <p className="text-xs text-muted">
@@ -837,7 +837,7 @@ export function SettingsModal() {
                                 onChange={() => handleToggleUseSummary(doc)}
                                 className="rounded border-slate-300 text-primary focus:ring-primary"
                               />
-                              <span className="text-xs text-slate-600 dark:text-slate-400">
+                              <span className="text-xs text-foreground-muted">
                                 Use summary for AI calls
                               </span>
                             </label>
@@ -913,7 +913,7 @@ export function SettingsModal() {
 
             {/* Additional Context Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-1">
                 Additional Context
                 <span className="group relative">
                   <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
@@ -937,7 +937,7 @@ export function SettingsModal() {
 
             {/* Saved Stories Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-1">
                 Saved Stories ({settings.savedStories?.length || 0})
                 <span className="group relative">
                   <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
@@ -951,19 +951,19 @@ export function SettingsModal() {
                   {settings.savedStories.map((story) => (
                     <div
                       key={story.id}
-                      className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden"
+                      className="border border-border rounded-lg overflow-hidden"
                     >
                       <button
                         type="button"
                         onClick={() => toggleStoryExpand(story.id)}
-                        className="w-full p-3 flex items-center gap-2 text-left bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        className="w-full p-3 flex items-center gap-2 text-left bg-surface hover:bg-surface-raised transition-colors"
                       >
                         {expandedStoryId === story.id ? (
                           <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
                         ) : (
                           <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
                         )}
-                        <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                        <span className="flex-1 text-sm font-medium text-foreground truncate">
                           {story.question}
                         </span>
                         <button
@@ -990,8 +990,8 @@ export function SettingsModal() {
                         </button>
                       </button>
                       {expandedStoryId === story.id && (
-                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                          <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                        <div className="p-3 border-t border-border bg-background">
+                          <p className="text-sm text-foreground-muted whitespace-pre-wrap">
                             {story.answer}
                           </p>
                         </div>
@@ -1011,7 +1011,7 @@ export function SettingsModal() {
           <TabsContent value="preferences" className="space-y-6">
             {/* Theme Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Appearance
               </h3>
               <Button variant="secondary" onClick={handleThemeToggle}>
@@ -1031,19 +1031,19 @@ export function SettingsModal() {
 
             {/* Browser Extension Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <Puzzle className="w-4 h-4" />
                 Browser Extension
               </h3>
-              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              <div className="p-4 bg-surface rounded-lg max-w-xl">
+                <p className="text-sm text-foreground-muted mb-3">
                   Capture jobs from LinkedIn, Indeed, Greenhouse, and more with one click.
                 </p>
-                <ol className="text-sm text-slate-600 dark:text-slate-400 list-decimal list-inside space-y-1 mb-3">
-                  <li>Open <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">chrome://extensions</code> in Chrome</li>
+                <ol className="text-sm text-foreground-muted list-decimal list-inside space-y-1 mb-3">
+                  <li>Open <code className="bg-surface-raised px-1 rounded">chrome://extensions</code> in Chrome</li>
                   <li>Enable "Developer mode" (top right toggle)</li>
                   <li>Click "Load unpacked"</li>
-                  <li>Select the <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">browser-extension</code> folder</li>
+                  <li>Select the <code className="bg-surface-raised px-1 rounded">browser-extension</code> folder</li>
                 </ol>
                 <p className="text-xs text-muted">
                   The extension is included in the app directory.
@@ -1053,7 +1053,7 @@ export function SettingsModal() {
 
             {/* Export/Import Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Data Backup
               </h3>
               <div className="flex gap-2 flex-wrap">
@@ -1087,7 +1087,7 @@ export function SettingsModal() {
 
             {/* Delete All Data Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Danger Zone
               </h3>
               <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
@@ -1104,7 +1104,7 @@ export function SettingsModal() {
           <TabsContent value="agent" className="space-y-6">
             {/* Confirmation Level */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 Tool Confirmation
               </h3>
@@ -1118,7 +1118,7 @@ export function SettingsModal() {
                     maxIterations: settings.agentSettings?.maxIterations ?? DEFAULT_AGENT_SETTINGS.maxIterations,
                   }
                 })}
-                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full max-w-xl px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Tool Uses - Confirm every action</option>
                 <option value="write-only">Write Operations Only - Confirm changes (default)</option>
@@ -1132,7 +1132,7 @@ export function SettingsModal() {
 
             {/* Max Iterations */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-1">
                 Max Agent Iterations
                 <span className="group relative">
                   <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
@@ -1165,14 +1165,14 @@ export function SettingsModal() {
 
             {/* Command Bar Info */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              <h3 className="text-sm font-medium text-foreground mb-3">
                 Command Bar
               </h3>
-              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg max-w-xl">
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                  Press <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Ctrl+K</kbd> (or <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 rounded">Cmd+K</kbd> on Mac) to open the Command Bar.
+              <div className="p-4 bg-surface rounded-lg max-w-xl">
+                <p className="text-sm text-foreground-muted mb-3">
+                  Press <kbd className="px-1.5 py-0.5 text-xs bg-surface-raised rounded">Ctrl+K</kbd> (or <kbd className="px-1.5 py-0.5 text-xs bg-surface-raised rounded">Cmd+K</kbd> on Mac) to open the Command Bar.
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-foreground-muted">
                   Use natural language to search jobs, update statuses, add notes, and more.
                 </p>
               </div>
@@ -1199,13 +1199,13 @@ export function SettingsModal() {
 
             {/* External Services Section */}
             <section>
-              <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 External Services
               </h3>
               <div className="space-y-3 max-w-xl">
                 {/* Job Search Toggle */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <div className="p-3 bg-surface rounded-lg">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1220,7 +1220,7 @@ export function SettingsModal() {
                       className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
                     />
                     <div className="flex-1">
-                      <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                      <span className="font-medium text-foreground text-sm">
                         Job Search
                       </span>
                       {settings.externalServicesConsent?.serpApiKey ? (
@@ -1237,7 +1237,7 @@ export function SettingsModal() {
                   </label>
                   {/* SerApi Key Input */}
                   <div className="mt-3 pl-7">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-xs font-medium text-foreground-muted mb-1">
                       Your SerApi Key <span className="text-slate-400 dark:text-slate-500">(optional)</span>
                     </label>
                     <Input
@@ -1263,7 +1263,7 @@ export function SettingsModal() {
                 </div>
 
                 {/* Web Research Toggle */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <div className="p-3 bg-surface rounded-lg">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1278,7 +1278,7 @@ export function SettingsModal() {
                       className="mt-1 rounded border-slate-300 text-primary focus:ring-primary"
                     />
                     <div className="flex-1">
-                      <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
+                      <span className="font-medium text-foreground text-sm">
                         Web Research
                       </span>
                       {settings.externalServicesConsent?.tavilyApiKey ? (
@@ -1295,7 +1295,7 @@ export function SettingsModal() {
                   </label>
                   {/* Tavily Key Input */}
                   <div className="mt-3 pl-7">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    <label className="block text-xs font-medium text-foreground-muted mb-1">
                       Your Tavily Key <span className="text-slate-400 dark:text-slate-500">(optional)</span>
                     </label>
                     <Input
@@ -1349,9 +1349,9 @@ export function SettingsModal() {
       {/* Document View/Edit Modal */}
       {viewingDocument && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col mx-4">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+          <div className="bg-background rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-medium text-foreground">
                 {viewingDocument.name}
               </h3>
               <button
@@ -1365,7 +1365,7 @@ export function SettingsModal() {
             </div>
 
             {/* Tabs for Full/Summary */}
-            <div className="flex border-b border-slate-200 dark:border-slate-700">
+            <div className="flex border-b border-border">
               <button
                 type="button"
                 onClick={() => setViewMode('full')}
@@ -1396,7 +1396,7 @@ export function SettingsModal() {
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-4">
               {viewMode === 'full' ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-slate-700 dark:text-slate-300">
+                <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>
                     {viewingDocument.fullText}
                   </ReactMarkdown>
@@ -1435,7 +1435,7 @@ export function SettingsModal() {
 
             {/* Footer */}
             {viewMode === 'summary' && viewingDocument.summary && (
-              <div className="flex justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex justify-end gap-2 p-4 border-t border-border">
                 <Button
                   variant="secondary"
                   onClick={() => handleSummarizeDocument(viewingDocument)}
@@ -1460,9 +1460,9 @@ export function SettingsModal() {
       {/* Story Edit Modal */}
       {editingStory && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+          <div className="bg-background rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="text-lg font-medium text-foreground">
                 Edit Story
               </h3>
               <button
@@ -1477,7 +1477,7 @@ export function SettingsModal() {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Question/Topic
                 </label>
                 <Input
@@ -1487,7 +1487,7 @@ export function SettingsModal() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Your Answer/Story
                 </label>
                 <Textarea
@@ -1499,7 +1499,7 @@ export function SettingsModal() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 p-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex justify-end gap-2 p-4 border-t border-border">
               <Button variant="secondary" onClick={() => setEditingStory(null)}>
                 Cancel
               </Button>

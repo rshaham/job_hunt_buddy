@@ -186,7 +186,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
               className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                 selectedType === type
                   ? 'bg-teal-500 text-white'
-                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-300'
+                  : 'bg-surface border border-border text-foreground hover:border-teal-300'
               }`}
               title={description}
             >
@@ -202,7 +202,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
               value={customType}
               onChange={(e) => setCustomType(e.target.value)}
               placeholder="Describe your email type (e.g., 'Requesting informational interview', 'Asking for referral')"
-              className="w-full px-3 py-2 text-sm border border-teal-300 dark:border-teal-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 text-sm border border-teal-300 dark:border-teal-700 rounded-lg bg-surface text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
         )}
@@ -294,7 +294,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
             {/* Email Display/Editor */}
             <div className={`${isRefining ? 'h-1/2' : 'flex-1'} overflow-y-auto mb-3`}>
               {isRefining ? (
-                <div className="h-full p-4 bg-white dark:bg-slate-800 rounded-lg border border-teal-200 dark:border-teal-800/30 overflow-y-auto">
+                <div className="h-full p-4 bg-surface rounded-lg border border-teal-200 dark:border-teal-800/30 overflow-y-auto">
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
                     {editedEmail}
                   </div>
@@ -340,7 +340,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
                             key={i}
                             type="button"
                             onClick={() => setUserMessage(prompt)}
-                            className="text-xs px-3 py-1.5 bg-white dark:bg-slate-800 rounded-full border border-teal-200 dark:border-teal-700 hover:border-teal-400 transition-colors"
+                            className="text-xs px-3 py-1.5 bg-surface rounded-full border border-teal-200 dark:border-teal-700 hover:border-teal-400 transition-colors"
                           >
                             {prompt}
                           </button>
@@ -358,7 +358,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
                             className={`max-w-[85%] p-3 rounded-2xl ${
                               entry.role === 'user'
                                 ? 'bg-teal-500 text-white rounded-br-sm'
-                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-sm'
+                                : 'bg-surface border border-border rounded-bl-sm'
                             }`}
                           >
                             <div className="text-sm">
@@ -398,7 +398,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
                       onKeyDown={handleKeyDown}
                       placeholder="Describe how you'd like to change the email..."
                       rows={1}
-                      className="w-full pr-12 py-2 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm"
+                      className="w-full pr-12 py-2 px-3 bg-surface border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm"
                       style={{ minHeight: '40px', maxHeight: '120px' }}
                     />
                     <button

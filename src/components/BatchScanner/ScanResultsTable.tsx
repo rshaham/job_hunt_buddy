@@ -42,13 +42,13 @@ export function ScanResultsTable({ jobs, onToggleSelect }: ScanResultsTableProps
 
   return (
     <table className="w-full">
-      <thead className="bg-slate-50 dark:bg-slate-800 sticky top-0">
+      <thead className="bg-surface sticky top-0">
         <tr>
           <th className="w-12 px-4 py-3 text-left">
             <span className="sr-only">Select</span>
           </th>
           <th
-            className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
+            className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
             onClick={() => handleSort('company')}
           >
             <div className="flex items-center gap-1">
@@ -57,7 +57,7 @@ export function ScanResultsTable({ jobs, onToggleSelect }: ScanResultsTableProps
             </div>
           </th>
           <th
-            className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
+            className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
             onClick={() => handleSort('title')}
           >
             <div className="flex items-center gap-1">
@@ -66,7 +66,7 @@ export function ScanResultsTable({ jobs, onToggleSelect }: ScanResultsTableProps
             </div>
           </th>
           <th
-            className="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
+            className="px-4 py-3 text-center text-xs font-medium text-foreground-muted uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
             onClick={() => handleSort('resumeFit')}
           >
             <div className="flex items-center justify-center gap-1">
@@ -75,7 +75,7 @@ export function ScanResultsTable({ jobs, onToggleSelect }: ScanResultsTableProps
             </div>
           </th>
           <th
-            className="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
+            className="px-4 py-3 text-center text-xs font-medium text-foreground-muted uppercase tracking-wider cursor-pointer hover:text-slate-700 dark:hover:text-slate-200"
             onClick={() => handleSort('trajectoryFit')}
           >
             <div className="flex items-center justify-center gap-1">
@@ -83,15 +83,15 @@ export function ScanResultsTable({ jobs, onToggleSelect }: ScanResultsTableProps
               <SortIcon field="trajectoryFit" />
             </div>
           </th>
-          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <th className="px-4 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
             Location
           </th>
-          <th className="w-20 px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <th className="w-20 px-4 py-3 text-center text-xs font-medium text-foreground-muted uppercase tracking-wider">
             Actions
           </th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+      <tbody className="divide-y divide-border">
         {jobs.map((job) => (
           <JobRow
             key={job.id}
@@ -130,7 +130,7 @@ function JobRow({ job, onToggleSelect }: JobRowProps) {
             'p-1 rounded transition-colors',
             isDisabled
               ? 'cursor-not-allowed opacity-50'
-              : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+              : 'hover:bg-surface-raised'
           )}
         >
           {job.isImported ? (
@@ -145,7 +145,7 @@ function JobRow({ job, onToggleSelect }: JobRowProps) {
 
       {/* Company */}
       <td className="px-4 py-3">
-        <span className="text-sm font-medium text-slate-900 dark:text-white">
+        <span className="text-sm font-medium text-foreground">
           {job.company}
         </span>
       </td>
@@ -153,11 +153,11 @@ function JobRow({ job, onToggleSelect }: JobRowProps) {
       {/* Title */}
       <td className="px-4 py-3">
         <div>
-          <span className="text-sm text-slate-700 dark:text-slate-300">
+          <span className="text-sm text-foreground">
             {job.title}
           </span>
           {job.department && (
-            <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="ml-2 text-xs text-foreground-muted">
               ({job.department})
             </span>
           )}
@@ -177,12 +177,12 @@ function JobRow({ job, onToggleSelect }: JobRowProps) {
       {/* Location */}
       <td className="px-4 py-3">
         {job.location ? (
-          <span className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400">
+          <span className="flex items-center gap-1 text-sm text-foreground-muted">
             <MapPin className="w-3 h-3" />
             {job.location}
           </span>
         ) : (
-          <span className="text-sm text-slate-400 dark:text-slate-500">—</span>
+          <span className="text-sm text-foreground-subtle">—</span>
         )}
       </td>
 
@@ -192,10 +192,10 @@ function JobRow({ job, onToggleSelect }: JobRowProps) {
           href={job.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          className="inline-flex items-center justify-center p-2 rounded hover:bg-surface-raised transition-colors"
           title="View Job"
         >
-          <ExternalLink className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+          <ExternalLink className="w-4 h-4 text-foreground-muted" />
         </a>
       </td>
     </tr>
@@ -210,7 +210,7 @@ interface ScoreBadgeProps {
 function ScoreBadge({ score, grade }: ScoreBadgeProps) {
   if (score === undefined || grade === undefined) {
     return (
-      <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+      <span className="text-xs text-foreground-subtle">—</span>
     );
   }
 

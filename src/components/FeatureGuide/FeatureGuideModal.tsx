@@ -59,7 +59,7 @@ function FeatureCard({ icon, title, description, items, location, color, isNew }
     amber: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
     rose: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800',
     teal: 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800',
-    slate: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
+    slate: 'bg-slate-100 dark:bg-slate-800 border-border',
     cyan: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
     gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700',
     orange: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
@@ -72,15 +72,15 @@ function FeatureCard({ icon, title, description, items, location, color, isNew }
     <section className={`p-4 rounded-lg border ${colorClasses[color] || colorClasses.slate}`}>
       <div className="flex items-center gap-2 mb-3">
         {icon}
-        <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
+        <h3 className="font-semibold text-foreground">{title}</h3>
         {isNew && (
           <span className="px-1.5 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded">
             NEW
           </span>
         )}
       </div>
-      <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{description}</p>
-      <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+      <p className="text-sm text-foreground-muted mb-3">{description}</p>
+      <ul className="space-y-2 text-sm text-foreground">
         {items.map((item, i) => (
           <li key={i} className="flex gap-2">
             <span className="flex-shrink-0 mt-0.5">{item.icon}</span>
@@ -90,7 +90,7 @@ function FeatureCard({ icon, title, description, items, location, color, isNew }
           </li>
         ))}
       </ul>
-      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-3 pt-2 border-t border-border flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
         <MapPin className="w-3.5 h-3.5" />
         <span>{location}</span>
       </div>
@@ -119,7 +119,7 @@ export function FeatureGuideModal() {
     >
       <div className="flex flex-col h-full">
         {/* Tabs */}
-        <div className="flex gap-1 px-6 pt-4 pb-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+        <div className="flex gap-1 px-6 pt-4 pb-2 border-b border-border overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -129,7 +129,7 @@ export function FeatureGuideModal() {
                 ${
                   activeTab === tab.id
                     ? 'bg-primary text-white'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    : 'text-foreground-muted hover:bg-surface-raised'
                 }`}
             >
               {tab.icon}
@@ -155,8 +155,8 @@ function WhatsNewTab() {
   return (
     <div className="space-y-6">
       <div className="text-center pb-4">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">What's New</h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <h2 className="text-2xl font-bold text-foreground mb-2">What's New</h2>
+        <p className="text-foreground-muted">
           Recent additions and improvements to Job Hunt Buddy
         </p>
       </div>
@@ -221,7 +221,7 @@ function WhatsNewTab() {
 function BoardTab() {
   return (
     <div className="space-y-6">
-      <p className="text-slate-600 dark:text-slate-400">
+      <p className="text-foreground-muted">
         Features for managing your job pipeline on the main board view.
       </p>
 
@@ -264,7 +264,7 @@ function BoardTab() {
         />
 
         <FeatureCard
-          icon={<Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
+          icon={<Moon className="w-5 h-5 text-foreground-muted" />}
           title="Dark Mode"
           description="Easy on the eyes for late-night job hunting."
           items={[
@@ -282,7 +282,7 @@ function BoardTab() {
 function JobDetailTab() {
   return (
     <div className="space-y-6">
-      <p className="text-slate-600 dark:text-slate-400">
+      <p className="text-foreground-muted">
         Features available when viewing a specific job's details.
       </p>
 
@@ -395,7 +395,7 @@ function JobDetailTab() {
 function AIFeaturesTab() {
   return (
     <div className="space-y-6">
-      <p className="text-slate-600 dark:text-slate-400">
+      <p className="text-foreground-muted">
         AI-powered features to supercharge your job search.
       </p>
 
@@ -458,7 +458,7 @@ function AIFeaturesTab() {
 function ProfileDataTab() {
   return (
     <div className="space-y-6">
-      <p className="text-slate-600 dark:text-slate-400">
+      <p className="text-foreground-muted">
         Manage your profile, documents, and data.
       </p>
 
@@ -500,7 +500,7 @@ function ProfileDataTab() {
         />
 
         <FeatureCard
-          icon={<Database className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
+          icon={<Database className="w-5 h-5 text-foreground-muted" />}
           title="Data & Privacy"
           description="Your data stays on your computer."
           items={[

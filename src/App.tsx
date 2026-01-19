@@ -98,10 +98,10 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+          <p className="text-foreground-muted">Loading...</p>
         </div>
       </div>
     );

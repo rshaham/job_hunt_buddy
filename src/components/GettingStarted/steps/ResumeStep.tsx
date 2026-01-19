@@ -46,10 +46,10 @@ export function ResumeStep({ onNext, onBack }: ResumeStepProps) {
   return (
     <div>
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           Upload Your Resume
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-foreground-muted">
           Your resume helps the AI grade your fit and generate tailored cover letters.
         </p>
       </div>
@@ -58,10 +58,10 @@ export function ResumeStep({ onNext, onBack }: ResumeStepProps) {
         {hasResume ? (
           <div className="text-center p-6 border-2 border-dashed border-green-300 dark:border-green-700 rounded-lg bg-green-50 dark:bg-green-900/20">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-            <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+            <p className="text-sm font-medium text-foreground mb-1">
               Resume Uploaded
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-sm text-foreground-muted mb-4">
               {settings.defaultResumeName}
             </p>
             <input
@@ -87,9 +87,9 @@ export function ResumeStep({ onNext, onBack }: ResumeStepProps) {
             </Button>
           </div>
         ) : (
-          <div className="text-center p-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg">
+          <div className="text-center p-8 border-2 border-dashed border-border-muted rounded-lg">
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-sm text-foreground-muted mb-4">
               PDF format recommended
             </p>
             <input
@@ -114,7 +114,7 @@ export function ResumeStep({ onNext, onBack }: ResumeStepProps) {
           </div>
         )}
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
+        <p className="text-xs text-foreground-muted text-center mt-4">
           This step is optional. You can upload your resume later in Settings.
         </p>
       </div>

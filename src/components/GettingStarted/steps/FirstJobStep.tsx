@@ -12,10 +12,10 @@ export function FirstJobStep({ onBack, onComplete, onAddJob }: FirstJobStepProps
     <div>
       <div className="text-center mb-6">
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           You're All Set!
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-foreground-muted">
           Start tracking your job applications.
         </p>
       </div>
@@ -32,10 +32,10 @@ export function FirstJobStep({ onBack, onComplete, onAddJob }: FirstJobStepProps
               <Plus className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-medium text-slate-900 dark:text-white">
+              <h3 className="font-medium text-foreground">
                 Add Your First Job
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-foreground-muted">
                 Paste a job description and let AI analyze it
               </p>
             </div>
@@ -43,16 +43,16 @@ export function FirstJobStep({ onBack, onComplete, onAddJob }: FirstJobStepProps
         </button>
 
         {/* Browser Extension Option */}
-        <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+        <div className="p-4 border border-border rounded-lg">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
               <Puzzle className="w-5 h-5 text-slate-500" />
             </div>
             <div>
-              <h3 className="font-medium text-slate-900 dark:text-white">
+              <h3 className="font-medium text-foreground">
                 Browser Extension
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-foreground-muted">
                 Capture jobs from LinkedIn, Indeed & more with one click.
                 <br />
                 <span className="text-xs">

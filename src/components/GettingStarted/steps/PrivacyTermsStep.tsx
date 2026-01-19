@@ -17,10 +17,10 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
         <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <Shield className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
           Privacy & Terms
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-foreground-muted">
           Before you get started, here's what you should know
         </p>
       </div>
@@ -29,8 +29,8 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
         <div className="flex gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <Database className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-slate-900 dark:text-white text-sm">Your Data Stays Local</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <h3 className="font-medium text-foreground text-sm">Your Data Stays Local</h3>
+            <p className="text-xs text-foreground-muted">
               Everything is stored in your browser. We don't have servers storing your information.
             </p>
           </div>
@@ -39,8 +39,8 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
         <div className="flex gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <Key className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-slate-900 dark:text-white text-sm">API Keys Are Private</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <h3 className="font-medium text-foreground text-sm">API Keys Are Private</h3>
+            <p className="text-xs text-foreground-muted">
               Your API key is only sent to your chosen AI provider (Anthropic, Google, etc.), never to us.
             </p>
           </div>
@@ -49,8 +49,8 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
         <div className="flex gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
           <Heart className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-medium text-slate-900 dark:text-white text-sm">Use Responsibly</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <h3 className="font-medium text-foreground text-sm">Use Responsibly</h3>
+            <p className="text-xs text-foreground-muted">
               This tool is provided as-is to help your job search. Please use it ethically and honestly.
             </p>
           </div>
@@ -64,7 +64,7 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
           onChange={(e) => setAcknowledged(e.target.checked)}
           className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
         />
-        <span className="text-sm text-slate-600 dark:text-slate-400">
+        <span className="text-sm text-foreground-muted">
           I understand and agree to use this tool responsibly
         </span>
       </label>
@@ -73,7 +73,7 @@ export function PrivacyTermsStep({ onNext }: PrivacyTermsStepProps) {
         <Button onClick={onNext} size="lg" className="w-full sm:w-auto" disabled={!acknowledged}>
           Continue
         </Button>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-foreground-muted">
           <button
             onClick={openPrivacyModal}
             className="text-primary hover:underline"

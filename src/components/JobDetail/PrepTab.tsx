@@ -18,23 +18,23 @@ interface PrepTabProps {
 // Markdown renderer component with proper styling
 function MarkdownContent({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-700 dark:text-slate-300">
+    <div className="text-sm text-foreground">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
         components={{
         h1: ({ children }) => (
-          <h1 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
+          <h1 className="text-lg font-bold mt-4 mb-2 text-foreground first:mt-0">
             {children}
           </h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-base font-semibold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
+          <h2 className="text-base font-semibold mt-4 mb-2 text-foreground first:mt-0">
             {children}
           </h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-sm font-semibold mt-3 mb-1.5 text-slate-700 dark:text-slate-300">
+          <h3 className="text-sm font-semibold mt-3 mb-1.5 text-foreground">
             {children}
           </h3>
         ),
@@ -43,7 +43,7 @@ function MarkdownContent({ content }: { content: string }) {
         ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
         strong: ({ children }) => (
-          <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
+          <strong className="font-semibold text-foreground">{children}</strong>
         ),
         em: ({ children }) => <em className="italic">{children}</em>,
         code: ({ children }) => (
@@ -57,11 +57,11 @@ function MarkdownContent({ content }: { content: string }) {
           </pre>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-slate-600 dark:text-slate-400">
+          <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-foreground-muted">
             {children}
           </blockquote>
         ),
-        hr: () => <hr className="my-4 border-slate-200 dark:border-slate-700" />,
+        hr: () => <hr className="my-4 border-border" />,
         a: ({ href, children }) => (
           <a
             href={href}
@@ -87,12 +87,12 @@ function MarkdownContent({ content }: { content: string }) {
           <tr className="border-b border-slate-300 dark:border-slate-600">{children}</tr>
         ),
         th: ({ children }) => (
-          <th className="px-3 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
+          <th className="px-3 py-2 text-left font-semibold text-foreground border border-slate-300 dark:border-slate-600">
             {children}
           </th>
         ),
         td: ({ children }) => (
-          <td className="px-3 py-2 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600">
+          <td className="px-3 py-2 text-foreground-muted border border-slate-300 dark:border-slate-600">
             {children}
           </td>
         ),
@@ -367,7 +367,7 @@ export function PrepTab({ job }: PrepTabProps) {
         size="sm"
       >
         <div className="p-4 space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-foreground-muted">
             Save this conversation to reload later.
           </p>
           <input
@@ -375,7 +375,7 @@ export function PrepTab({ job }: PrepTabProps) {
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             placeholder={`Chat ${format(new Date(), 'MMM d, h:mm a')}`}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-surface text-sm"
             autoFocus
           />
           <div className="flex justify-end gap-2">
@@ -468,7 +468,7 @@ export function PrepTab({ job }: PrepTabProps) {
                     type="button"
                     key={i}
                     onClick={() => setQuestion(q)}
-                    className="w-full text-left text-sm p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    className="w-full text-left text-sm p-3 bg-surface rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
                   >
                     {q}
                   </button>
@@ -496,7 +496,7 @@ export function PrepTab({ job }: PrepTabProps) {
                   ) : (
                     <div className="flex justify-start">
                       <div className="max-w-[85%]">
-                        <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="p-4 bg-surface rounded-2xl rounded-bl-sm border border-border shadow-sm">
                           <MarkdownContent content={entry.answer} />
                         </div>
                         <button
@@ -546,7 +546,7 @@ export function PrepTab({ job }: PrepTabProps) {
             onKeyDown={handleKeyDown}
             placeholder="Ask about the job, interview prep, or get coaching..."
             rows={1}
-            className="w-full pr-14 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400 min-h-[48px] max-h-[120px]"
+            className="w-full pr-14 py-3 px-4 bg-surface border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400 min-h-[48px] max-h-[120px]"
           />
           <button
             type="button"
@@ -597,10 +597,10 @@ export function PrepTab({ job }: PrepTabProps) {
                 <button
                   type="button"
                   onClick={() => setShowInterviewerDropdown(!showInterviewerDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm hover:border-blue-300 transition-colors w-full"
+                  className="flex items-center gap-2 px-3 py-2 bg-surface border border-border rounded-lg text-sm hover:border-blue-300 transition-colors w-full"
                 >
                   <Users className="w-4 h-4 text-blue-500" />
-                  <span className="text-slate-600 dark:text-slate-400 truncate">
+                  <span className="text-foreground-muted truncate">
                     {selectedInterviewer
                       ? `Preparing for: ${selectedInterviewer.name}`
                       : 'Select interviewer...'}
@@ -609,7 +609,7 @@ export function PrepTab({ job }: PrepTabProps) {
                 </button>
 
                 {showInterviewerDropdown && (
-                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10 w-full">
+                  <div className="absolute top-full left-0 mt-1 bg-surface border border-border rounded-lg shadow-lg z-10 w-full">
                     {contactsWithIntel.map((contact) => (
                       <button
                         key={contact.id}
@@ -621,7 +621,7 @@ export function PrepTab({ job }: PrepTabProps) {
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors first:rounded-t-lg last:rounded-b-lg ${
                           selectedInterviewerId === contact.id
                             ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                            : 'text-slate-700 dark:text-slate-300'
+                            : 'text-foreground'
                         }`}
                       >
                         <span className="font-medium">{contact.name}</span>
@@ -665,7 +665,7 @@ export function PrepTab({ job }: PrepTabProps) {
                       <X className="w-3.5 h-3.5 text-blue-400" />
                     </button>
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                  <div className="text-xs text-foreground-muted">
                     <MarkdownContent content={selectedInterviewer.interviewerIntel!} />
                   </div>
                 </div>
@@ -705,11 +705,11 @@ export function PrepTab({ job }: PrepTabProps) {
               {job.prepMaterials.map((material) => (
                 <div
                   key={material.id}
-                  className="group p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                  className="group p-3 bg-surface rounded-lg border border-border"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <details className="flex-1 min-w-0">
-                      <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary truncate">
+                      <summary className="cursor-pointer text-sm font-medium text-foreground hover:text-primary truncate">
                         {material.title}
                       </summary>
                       <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
@@ -750,11 +750,11 @@ export function PrepTab({ job }: PrepTabProps) {
               {job.savedPrepConversations.map((saved) => (
                 <div
                   key={saved.id}
-                  className="group p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                  className="group p-3 bg-surface rounded-lg border border-border"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {saved.name}
                       </p>
                       <p className="text-xs text-slate-400">

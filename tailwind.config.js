@@ -8,6 +8,22 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Semantic colors using CSS variables (auto dark mode)
+        foreground: {
+          DEFAULT: 'rgb(var(--color-foreground) / <alpha-value>)',
+          muted: 'rgb(var(--color-foreground-muted) / <alpha-value>)',
+          subtle: 'rgb(var(--color-foreground-subtle) / <alpha-value>)',
+        },
+        background: 'rgb(var(--color-background) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
+          raised: 'rgb(var(--color-surface-raised) / <alpha-value>)',
+        },
+        border: {
+          DEFAULT: 'rgb(var(--color-border) / <alpha-value>)',
+          muted: 'rgb(var(--color-border-muted) / <alpha-value>)',
+        },
+        // Static colors
         primary: {
           DEFAULT: '#6366f1',
           hover: '#4f46e5',

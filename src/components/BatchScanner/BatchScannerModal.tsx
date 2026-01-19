@@ -158,10 +158,10 @@ export function BatchScannerModal() {
         {showResults && (
           <>
             {/* Results Header */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            <div className="px-6 py-4 border-b border-border bg-surface">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-medium text-slate-900 dark:text-white">
+                  <h3 className="text-lg font-medium text-foreground">
                     {scoredJobs.length} Jobs Found
                   </h3>
                   {importableCount > 0 && (
@@ -217,7 +217,7 @@ export function BatchScannerModal() {
 
               {/* Import progress */}
               {isImporting && importProgress.currentJob && (
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-sm text-foreground-muted">
                   Importing: {importProgress.currentJob}
                 </p>
               )}

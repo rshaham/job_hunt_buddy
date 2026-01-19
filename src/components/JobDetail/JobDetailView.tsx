@@ -31,26 +31,26 @@ export function JobDetailView({ job }: JobDetailViewProps) {
   const currentStatus = settings.statuses.find((s) => s.name === job.status);
 
   return (
-    <div className="fixed inset-0 z-40 bg-white dark:bg-slate-900 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-40 bg-background overflow-hidden flex flex-col">
       {/* Header */}
-      <header className="flex items-center gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <header className="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface">
         <Button variant="ghost" size="sm" onClick={() => selectJob(null)}>
           <ArrowLeft className="w-4 h-4 mr-1" />
           Back
         </Button>
 
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">
+          <h1 className="text-lg font-bold text-foreground truncate">
             {job.company}
           </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{job.title}</p>
+          <p className="text-sm text-foreground-muted truncate">{job.title}</p>
         </div>
 
         {/* Status Dropdown */}
         <select
           value={job.status}
           onChange={(e) => handleStatusChange(e.target.value)}
-          className="px-3 py-1.5 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-1.5 text-sm rounded-md border border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           style={currentStatus ? { borderColor: currentStatus.color } : undefined}
         >
           {settings.statuses.map((status) => (
@@ -78,7 +78,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
       {/* Tabs */}
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <div className="px-6 pt-4 border-b border-slate-200 dark:border-slate-700">
+          <div className="px-6 pt-4 border-b border-border">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="resume">Resume Fit</TabsTrigger>

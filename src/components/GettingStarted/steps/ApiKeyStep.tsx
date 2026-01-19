@@ -90,10 +90,10 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
   return (
     <div>
       <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           Set Up AI Features
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-foreground-muted">
           This app is open source and free. You just need an API key from your preferred provider.
         </p>
       </div>
@@ -101,14 +101,14 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
       <div className="max-w-md mx-auto space-y-4">
         {/* Provider Selection */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             AI Provider
           </label>
           <select
             aria-label="Select AI provider"
             value={activeProvider}
             onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
-            className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="anthropic">Anthropic (Claude) - Recommended · $5 free credit</option>
             <option value="gemini">Google Gemini - Free tier · Great for trying it out</option>
@@ -119,7 +119,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
         {/* OpenAI-compatible specific fields */}
         {activeProvider === 'openai-compatible' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Server URL
             </label>
             <Input
@@ -139,7 +139,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
         {/* API Key Input */}
         {needsApiKey && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               API Key
             </label>
             <Input
@@ -182,7 +182,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
             </button>
             {showGeminiGuide && (
               <div className="px-4 pb-4 space-y-3">
-                <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
+                <ol className="text-sm text-foreground-muted space-y-2 list-decimal list-inside">
                   <li>Click the button below to open Google AI Studio</li>
                   <li>Sign in with your Google account</li>
                   <li>Click "Get API Key" → "Create API key in new project"</li>
@@ -204,7 +204,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
 
         {/* Model Selection */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Model
           </label>
           <select
@@ -214,7 +214,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
               setModelInput(e.target.value);
               setTestStatus('idle');
             }}
-            className="w-full px-3 py-2 text-sm border rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {PROVIDER_MODELS[activeProvider].map((model) => (
               <option key={model.id} value={model.id}>

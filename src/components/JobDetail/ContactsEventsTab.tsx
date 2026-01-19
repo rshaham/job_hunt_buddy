@@ -40,23 +40,23 @@ interface ContactsEventsTabProps {
 // Markdown renderer for intel content
 function IntelMarkdown({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-700 dark:text-slate-300">
+    <div className="text-sm text-foreground">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
         components={{
           h1: ({ children }) => (
-            <h1 className="text-base font-bold mt-3 mb-1.5 text-slate-800 dark:text-slate-200 first:mt-0">
+            <h1 className="text-base font-bold mt-3 mb-1.5 text-foreground first:mt-0">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-sm font-semibold mt-3 mb-1 text-slate-800 dark:text-slate-200 first:mt-0">
+            <h2 className="text-sm font-semibold mt-3 mb-1 text-foreground first:mt-0">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-sm font-medium mt-2 mb-1 text-slate-700 dark:text-slate-300">
+            <h3 className="text-sm font-medium mt-2 mb-1 text-foreground">
               {children}
             </h3>
           ),
@@ -65,7 +65,7 @@ function IntelMarkdown({ content }: { content: string }) {
           ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           strong: ({ children }) => (
-            <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
+            <strong className="font-semibold text-foreground">{children}</strong>
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children }) => (
@@ -73,7 +73,7 @@ function IntelMarkdown({ content }: { content: string }) {
               {children}
             </code>
           ),
-          hr: () => <hr className="my-2 border-slate-200 dark:border-slate-700" />,
+          hr: () => <hr className="my-2 border-border" />,
         }}
       >
         {content}
@@ -318,7 +318,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
             <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Contacts</h3>
+            <h3 className="font-semibold text-foreground">Contacts</h3>
           </div>
           <Button size="sm" variant="ghost" onClick={() => setShowContactForm(!showContactForm)}>
             <Plus className="w-4 h-4" />
@@ -365,7 +365,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                 placeholder="Paste their LinkedIn About section or bio here..."
                 value={contactLinkedInBio}
                 onChange={(e) => setContactLinkedInBio(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 rows={3}
               />
             </div>
@@ -400,7 +400,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                 {editingContactId === contact.id ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Edit Contact</span>
+                      <span className="text-sm font-medium text-foreground">Edit Contact</span>
                       <button
                         type="button"
                         onClick={handleCancelEditContact}
@@ -462,7 +462,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium text-slate-800 dark:text-slate-200">{contact.name}</p>
+                        <p className="font-medium text-foreground">{contact.name}</p>
                         {contact.role && (
                           <p className="text-sm text-muted">{contact.role}</p>
                         )}
@@ -490,9 +490,9 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                     {/* Contact Actions */}
                     <div className="flex flex-wrap gap-2 mt-2">
                       {contact.email && (
-                        <div className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg">
+                        <div className="flex items-center gap-1 text-xs bg-surface px-2 py-1 rounded-lg">
                           <Mail className="w-3 h-3 text-tertiary" />
-                          <span className="text-slate-600 dark:text-slate-400 truncate max-w-[120px]">
+                          <span className="text-foreground-muted truncate max-w-[120px]">
                             {contact.email}
                           </span>
                           <button
@@ -512,7 +512,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                       {contact.phone && (
                         <a
                           href={`tel:${contact.phone}`}
-                          className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+                          className="flex items-center gap-1 text-xs bg-surface px-2 py-1 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
                         >
                           <Phone className="w-3 h-3 text-green-500" />
                           <span className="text-green-600 dark:text-green-400">{contact.phone}</span>
@@ -523,7 +523,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           href={contact.linkedin}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          className="flex items-center gap-1 text-xs bg-surface px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                         >
                           <Linkedin className="w-3 h-3 text-blue-500" />
                           <span className="text-blue-600 dark:text-blue-400">LinkedIn</span>
@@ -540,7 +540,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           <textarea
                             value={editingBioText}
                             onChange={(e) => setEditingBioText(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             rows={4}
                             placeholder="Paste their LinkedIn About section..."
                           />
@@ -576,7 +576,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                               Edit
                             </button>
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+                          <p className="text-xs text-foreground-muted line-clamp-2">
                             {contact.linkedInBio}
                           </p>
 
@@ -644,7 +644,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                               </button>
 
                               {expandedIntelContactId === contact.id && (
-                                <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                <div className="p-3 bg-surface rounded-lg border border-blue-100 dark:border-blue-800/30">
                                   <IntelMarkdown content={contact.interviewerIntel} />
                                   <div className="flex justify-end gap-3 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                                     <button
@@ -738,7 +738,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Events</h3>
+            <h3 className="font-semibold text-foreground">Events</h3>
           </div>
           <Button size="sm" variant="ghost" onClick={() => setShowEventForm(!showEventForm)}>
             <Plus className="w-4 h-4" />
@@ -760,7 +760,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                     className={`text-xs px-2.5 py-1.5 rounded-full transition-colors flex items-center gap-1 ${
                       eventType === type.label
                         ? 'bg-purple-500 text-white'
-                        : 'bg-white dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-600 dark:text-slate-400'
+                        : 'bg-surface hover:bg-purple-100 dark:hover:bg-purple-900/40 text-foreground-muted'
                     }`}
                   >
                     <span>{type.icon}</span>
@@ -825,7 +825,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                       {/* Event content */}
                       <div className={`flex-1 ${!isLast ? 'pb-4' : 'pb-0'}`}>
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm text-slate-800 dark:text-slate-200">
+                          <span className="font-medium text-sm text-foreground">
                             {event.type}
                           </span>
                           <div className="flex items-center gap-2">
@@ -842,7 +842,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                             </button>
                           </div>
                         </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                        <p className="text-sm text-foreground-muted mt-0.5">
                           {event.description}
                         </p>
                       </div>

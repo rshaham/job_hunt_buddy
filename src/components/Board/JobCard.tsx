@@ -33,13 +33,13 @@ export function JobCard({ job, onClick }: JobCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+      className="relative bg-surface rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
       onClick={onClick}
     >
       <div className="p-3">
         {/* Header: Company + Job Type */}
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium text-slate-900 dark:text-white truncate">
+          <span className="text-sm font-medium text-foreground truncate">
             {job.company}
           </span>
           <div className="flex items-center gap-1">
@@ -49,7 +49,7 @@ export function JobCard({ job, onClick }: JobCardProps) {
         </div>
 
         {/* Title */}
-        <p className="text-xs text-slate-600 dark:text-slate-400 truncate mb-2">
+        <p className="text-xs text-foreground-muted truncate mb-2">
           {job.title}
         </p>
 

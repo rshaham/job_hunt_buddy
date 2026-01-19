@@ -120,7 +120,7 @@ export function JobFinderModal() {
     >
       <div className="flex flex-col h-full">
         {/* Search Form */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="p-4 border-b border-border">
           <SearchForm
             onSearch={search}
             isSearching={isSearching}
@@ -155,9 +155,9 @@ export function JobFinderModal() {
 
         {/* Results Header */}
         {hasResults && (
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+          <div className="px-4 py-3 border-b border-border bg-surface">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-4 text-sm text-foreground-muted">
                 <span>{results.length} jobs found</span>
                 {aiSearchStats && (
                   <span className="text-purple-600 dark:text-purple-400">
@@ -196,12 +196,12 @@ export function JobFinderModal() {
             </div>
             {/* AI Search queries used */}
             {aiSearchQueries && aiSearchQueries.length > 0 && (
-              <div className="mt-2 text-xs text-slate-500 dark:text-slate-500">
+              <div className="mt-2 text-xs text-foreground-muted">
                 <span className="text-purple-600 dark:text-purple-400 font-medium">AI queries:</span>{' '}
                 {aiSearchQueries.map((q, i) => (
                   <span key={i}>
                     {i > 0 && ' • '}
-                    <span className="text-slate-600 dark:text-slate-400">"{q}"</span>
+                    <span className="text-foreground-muted">"{q}"</span>
                   </span>
                 ))}
               </div>
@@ -221,11 +221,11 @@ export function JobFinderModal() {
           {/* Empty State - Before Search */}
           {!hasResults && !isSearching && !searchError && hasResume && (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <Search className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+              <Search className="w-12 h-12 text-foreground-subtle mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Search for jobs to get started
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-md">
+              <p className="text-foreground-muted max-w-md">
                 Enter keywords like "React Developer" or "Product Manager" to find jobs
                 and see how well they match your profile.
               </p>
@@ -236,12 +236,12 @@ export function JobFinderModal() {
           {isSearching && (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 {isEnhancingQuery
                   ? 'AI is generating search queries and ranking results...'
                   : 'Searching for jobs...'}
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+              <p className="text-sm text-foreground-muted max-w-md">
                 {isEnhancingQuery
                   ? 'Analyzing your profile and generating multiple search strategies'
                   : enhancedQuery
@@ -268,19 +268,19 @@ export function JobFinderModal() {
 
         {/* Footer */}
         {hasResults && (
-          <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <div className="px-4 py-3 border-t border-border bg-surface">
             <div className="flex items-center justify-between">
               {/* Import Progress */}
               {isImporting && importProgress.total > 0 ? (
                 <div className="flex-1 mr-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2 text-sm text-foreground-muted">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>
                       Analyzing job {importProgress.current + 1} of {importProgress.total}
                     </span>
                   </div>
                   {importProgress.currentJob && (
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5 truncate max-w-md">
+                    <p className="text-xs text-foreground-muted mt-0.5 truncate max-w-md">
                       {importProgress.currentJob}
                     </p>
                   )}
