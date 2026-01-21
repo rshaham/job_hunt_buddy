@@ -14,6 +14,7 @@ import { CommandBar } from './components/CommandBar';
 import { JobFinderModal } from './components/JobFinder';
 import { BatchScannerModal } from './components/BatchScanner';
 import { ToastContainer } from './components/ui';
+import { Sidebar } from './components/Sidebar';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
@@ -110,9 +111,12 @@ function App() {
   const selectedJob = selectedJobId ? jobs.find((j) => j.id === selectedJobId) : null;
 
   return (
-    <>
-      <BoardView />
-      {selectedJob && <JobDetailView job={selectedJob} />}
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 ml-sidebar-collapsed">
+        <BoardView />
+        {selectedJob && <JobDetailView job={selectedJob} />}
+      </main>
       <AddJobModal />
       <SettingsModal />
       <GettingStartedModal />
@@ -124,7 +128,7 @@ function App() {
       <CommandBar />
       <ToastContainer />
       <Analytics />
-    </>
+    </div>
   );
 }
 
