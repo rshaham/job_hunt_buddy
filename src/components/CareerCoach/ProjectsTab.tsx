@@ -11,7 +11,7 @@ import remarkGfm from 'remark-gfm';
 // Simple markdown renderer for project details
 function MarkdownContent({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
+    <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
@@ -25,10 +25,10 @@ function MarkdownContent({ content }: { content: string }) {
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
           code: ({ children }) => (
-            <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-xs">{children}</code>
+            <code className="bg-surface-raised px-1 py-0.5 rounded text-xs">{children}</code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-slate-100 dark:bg-slate-800 p-2 rounded overflow-x-auto mb-2 text-xs">{children}</pre>
+            <pre className="bg-surface p-2 rounded overflow-x-auto mb-2 text-xs">{children}</pre>
           ),
         }}
       >
@@ -179,13 +179,13 @@ export function ProjectsTab() {
   };
 
   const renderForm = () => (
-    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
+    <div className="p-4 bg-surface rounded-lg border border-border space-y-3">
       <input
         type="text"
         value={formData.title}
         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
         placeholder="Project title"
-        className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+        className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
         autoFocus
       />
       <textarea
@@ -193,20 +193,20 @@ export function ProjectsTab() {
         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         placeholder="Description - what will you build and why?"
         rows={3}
-        className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+        className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
       />
       <input
         type="text"
         value={formData.skills}
         onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
         placeholder="Skills (comma separated): React, TypeScript, API Design"
-        className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+        className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
       />
       <div className="flex items-center gap-3">
         <select
           value={formData.status}
           onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectStatus })}
-          className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="px-3 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
           <option value="idea">Idea</option>
           <option value="in_progress">In Progress</option>
@@ -236,13 +236,13 @@ export function ProjectsTab() {
     return (
       <div
         key={project.id}
-        className="group bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+        className="group bg-surface rounded-lg border border-border hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
       >
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                <h4 className="font-medium text-foreground truncate">
                   {project.title}
                 </h4>
                 <select
@@ -257,7 +257,7 @@ export function ProjectsTab() {
                 </select>
               </div>
               {project.description && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 line-clamp-2">
+                <p className="text-sm text-foreground-muted mb-2 line-clamp-2">
                   {project.description}
                 </p>
               )}
@@ -266,7 +266,7 @@ export function ProjectsTab() {
                   {project.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full"
+                      className="px-2 py-0.5 text-xs bg-surface-raised text-foreground-muted rounded-full"
                     >
                       {skill}
                     </span>
@@ -303,7 +303,7 @@ export function ProjectsTab() {
               <button
                 type="button"
                 onClick={() => handleStartEdit(project)}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                className="p-1.5 hover:bg-surface-raised rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 title="Edit"
               >
                 <Edit2 className="w-4 h-4" />
@@ -321,7 +321,7 @@ export function ProjectsTab() {
         </div>
         {/* Expandable Details Section */}
         {isExpanded && hasDetails && (
-          <div className="px-4 pb-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <div className="px-4 pb-4 pt-2 border-t border-border">
             <MarkdownContent content={project.details!} />
           </div>
         )}
@@ -335,7 +335,7 @@ export function ProjectsTab() {
 
     return (
       <div key={status} className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground-muted">
           <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${statusColors[status]}`}>
             {statusIcons[status]}
             {PROJECT_STATUS_LABELS[status]}
@@ -378,10 +378,10 @@ export function ProjectsTab() {
       <div className="flex-1 overflow-y-auto space-y-4">
         {projects.length === 0 && !isAdding ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mb-4">
               <Lightbulb className="w-8 h-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <h3 className="text-lg font-medium text-foreground mb-2">
               No projects yet
             </h3>
             <p className="text-sm text-slate-500 mb-6 max-w-md">

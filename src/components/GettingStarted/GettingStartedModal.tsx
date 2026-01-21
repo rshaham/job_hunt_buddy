@@ -71,7 +71,7 @@ export function GettingStartedModal() {
                   w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
                   ${index <= currentStep
                     ? 'bg-primary text-white'
-                    : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                    : 'bg-surface-raised text-foreground-muted'
                   }
                 `}
               >
@@ -83,7 +83,7 @@ export function GettingStartedModal() {
                     w-12 h-0.5 mx-1
                     ${index < currentStep
                       ? 'bg-primary'
-                      : 'bg-slate-200 dark:bg-slate-700'
+                      : 'bg-surface-raised'
                     }
                   `}
                 />

@@ -29,10 +29,10 @@ export function Column({ status, jobs, onJobClick }: ColumnProps) {
           className="w-3 h-3 rounded-full"
           style={{ backgroundColor: status.color }}
         />
-        <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <h3 className="text-sm font-medium text-foreground">
           {status.name}
         </h3>
-        <span className="ml-auto text-xs text-slate-500 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">
+        <span className="ml-auto text-xs text-slate-500 bg-surface px-1.5 py-0.5 rounded">
           {jobs.length}
         </span>
       </div>
@@ -40,7 +40,7 @@ export function Column({ status, jobs, onJobClick }: ColumnProps) {
       {/* Column Content */}
       <div
         className={cn(
-          'flex-1 p-2 space-y-2 bg-slate-50 dark:bg-slate-900/50 rounded-b-lg border border-t-0 border-slate-200 dark:border-slate-700 min-h-[200px] overflow-y-auto',
+          'flex-1 p-2 space-y-2 bg-slate-50 dark:bg-slate-900/50 rounded-b-lg border border-t-0 border-border min-h-[200px] overflow-y-auto',
           isOver && 'bg-primary/5 border-primary/30'
         )}
       >

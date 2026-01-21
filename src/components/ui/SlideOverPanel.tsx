@@ -2,16 +2,23 @@ import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 
-interface ModalProps {
+interface SlideOverPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: ReactNode;
+  title?: string;
   children: ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
-export function Modal({ isOpen, onClose, title, children, className, size = 'md' }: ModalProps) {
+export function SlideOverPanel({
+  isOpen,
+  onClose,
+  title,
+  children,
+  className,
+  size = 'md',
+}: SlideOverPanelProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -19,48 +26,47 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-40 flex justify-end">
+      {/* Backdrop - dims but doesn't blur */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 transition-opacity duration-normal"
         onClick={onClose}
       />
 
-      {/* Modal */}
+      {/* Panel */}
       <div
         className={cn(
-          'relative bg-surface rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col',
+          'relative bg-surface shadow-panel h-full flex flex-col',
+          'animate-slide-in-right',
           {
             'w-full max-w-sm': size === 'sm',
             'w-full max-w-md': size === 'md',
             'w-full max-w-lg': size === 'lg',
-            'w-full max-w-2xl': size === 'xl',
-            'w-full max-w-5xl h-[90vh]': size === 'full',
+            'w-[60%] max-w-4xl': size === 'xl',
+            'w-full': size === 'full',
           },
           className
         )}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface sticky top-0 z-10">
+            <h2 className="font-display text-heading-lg text-foreground">{title}</h2>
             <button
               onClick={onClose}
-              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              className="p-2 rounded-lg text-foreground-muted hover:bg-surface-raised hover:text-foreground transition-colors duration-fast"
             >
-              <X className="w-5 h-5 text-foreground-muted" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}

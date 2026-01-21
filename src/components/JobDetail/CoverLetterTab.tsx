@@ -249,11 +249,11 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
               )}
             </Button>
             {showDownloadMenu && (
-              <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-10">
+              <div className="absolute right-0 mt-1 w-44 bg-surface rounded-lg shadow-lg border border-border py-1 z-10">
                 <button
                   type="button"
                   onClick={handleDownloadPdf}
-                  className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
                   Download as PDF
@@ -261,7 +261,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                 <button
                   type="button"
                   onClick={handleDownloadText}
-                  className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
                   Download as Text
@@ -300,7 +300,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
             {/* Cover Letter Display/Editor */}
             <div className={`${isRefining ? 'h-1/2' : 'flex-1'} overflow-y-auto mb-3`}>
               {isRefining ? (
-                <div className="h-full p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-y-auto">
+                <div className="h-full p-4 bg-surface rounded-lg border border-border overflow-y-auto">
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap font-serif">
                     {editedLetter}
                   </div>
@@ -327,8 +327,8 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
             {/* Chat Section (only when refining) */}
             {isRefining && (
               <div className="h-1/2 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-800/50 rounded-xl overflow-hidden">
-                <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
-                  <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <div className="px-3 py-2 border-b border-border">
+                  <h3 className="text-sm font-medium text-foreground">
                     Refine Your Cover Letter
                   </h3>
                 </div>
@@ -345,7 +345,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                           <button
                             key={i}
                             onClick={() => setUserMessage(prompt)}
-                            className="text-xs px-3 py-1.5 bg-white dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-colors"
+                            className="text-xs px-3 py-1.5 bg-surface rounded-full border border-border hover:border-primary/50 transition-colors"
                           >
                             {prompt}
                           </button>
@@ -363,7 +363,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                             className={`max-w-[85%] p-3 rounded-2xl ${
                               entry.role === 'user'
                                 ? 'bg-primary text-white rounded-br-sm'
-                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-sm'
+                                : 'bg-surface border border-border rounded-bl-sm'
                             }`}
                           >
                             <div className="text-sm">
@@ -391,7 +391,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                 </div>
 
                 {/* Chat Input */}
-                <div className="p-3 border-t border-slate-200 dark:border-slate-700">
+                <div className="p-3 border-t border-border">
                   <div className="relative">
                     <textarea
                       ref={textareaRef}
@@ -403,7 +403,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                       onKeyDown={handleKeyDown}
                       placeholder="Describe how you'd like to change the letter..."
                       rows={1}
-                      className="w-full pr-12 py-2 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                      className="w-full pr-12 py-2 px-3 bg-surface border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                       style={{ minHeight: '40px', maxHeight: '120px' }}
                     />
                     <button

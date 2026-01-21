@@ -80,7 +80,7 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
               disabled={isSearching || disabled}
               className={`
                 relative w-11 h-6 rounded-full transition-colors
-                ${remoteOnly ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}
+                ${remoteOnly ? 'bg-primary' : 'bg-surface-raised'}
                 ${isSearching || disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
@@ -91,7 +91,7 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
                 `}
               />
             </button>
-            <span className="text-sm text-slate-600 dark:text-slate-400">
+            <span className="text-sm text-foreground-muted">
               Remote only
             </span>
           </label>
@@ -106,7 +106,7 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
               disabled={isSearching || disabled}
               className={`
                 relative w-11 h-6 rounded-full transition-colors
-                ${useAISearch ? 'bg-purple-500' : 'bg-slate-300 dark:bg-slate-600'}
+                ${useAISearch ? 'bg-purple-500' : 'bg-surface-raised'}
                 ${isSearching || disabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
@@ -117,7 +117,7 @@ export function SearchForm({ onSearch, isSearching, disabled }: SearchFormProps)
                 `}
               />
             </button>
-            <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+            <span className="flex items-center gap-1.5 text-sm text-foreground-muted">
               <Sparkles className="w-3.5 h-3.5 text-purple-500" />
               AI Search
             </span>

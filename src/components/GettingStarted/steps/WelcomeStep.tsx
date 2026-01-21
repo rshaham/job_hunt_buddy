@@ -37,10 +37,10 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
   return (
     <div className="text-center">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
           Welcome to Job Hunt Buddy
         </h2>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-foreground-muted">
           Your AI-powered job search companion
         </p>
       </div>
@@ -49,20 +49,20 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
         {features.map((feature) => (
           <div
             key={feature.title}
-            className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800"
+            className="p-3 rounded-lg bg-surface"
           >
             <feature.icon className="w-6 h-6 text-primary mx-auto mb-2" />
-            <h3 className="text-sm font-medium text-slate-900 dark:text-white">
+            <h3 className="text-sm font-medium text-foreground">
               {feature.title}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-foreground-muted">
               {feature.description}
             </p>
           </div>
         ))}
       </div>
 
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+      <p className="text-sm text-foreground-muted mb-6">
         All your data stays on your device. Private and secure.
       </p>
 

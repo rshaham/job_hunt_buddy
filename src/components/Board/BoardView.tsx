@@ -11,14 +11,13 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search, ArrowUpDown, X, ListChecks } from 'lucide-react';
+import { Plus, Sparkles, Search, ArrowUpDown, X, ScanLine } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
 import { EmbeddingStatus } from '../EmbeddingStatus';
-import { isFeatureEnabled } from '../../utils/featureFlags';
 import type { Job } from '../../types';
 
 type SortOption = 'dateAdded' | 'company' | 'title' | 'resumeFit';
@@ -31,13 +30,7 @@ export function BoardView() {
     moveJob,
     selectJob,
     openAddJobModal,
-    openSettingsModal,
-    openGettingStartedModal,
-    openPrivacyModal,
-    openFeatureGuideModal,
-    openCareerCoachModal,
     openJobFinderModal,
-    openBatchScannerModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -156,99 +149,89 @@ export function BoardView() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-900">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="Job Hunt Buddy" className="w-16 h-16 rounded-xl" />
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
-            Job Hunt Buddy
-            <span className="ml-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full align-middle">
-              beta
-            </span>
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <header
+        className="relative flex items-center justify-end px-6 py-5 bg-primary-subtle"
+      >
+        {/* Wireframe mesh pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(74, 158, 143, 0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(74, 158, 143, 0.5) 1px, transparent 1px),
+              linear-gradient(45deg, rgba(74, 158, 143, 0.25) 1px, transparent 1px),
+              linear-gradient(-45deg, rgba(74, 158, 143, 0.25) 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px, 20px 20px, 28px 28px, 28px 28px',
+          }}
+        />
+        {/* Bottom accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary" />
+        <div className="relative z-10 flex items-center gap-2">
           <Button onClick={openAddJobModal} size="sm">
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
-          {isFeatureEnabled('jobSearch', settings) && (
-            <Button onClick={openJobFinderModal} size="sm" variant="secondary">
-              <Search className="w-4 h-4 mr-1" />
-              Find Jobs
-            </Button>
-          )}
-          <Button onClick={openBatchScannerModal} size="sm" variant="secondary" title="Scan multiple career pages">
-            <ListChecks className="w-4 h-4 mr-1" />
+          <Button
+            onClick={() => openJobFinderModal('batch')}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+          >
+            <ScanLine className="w-4 h-4 mr-1" />
             Batch Scan
           </Button>
           <button
             type="button"
             onClick={() => useCommandBarStore.getState().open()}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300
-              hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted
+              hover:bg-surface-raised rounded-lg transition-colors duration-fast"
             title="Open AI Agent (Ctrl+K)"
           >
             <Sparkles className="w-4 h-4" />
             <span>AI Agent</span>
-            <kbd className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-600 rounded font-mono">
+            <kbd className="px-1.5 py-0.5 text-xs bg-surface-raised rounded font-mono">
               Ctrl+K
             </kbd>
           </button>
           {/* Active AI Model Indicator */}
           <div
-            className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 dark:text-slate-400
-              bg-slate-100 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600"
+            className="flex items-center gap-1.5 px-2 py-1 text-xs text-foreground-muted
+              bg-surface-raised rounded-lg border border-border"
             title={`Active AI: ${settings.providers[settings.activeProvider]?.model || 'Not configured'}`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="font-medium">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="font-medium font-body">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
           </div>
           <EmbeddingStatus />
-          <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
-            <HelpCircle className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openFeatureGuideModal} title="Feature Guide">
-            <BookOpen className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openCareerCoachModal} title="Career Coach">
-            <GraduationCap className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openPrivacyModal} title="Privacy & Terms">
-            <Shield className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openSettingsModal} title="Settings">
-            <Settings className="w-4 h-4" />
-          </Button>
         </div>
       </header>
 
       {/* Filter/Sort Toolbar */}
-      <div className="flex items-center gap-4 px-6 py-2 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-4 px-6 py-2 bg-surface border-b border-border">
         {/* Search */}
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-subtle" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search jobs..."
-            className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-              bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full pl-9 pr-3 py-1.5 text-sm border border-border-muted rounded-md
+              bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
 
         {/* Sort */}
         <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-4 h-4 text-slate-400" />
+          <ArrowUpDown className="w-4 h-4 text-foreground-subtle" />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             title="Sort by"
-            className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-              bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="px-2 py-1.5 text-sm border border-border-muted rounded-md
+              bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="dateAdded">Date Added</option>
             <option value="resumeFit">Resume Fit</option>
@@ -258,8 +241,8 @@ export function BoardView() {
           <button
             type="button"
             onClick={toggleSortDirection}
-            className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-              bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+            className="px-2 py-1.5 text-sm border border-border-muted rounded-md
+              bg-surface hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
             title={sortDirection === 'desc' ? 'Descending' : 'Ascending'}
           >
             {sortDirection === 'desc' ? '↓' : '↑'}
@@ -271,14 +254,14 @@ export function BoardView() {
           <button
             type="button"
             onClick={clearFilters}
-            className="flex items-center gap-1 px-2 py-1 text-sm text-slate-600 dark:text-slate-400
+            className="flex items-center gap-1 px-2 py-1 text-sm text-foreground-muted
               hover:text-red-600 dark:hover:text-red-400 transition-colors"
           >
             <X className="w-4 h-4" />
             Clear
           </button>
         )}
-        <span className="text-sm text-slate-500 dark:text-slate-400">
+        <span className="text-sm text-foreground-muted">
           {hasActiveFilters ? `${totalVisible} of ${jobs.length}` : `${jobs.length} jobs`}
         </span>
       </div>
@@ -318,13 +301,13 @@ export function BoardView() {
       {jobs.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
-            <div className="w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-slate-400" />
+            <div className="w-16 h-16 bg-surface-raised rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-foreground-subtle" />
             </div>
-            <h2 className="text-lg font-medium text-slate-600 dark:text-slate-400 mb-2">
+            <h2 className="text-lg font-medium text-foreground-muted mb-2">
               No jobs yet
             </h2>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-foreground-muted mb-4">
               Add your first job to start tracking
             </p>
             <Button onClick={openAddJobModal} className="pointer-events-auto">

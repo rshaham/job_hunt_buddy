@@ -73,6 +73,7 @@ interface AppState {
   isFeatureGuideModalOpen: boolean;
   isCareerCoachModalOpen: boolean;
   isJobFinderModalOpen: boolean;
+  jobFinderInitialTab: 'search' | 'batch';
   isBatchScannerModalOpen: boolean;
 
   // Career Coach State
@@ -123,7 +124,7 @@ interface AppState {
   closeFeatureGuideModal: () => void;
   openCareerCoachModal: () => void;
   closeCareerCoachModal: () => void;
-  openJobFinderModal: () => void;
+  openJobFinderModal: (tab?: 'search' | 'batch') => void;
   closeJobFinderModal: () => void;
   openBatchScannerModal: () => void;
   closeBatchScannerModal: () => void;
@@ -162,6 +163,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isFeatureGuideModalOpen: false,
   isCareerCoachModalOpen: false,
   isJobFinderModalOpen: false,
+  jobFinderInitialTab: 'search',
   isBatchScannerModalOpen: false,
   careerCoachState: { history: [] },
 
@@ -504,7 +506,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeFeatureGuideModal: () => set({ isFeatureGuideModalOpen: false }),
   openCareerCoachModal: () => set({ isCareerCoachModalOpen: true }),
   closeCareerCoachModal: () => set({ isCareerCoachModalOpen: false }),
-  openJobFinderModal: () => set({ isJobFinderModalOpen: true }),
+  openJobFinderModal: (tab?: 'search' | 'batch') => set({ isJobFinderModalOpen: true, jobFinderInitialTab: tab || 'search' }),
   closeJobFinderModal: () => set({ isJobFinderModalOpen: false }),
   openBatchScannerModal: () => set({ isBatchScannerModalOpen: true }),
   closeBatchScannerModal: () => set({ isBatchScannerModalOpen: false }),

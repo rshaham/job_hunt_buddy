@@ -42,7 +42,7 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
         'hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
         job.isSelected
           ? 'border-primary bg-primary/5 dark:bg-primary/10'
-          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800',
+          : 'border-border bg-surface',
         job.isImported && 'opacity-60 cursor-not-allowed'
       )}
     >
@@ -53,8 +53,8 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
             'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
             job.isSelected
               ? 'bg-primary border-primary text-white'
-              : 'border-slate-300 dark:border-slate-600',
-            job.isImported && 'bg-slate-200 dark:bg-slate-700 border-slate-300'
+              : 'border-border-muted',
+            job.isImported && 'bg-surface-raised border-slate-300'
           )}
         >
           {(job.isSelected || job.isImported) && <Check className="w-3 h-3" />}
@@ -75,10 +75,10 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
         {/* Company & Title */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="font-medium text-slate-900 dark:text-white truncate">
+            <h3 className="font-medium text-foreground truncate">
               {job.title}
             </h3>
-            <div className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400">
+            <div className="flex items-center gap-1 text-sm text-foreground-muted">
               <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="truncate">{job.company}</span>
             </div>
@@ -92,7 +92,7 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
               </span>
             )}
             {job.isImported && (
-              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-surface-raised text-foreground-muted">
                 Saved
               </span>
             )}
@@ -100,7 +100,7 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
         </div>
 
         {/* Meta info */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground-muted">
           {job.location && (
             <span className="flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5" />
@@ -123,7 +123,7 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
 
         {/* Source & Link */}
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs text-slate-400 dark:text-slate-500">
+          <span className="text-xs text-foreground-subtle">
             {job.source}
           </span>
           <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ export function SearchResultCard({ job, onToggleSelect, onPreview }: SearchResul
                 e.stopPropagation();
                 onPreview(job);
               }}
-              className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary"
+              className="flex items-center gap-1 text-xs text-foreground-muted hover:text-primary dark:hover:text-primary"
             >
               <Eye className="w-3 h-3" />
               Preview

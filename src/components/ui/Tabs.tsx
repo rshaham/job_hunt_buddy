@@ -9,13 +9,24 @@ interface TabsContextValue {
 const TabsContext = createContext<TabsContextValue | null>(null);
 
 interface TabsProps {
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: ReactNode;
   className?: string;
 }
 
-export function Tabs({ defaultValue, children, className }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultValue);
+export function Tabs({ defaultValue, value, onValueChange, children, className }: TabsProps) {
+  const [internalTab, setInternalTab] = useState(defaultValue || value || '');
+
+  // Controlled mode: use value prop; Uncontrolled: use internal state
+  const activeTab = value !== undefined ? value : internalTab;
+  const setActiveTab = (tab: string) => {
+    if (value === undefined) {
+      setInternalTab(tab);
+    }
+    onValueChange?.(tab);
+  };
 
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>
@@ -33,7 +44,7 @@ export function TabsList({ children, className }: TabsListProps) {
   return (
     <div
       className={cn(
-        'flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg',
+        'flex gap-1 p-1 bg-surface-raised rounded-lg',
         className
       )}
     >
@@ -60,8 +71,8 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
       className={cn(
         'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
         isActive
-          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+          ? 'bg-surface text-foreground shadow-sm'
+          : 'text-foreground-muted hover:text-foreground',
         className
       )}
     >

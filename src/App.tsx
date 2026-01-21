@@ -12,8 +12,8 @@ import { FeatureGuideModal } from './components/FeatureGuide';
 import { CareerCoachModal } from './components/CareerCoach';
 import { CommandBar } from './components/CommandBar';
 import { JobFinderModal } from './components/JobFinder';
-import { BatchScannerModal } from './components/BatchScanner';
 import { ToastContainer } from './components/ui';
+import { Sidebar } from './components/Sidebar';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
@@ -98,10 +98,10 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-100 dark:bg-slate-900">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+          <p className="text-foreground-muted">Loading...</p>
         </div>
       </div>
     );
@@ -110,9 +110,12 @@ function App() {
   const selectedJob = selectedJobId ? jobs.find((j) => j.id === selectedJobId) : null;
 
   return (
-    <>
-      <BoardView />
-      {selectedJob && <JobDetailView job={selectedJob} />}
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 ml-sidebar-collapsed">
+        <BoardView />
+        {selectedJob && <JobDetailView job={selectedJob} />}
+      </main>
       <AddJobModal />
       <SettingsModal />
       <GettingStartedModal />
@@ -120,11 +123,10 @@ function App() {
       <FeatureGuideModal />
       <CareerCoachModal />
       <JobFinderModal />
-      <BatchScannerModal />
       <CommandBar />
       <ToastContainer />
       <Analytics />
-    </>
+    </div>
   );
 }
 

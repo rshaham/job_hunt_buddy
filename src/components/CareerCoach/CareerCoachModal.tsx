@@ -48,23 +48,23 @@ function parseProjectSuggestions(content: string): { cleanContent: string; proje
 // Markdown renderer component with proper styling
 function MarkdownContent({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-700 dark:text-slate-300">
+    <div className="text-sm text-foreground">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
         components={{
           h1: ({ children }) => (
-            <h1 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
+            <h1 className="text-lg font-bold mt-4 mb-2 text-foreground first:mt-0">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-base font-semibold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
+            <h2 className="text-base font-semibold mt-4 mb-2 text-foreground first:mt-0">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-sm font-semibold mt-3 mb-1.5 text-slate-700 dark:text-slate-300">
+            <h3 className="text-sm font-semibold mt-3 mb-1.5 text-foreground">
               {children}
             </h3>
           ),
@@ -73,25 +73,25 @@ function MarkdownContent({ content }: { content: string }) {
           ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           strong: ({ children }) => (
-            <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
+            <strong className="font-semibold text-foreground">{children}</strong>
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children }) => (
-            <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono">
+            <code className="bg-surface-raised px-1.5 py-0.5 rounded text-xs font-mono">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto mb-3 text-xs">
+            <pre className="bg-surface p-3 rounded-lg overflow-x-auto mb-3 text-xs">
               {children}
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-slate-600 dark:text-slate-400">
+            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-foreground-muted">
               {children}
             </blockquote>
           ),
-          hr: () => <hr className="my-4 border-slate-200 dark:border-slate-700" />,
+          hr: () => <hr className="my-4 border-border" />,
         }}
       >
         {content}
@@ -388,11 +388,11 @@ export function CareerCoachModal() {
     const isExpanded = expandedCategories[category];
 
     return (
-      <div key={category} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+      <div key={category} className="border border-border rounded-lg overflow-hidden">
         <button
           type="button"
           onClick={() => toggleCategory(category)}
-          className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="w-full flex items-center justify-between p-3 bg-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <div className="flex items-center gap-2">
             {isExpanded ? (
@@ -400,7 +400,7 @@ export function CareerCoachModal() {
             ) : (
               <ChevronRight className="w-4 h-4 text-slate-400" />
             )}
-            <span className="font-medium text-slate-700 dark:text-slate-300">
+            <span className="font-medium text-foreground">
               {categoryLabels[category]}
             </span>
             <span className="text-xs text-slate-400">({skills.length})</span>
@@ -455,7 +455,7 @@ export function CareerCoachModal() {
                     }
                   }}
                   placeholder={`Add ${categoryLabels[category].toLowerCase()} skill...`}
-                  className="flex-1 px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="flex-1 px-3 py-1.5 text-sm border border-border-muted rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
                   autoFocus
                 />
                 <Button size="sm" onClick={() => handleAddSkill(category)}>
@@ -498,7 +498,7 @@ export function CareerCoachModal() {
     >
       <div className="flex flex-col h-full">
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 dark:border-slate-700 px-4">
+        <div className="flex border-b border-border px-4">
           <button
             type="button"
             onClick={() => setActiveTab('coach')}
@@ -580,7 +580,7 @@ export function CareerCoachModal() {
               </label>
               <span className="text-slate-400">|</span>
               <span>
-                Based on <strong className="text-slate-700 dark:text-slate-300">{analyzedJobCount}</strong> jobs
+                Based on <strong className="text-foreground">{analyzedJobCount}</strong> jobs
                 {jobsWithSummaries < analyzedJobCount && (
                   <span className="text-amber-500"> ({jobsWithSummaries} with summaries)</span>
                 )}
@@ -598,7 +598,7 @@ export function CareerCoachModal() {
             />
 
             {/* Chat History */}
-            <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-surface rounded-xl">
               {history.length === 0 && !isAnalyzing ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
                   <Sparkles className="w-8 h-8 text-primary/50 mb-3" />
@@ -622,7 +622,7 @@ export function CareerCoachModal() {
                             type="button"
                             key={i}
                             onClick={() => setQuestion(q)}
-                            className="w-full text-left text-sm p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                            className="w-full text-left text-sm p-3 bg-surface rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
                           >
                             {q}
                           </button>
@@ -652,7 +652,7 @@ export function CareerCoachModal() {
                           return (
                             <div className="flex justify-start">
                               <div className="max-w-[85%]">
-                                <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 shadow-sm">
+                                <div className="p-4 bg-surface rounded-2xl rounded-bl-sm border border-border shadow-sm">
                                   <MarkdownContent content={cleanContent} />
                                   {/* Project Suggestions */}
                                   {projects.length > 0 && (
@@ -669,11 +669,11 @@ export function CareerCoachModal() {
                                               <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
                                                   <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                                                  <span className="font-medium text-sm text-slate-800 dark:text-slate-200">
+                                                  <span className="font-medium text-sm text-foreground">
                                                     {project.title}
                                                   </span>
                                                 </div>
-                                                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                                                <p className="text-xs text-foreground-muted mb-2">
                                                   {project.description}
                                                 </p>
                                                 <div className="flex flex-wrap gap-1">
@@ -772,7 +772,7 @@ export function CareerCoachModal() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about your career, skill gaps, or what to focus on..."
                 rows={1}
-                className="w-full pr-14 py-3 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400"
+                className="w-full pr-14 py-3 px-4 bg-surface border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm placeholder:text-slate-400"
                 style={{ minHeight: '48px', maxHeight: '120px' }}
               />
               <button
@@ -838,10 +838,10 @@ export function CareerCoachModal() {
               {!skillProfile?.skills?.length ? (
                 /* Empty State */
                 <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mb-4">
                     <Sparkles className="w-8 h-8 text-slate-400" />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
                     No skills tracked yet
                   </h3>
                   <p className="text-sm text-slate-500 mb-6 max-w-md">

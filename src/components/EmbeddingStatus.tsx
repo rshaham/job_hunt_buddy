@@ -52,7 +52,7 @@ export function EmbeddingStatus() {
     if (status.isReady) {
       return <Check className="w-4 h-4 text-green-500" />;
     }
-    return <Brain className="w-4 h-4 text-slate-400" />;
+    return <Brain className="w-4 h-4 text-slate-400 dark:text-slate-500" />;
   };
 
   // Status label
@@ -80,8 +80,8 @@ export function EmbeddingStatus() {
       {/* Compact status indicator */}
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300
-          hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted
+          hover:bg-surface-raised rounded-lg transition-colors"
         title="Semantic Search Status"
       >
         <StatusIcon />
@@ -90,10 +90,10 @@ export function EmbeddingStatus() {
 
       {/* Details dropdown */}
       {showDetails && (
-        <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 rounded-lg shadow-lg
-          border border-slate-200 dark:border-slate-700 z-50 p-4">
+        <div className="absolute right-0 mt-2 w-72 bg-surface rounded-lg shadow-lg
+          border border-border z-50 p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-medium text-foreground flex items-center gap-2">
               <Brain className="w-4 h-4" />
               Semantic Search
             </h3>
@@ -109,7 +109,7 @@ export function EmbeddingStatus() {
           <div className="space-y-3">
             {/* Model status */}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600 dark:text-slate-400">Model:</span>
+              <span className="text-foreground-muted">Model:</span>
               <span className={`font-medium ${
                 status.isReady ? 'text-green-600 dark:text-green-400' :
                 status.isLoading ? 'text-blue-600 dark:text-blue-400' :
@@ -130,7 +130,7 @@ export function EmbeddingStatus() {
                   <span>Downloading model...</span>
                   <span>{Math.round(status.progress)}%</span>
                 </div>
-                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${status.progress}%` }}
@@ -141,8 +141,8 @@ export function EmbeddingStatus() {
 
             {/* Indexed count */}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600 dark:text-slate-400">Indexed items:</span>
-              <span className="font-medium text-slate-900 dark:text-white">
+              <span className="text-foreground-muted">Indexed items:</span>
+              <span className="font-medium text-foreground">
                 {status.indexedCount}
               </span>
             </div>
@@ -154,7 +154,7 @@ export function EmbeddingStatus() {
                   <span>Indexing {indexingProgress.entityType}...</span>
                   <span>{indexingProgress.current}/{indexingProgress.total}</span>
                 </div>
-                <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
                   <div
                     className="h-full bg-green-500 transition-all duration-300"
                     style={{ width: `${(indexingProgress.current / indexingProgress.total) * 100}%` }}
@@ -171,7 +171,7 @@ export function EmbeddingStatus() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex gap-2 pt-2 border-t border-border">
               {!status.isReady && !status.isLoading && (
                 <Button
                   size="sm"

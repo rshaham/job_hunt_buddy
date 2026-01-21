@@ -63,12 +63,12 @@ export function ExternalServiceConsent({
         </div>
 
         {/* Title */}
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+        <h2 className="text-xl font-semibold text-foreground mb-2">
           {info.title} uses an external service
         </h2>
 
         {/* Description */}
-        <p className="text-slate-600 dark:text-slate-400 mb-6">
+        <p className="text-foreground-muted mb-6">
           {info.description} This requires sending some data to{' '}
           <a
             href={info.providerUrl}
@@ -103,7 +103,7 @@ export function ExternalServiceConsent({
         </div>
 
         {/* Privacy note */}
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+        <p className="text-xs text-foreground-muted mb-6">
           All other data (resume, cover letters, notes) stays on your device.
           You can revoke this consent anytime in Settings.
         </p>

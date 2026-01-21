@@ -55,22 +55,22 @@ export function ScanProgressPanel({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary-500" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span className="text-sm font-medium text-foreground">
                 {isScanning ? 'Scanning URLs...' : 'URLs Scanned'}
               </span>
             </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">
+            <span className="text-sm text-foreground-muted">
               {scanProgress.urlsComplete} / {scanProgress.urlsTotal}
             </span>
           </div>
-          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-raised rounded-full overflow-hidden">
             <div
               className="h-full bg-primary-500 transition-all duration-300"
               style={{ width: `${scanPercent}%` }}
             />
           </div>
           {scanProgress.currentUrl && isScanning && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
+            <p className="mt-1 text-xs text-foreground-muted truncate">
               Fetching: {scanProgress.currentUrl}
             </p>
           )}
@@ -82,15 +82,15 @@ export function ScanProgressPanel({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-green-500" />
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <span className="text-sm font-medium text-foreground">
                   {isScoring ? 'Scoring Jobs...' : 'Jobs Scored'}
                 </span>
               </div>
-              <span className="text-sm text-slate-500 dark:text-slate-400">
+              <span className="text-sm text-foreground-muted">
                 {scoringProgress.completed} / {scoringProgress.total}
               </span>
             </div>
-            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-2 bg-surface-raised rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-500 transition-all duration-300"
                 style={{ width: `${scorePercent}%` }}
@@ -100,7 +100,7 @@ export function ScanProgressPanel({
         )}
 
         {/* Jobs Found Counter */}
-        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-sm text-foreground-muted">
           <Briefcase className="w-4 h-4" />
           <span>{scanProgress.jobsFound} jobs found so far</span>
         </div>
@@ -134,7 +134,7 @@ export function ScanProgressPanel({
 
       {/* Per-URL Status */}
       <div>
-        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+        <h4 className="text-sm font-medium text-foreground mb-3">
           URL Status
         </h4>
         <div className="max-h-64 overflow-y-auto space-y-2">
@@ -184,24 +184,24 @@ function UrlStatusRow({ url }: UrlStatusRowProps) {
   const displayName = url.original.companyHint || new URL(url.original.url).hostname;
 
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+    <div className="flex items-center gap-3 p-2 rounded-lg bg-surface">
       {getStatusIcon()}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+          <span className="text-sm font-medium text-foreground truncate">
             {displayName}
           </span>
         </div>
         <p className={`text-xs truncate ${
           url.status === 'error'
             ? 'text-red-500 dark:text-red-400'
-            : 'text-slate-500 dark:text-slate-400'
+            : 'text-foreground-muted'
         }`}>
           {getStatusText()}
         </p>
       </div>
       {url.extractionResult?.atsType && url.extractionResult.atsType !== 'unknown' && (
-        <span className="px-2 py-0.5 text-xs rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+        <span className="px-2 py-0.5 text-xs rounded bg-surface-raised text-foreground-muted">
           {url.extractionResult.atsType}
         </span>
       )}

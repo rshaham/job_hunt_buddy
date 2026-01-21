@@ -25,23 +25,23 @@ interface NotesTabProps {
 // Markdown renderer for notes
 function NoteMarkdown({ content }: { content: string }) {
   return (
-    <div className="text-sm text-slate-700 dark:text-slate-300">
+    <div className="text-sm text-foreground">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
         components={{
           h1: ({ children }) => (
-            <h1 className="text-base font-bold mt-3 mb-1.5 text-slate-800 dark:text-slate-200 first:mt-0">
+            <h1 className="text-base font-bold mt-3 mb-1.5 text-foreground first:mt-0">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-sm font-semibold mt-3 mb-1 text-slate-800 dark:text-slate-200 first:mt-0">
+            <h2 className="text-sm font-semibold mt-3 mb-1 text-foreground first:mt-0">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-sm font-medium mt-2 mb-1 text-slate-700 dark:text-slate-300">
+            <h3 className="text-sm font-medium mt-2 mb-1 text-foreground">
               {children}
             </h3>
           ),
@@ -50,7 +50,7 @@ function NoteMarkdown({ content }: { content: string }) {
           ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           strong: ({ children }) => (
-            <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
+            <strong className="font-semibold text-foreground">{children}</strong>
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children }) => (
@@ -70,10 +70,10 @@ function NoteMarkdown({ content }: { content: string }) {
             <tr className="border-b border-slate-200 dark:border-slate-600">{children}</tr>
           ),
           th: ({ children }) => (
-            <th className="px-2 py-1 text-left text-xs font-semibold text-slate-700 dark:text-slate-300">{children}</th>
+            <th className="px-2 py-1 text-left text-xs font-semibold text-foreground">{children}</th>
           ),
           td: ({ children }) => (
-            <td className="px-2 py-1 text-xs text-slate-600 dark:text-slate-400">{children}</td>
+            <td className="px-2 py-1 text-xs text-foreground-muted">{children}</td>
           ),
         }}
       >
@@ -175,11 +175,11 @@ export function NotesTab({ job }: NotesTabProps) {
         <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
           <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
         </div>
-        <h3 className="font-semibold text-slate-800 dark:text-slate-200">Notes</h3>
+        <h3 className="font-semibold text-foreground">Notes</h3>
       </div>
 
       {/* Unified Notes Input Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-800/30 overflow-hidden mb-4 shadow-sm">
+      <div className="bg-surface rounded-xl border border-amber-200 dark:border-amber-800/30 overflow-hidden mb-4 shadow-sm">
         {/* Template buttons inside the card */}
         <div className="flex gap-2 px-3 pt-3 flex-wrap">
           {noteTemplates.map((t) => (
@@ -280,7 +280,7 @@ export function NotesTab({ job }: NotesTabProps) {
                         {expandedNotes.has(note.id) ? (
                           <NoteMarkdown content={note.content} />
                         ) : (
-                          <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
+                          <p className="text-sm text-foreground-muted truncate">
                             {getPreviewText(note.content)}
                           </p>
                         )}

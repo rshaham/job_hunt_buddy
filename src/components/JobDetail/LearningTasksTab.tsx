@@ -61,7 +61,7 @@ const priorityConfig = {
   },
   low: {
     label: 'Low',
-    color: 'text-slate-500 dark:text-slate-400',
+    color: 'text-foreground-muted',
     bgColor: 'bg-slate-100 dark:bg-slate-700',
     borderColor: 'border-slate-200 dark:border-slate-700',
   },
@@ -133,14 +133,14 @@ function TaskCard({
   return (
     <>
       <div
-        className={`p-4 rounded-xl border ${priority.borderColor} bg-white dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-shadow`}
+        className={`p-4 rounded-xl border ${priority.borderColor} bg-surface/50 shadow-sm hover:shadow-md transition-shadow`}
       >
         {isEditing ? (
           /* Edit Form */
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Skill
                 </label>
                 <input
@@ -152,7 +152,7 @@ function TaskCard({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Priority
                 </label>
                 <select
@@ -169,7 +169,7 @@ function TaskCard({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="block text-xs font-medium text-foreground-muted mb-1">
                 Description
               </label>
               <textarea
@@ -183,7 +183,7 @@ function TaskCard({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Due Date
                 </label>
                 <input
@@ -195,7 +195,7 @@ function TaskCard({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-medium text-foreground-muted mb-1">
                   Resource URL
                 </label>
                 <input
@@ -241,7 +241,7 @@ function TaskCard({
                 </span>
               </div>
 
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{task.description}</p>
+              <p className="text-sm text-foreground-muted mb-2">{task.description}</p>
 
               <div className="flex flex-wrap items-center gap-3 text-xs">
                 {/* Due date */}
@@ -252,7 +252,7 @@ function TaskCard({
                         ? 'text-red-600 dark:text-red-400'
                         : isDueToday
                           ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-slate-500 dark:text-slate-400'
+                          : 'text-foreground-muted'
                     }`}
                   >
                     {isOverdue && <AlertTriangle className="w-3 h-3" />}
@@ -391,7 +391,7 @@ export function LearningTasksTab({ job }: LearningTasksTabProps) {
         </div>
         <h3 className="font-semibold text-slate-800 dark:text-slate-200">Learning Tasks</h3>
         {tasks.length > 0 && (
-          <span className="text-sm text-slate-500 dark:text-slate-400">({tasks.length})</span>
+          <span className="text-sm text-foreground-muted">({tasks.length})</span>
         )}
       </div>
 
@@ -417,7 +417,7 @@ export function LearningTasksTab({ job }: LearningTasksTabProps) {
       {tasks.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
           <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-500 dark:text-slate-400 mb-2">No learning tasks yet</p>
+          <p className="text-foreground-muted mb-2">No learning tasks yet</p>
           <p className="text-sm text-slate-400 dark:text-slate-500">
             Use the agent (Ctrl+K) to suggest skills to learn based on this job's requirements.
           </p>

@@ -125,15 +125,15 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
   return (
     <div className="space-y-4">
       {/* Resume Upload */}
-      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Resume</h4>
+      <div className="p-4 bg-surface-raised rounded-lg">
+        <h4 className="text-sm font-medium text-foreground mb-3">Resume</h4>
 
         {job.resumeText ? (
           <div className="flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium">Job-specific resume</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 {job.resumeText.length.toLocaleString()} characters
               </p>
             </div>
@@ -158,13 +158,13 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                 )}
               </Button>
               {showDownloadMenu && (
-                <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-10">
+                <div className="absolute right-0 mt-1 w-44 bg-surface rounded-lg shadow-lg border border-border py-1 z-10">
                   <button
                     type="button"
                     onClick={() => {
                       handleDownloadPDF();
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-raised flex items-center gap-2"
                   >
                     <FileText className="w-4 h-4" />
                     Download as PDF
@@ -175,7 +175,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                       handleDownload();
                       setShowDownloadMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-raised flex items-center gap-2"
                   >
                     <FileText className="w-4 h-4" />
                     Download as Markdown
@@ -189,10 +189,10 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
           </div>
         ) : settings.defaultResumeText ? (
           <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-slate-400" />
+            <FileText className="w-8 h-8 text-tertiary" />
             <div className="flex-1">
               <p className="text-sm font-medium">Using default resume</p>
-              <p className="text-xs text-slate-500">{settings.defaultResumeName}</p>
+              <p className="text-xs text-muted">{settings.defaultResumeName}</p>
             </div>
             <input
               ref={fileInputRef}
@@ -231,7 +231,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               )}
               Upload Resume (PDF)
             </Button>
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="text-xs text-muted mt-2">
               Or set a default resume in Settings
             </p>
           </div>
@@ -263,7 +263,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       {job.resumeAnalysis && (
         <div className="space-y-4">
           {/* Grade */}
-          <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+          <div className="flex items-center gap-4 p-4 bg-surface-raised rounded-lg">
             <div
               className={`text-4xl font-bold px-4 py-2 rounded-lg ${getGradeColor(
                 job.resumeAnalysis.grade
@@ -272,17 +272,17 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               {job.resumeAnalysis.grade}
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+              <p className="text-sm text-foreground-muted flex items-center gap-1">
                 Match Score
                 <span className="group relative">
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                  <HelpCircle className="w-3.5 h-3.5 text-tertiary cursor-help" />
                   <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-slate-800 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                     Based on job requirements match
                   </span>
                 </span>
               </p>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full w-32">
+                <div className="flex-1 h-2 bg-surface-raised rounded-full w-32">
                   <div
                     className="h-full bg-primary rounded-full"
                     style={{ width: `${job.resumeAnalysis.matchPercentage}%` }}
@@ -312,7 +312,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
           {/* Strengths */}
           <div>
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1">
               <CheckCircle className="w-4 h-4 text-green-500" />
               Strengths
             </h4>
@@ -320,7 +320,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               {job.resumeAnalysis.strengths.map((strength, i) => (
                 <li
                   key={i}
-                  className="text-sm text-slate-600 dark:text-slate-400 pl-5 relative before:content-['✓'] before:absolute before:left-0 before:text-green-500"
+                  className="text-sm text-foreground-muted pl-5 relative before:content-['✓'] before:absolute before:left-0 before:text-green-500"
                 >
                   {strength}
                 </li>
@@ -330,7 +330,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
           {/* Gaps */}
           <div>
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1">
               <XCircle className="w-4 h-4 text-red-500" />
               Gaps
             </h4>
@@ -338,7 +338,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               {job.resumeAnalysis.gaps.map((gap, i) => (
                 <li
                   key={i}
-                  className="text-sm text-slate-600 dark:text-slate-400 pl-5 relative before:content-['✗'] before:absolute before:left-0 before:text-red-500"
+                  className="text-sm text-foreground-muted pl-5 relative before:content-['✗'] before:absolute before:left-0 before:text-red-500"
                 >
                   {gap}
                 </li>
@@ -348,7 +348,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
           {/* Suggestions */}
           <div>
-            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-1">
               <AlertCircle className="w-4 h-4 text-amber-500" />
               Suggestions
             </h4>
@@ -356,7 +356,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
               {job.resumeAnalysis.suggestions.map((suggestion, i) => (
                 <li
                   key={i}
-                  className="text-sm text-slate-600 dark:text-slate-400 pl-5 relative before:content-['→'] before:absolute before:left-0 before:text-amber-500"
+                  className="text-sm text-foreground-muted pl-5 relative before:content-['→'] before:absolute before:left-0 before:text-amber-500"
                 >
                   {suggestion}
                 </li>
@@ -366,21 +366,21 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
           {/* Keywords */}
           {(job.resumeAnalysis.matchedKeywords?.length || job.resumeAnalysis.missingKeywords?.length) && (
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <div className="p-4 bg-surface-raised rounded-lg">
               <button
                 type="button"
                 onClick={() => setKeywordsExpanded(!keywordsExpanded)}
-                className="w-full text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                className="w-full text-sm font-medium text-foreground flex items-center gap-1 hover:text-foreground transition-colors"
               >
                 {keywordsExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                  <ChevronDown className="w-4 h-4 text-tertiary" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <ChevronRight className="w-4 h-4 text-tertiary" />
                 )}
                 <Tag className="w-4 h-4 text-primary" />
                 Keywords
                 {job.resumeAnalysis.matchedKeywords && job.resumeAnalysis.missingKeywords && (
-                  <span className="ml-2 text-xs font-normal text-slate-500">
+                  <span className="ml-2 text-xs font-normal text-muted">
                     ({job.resumeAnalysis.matchedKeywords.length} of {job.resumeAnalysis.matchedKeywords.length + job.resumeAnalysis.missingKeywords.length} matched)
                   </span>
                 )}
@@ -391,7 +391,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                   {/* Matched Keywords */}
                   {job.resumeAnalysis.matchedKeywords && job.resumeAnalysis.matchedKeywords.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+                      <p className="text-xs text-foreground-muted mb-2 flex items-center gap-1">
                         <CheckCircle className="w-3 h-3 text-green-500" />
                         Matched
                       </p>
@@ -411,10 +411,10 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                   {/* Missing Keywords */}
                   {job.resumeAnalysis.missingKeywords && job.resumeAnalysis.missingKeywords.length > 0 && (
                     <div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+                      <p className="text-xs text-foreground-muted mb-2 flex items-center gap-1">
                         <XCircle className="w-3 h-3 text-red-500" />
                         Missing
-                        <span className="text-slate-400 dark:text-slate-500">- click to address in Resume Tailoring</span>
+                        <span className="text-tertiary">- click to address in Resume Tailoring</span>
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {job.resumeAnalysis.missingKeywords.map((keyword, i) => (
