@@ -9,3 +9,4 @@ export { Input } from './Input';
 export { Textarea } from './Textarea';
 export { Card, CardHeader, CardContent, CardFooter } from './Card';
 export { ThinkingBubble } from './ThinkingBubble';
+export { SlideOverPanel } from './SlideOverPanel';
