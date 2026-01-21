@@ -56,7 +56,16 @@
   }
 
   .text-label {
-    @apply text-foreground-muted text-xs font-medium uppercase;
+    @apply text-foreground-muted text-xs font-medium uppercase tracking-wide;
+  }
+
+  /* Typography presets */
+  .font-display {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Source Sans 3', system-ui, sans-serif;
   }
 }
 
@@ -71,20 +80,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #E5E4E1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9C9C96;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #3A3A36;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #6B6B66;
 }
 
 /* Smooth transitions for theme changes */
