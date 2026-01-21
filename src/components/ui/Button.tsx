@@ -13,18 +13,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled}
         className={cn(
-          'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:pointer-events-none',
+          // Base styles
+          'inline-flex items-center justify-center font-medium font-body rounded-lg',
+          'transition-all duration-fast ease-out',
+          'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary',
+          'disabled:opacity-50 disabled:pointer-events-none',
+          // Hover/active micro-interactions
+          'hover:scale-[1.02] active:scale-[0.98]',
           {
             // Variants
             'bg-primary text-white hover:bg-primary-hover': variant === 'primary',
-            'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600':
+            'bg-transparent text-primary border border-primary hover:bg-primary-subtle':
               variant === 'secondary',
-            'hover:bg-slate-100 dark:hover:bg-slate-800': variant === 'ghost',
+            'bg-transparent text-foreground-muted hover:bg-surface-raised hover:text-foreground':
+              variant === 'ghost',
             'bg-danger text-white hover:bg-red-600': variant === 'danger',
-            // Sizes
-            'px-2.5 py-1.5 text-xs': size === 'sm',
-            'px-3 py-2 text-sm': size === 'md',
-            'px-4 py-2.5 text-base': size === 'lg',
+            // Sizes (updated padding)
+            'px-3 py-1.5 text-xs': size === 'sm',
+            'px-4 py-2.5 text-sm': size === 'md',
+            'px-5 py-3 text-base': size === 'lg',
           },
           className
         )}
