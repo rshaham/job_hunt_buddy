@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Sparkles, Search, ArrowUpDown, X, ListChecks } from 'lucide-react';
+import { Plus, Sparkles, Search, ArrowUpDown, X } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
@@ -30,7 +30,6 @@ export function BoardView() {
     moveJob,
     selectJob,
     openAddJobModal,
-    openBatchScannerModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -165,10 +164,6 @@ export function BoardView() {
           <Button onClick={openAddJobModal} size="sm">
             <Plus className="w-4 h-4 mr-1" />
             Add Job
-          </Button>
-          <Button onClick={openBatchScannerModal} size="sm" variant="secondary" title="Scan multiple career pages">
-            <ListChecks className="w-4 h-4 mr-1" />
-            Batch Scan
           </Button>
           <button
             type="button"

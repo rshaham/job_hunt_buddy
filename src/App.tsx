@@ -12,7 +12,6 @@ import { FeatureGuideModal } from './components/FeatureGuide';
 import { CareerCoachModal } from './components/CareerCoach';
 import { CommandBar } from './components/CommandBar';
 import { JobFinderModal } from './components/JobFinder';
-import { BatchScannerModal } from './components/BatchScanner';
 import { ToastContainer } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 
@@ -124,7 +123,6 @@ function App() {
       <FeatureGuideModal />
       <CareerCoachModal />
       <JobFinderModal />
-      <BatchScannerModal />
       <CommandBar />
       <ToastContainer />
       <Analytics />
