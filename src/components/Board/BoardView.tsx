@@ -11,14 +11,13 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Settings, HelpCircle, Shield, BookOpen, GraduationCap, Sparkles, Search, ArrowUpDown, X, ListChecks } from 'lucide-react';
+import { Plus, Sparkles, Search, ArrowUpDown, X, ListChecks } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
 import { EmbeddingStatus } from '../EmbeddingStatus';
-import { isFeatureEnabled } from '../../utils/featureFlags';
 import type { Job } from '../../types';
 
 type SortOption = 'dateAdded' | 'company' | 'title' | 'resumeFit';
@@ -31,12 +30,6 @@ export function BoardView() {
     moveJob,
     selectJob,
     openAddJobModal,
-    openSettingsModal,
-    openGettingStartedModal,
-    openPrivacyModal,
-    openFeatureGuideModal,
-    openCareerCoachModal,
-    openJobFinderModal,
     openBatchScannerModal,
   } = useAppStore();
 
@@ -156,17 +149,16 @@ export function BoardView() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-100 dark:bg-slate-900">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border">
-        <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="Job Hunt Buddy" className="w-16 h-16 rounded-xl" />
-          <h1 className="text-4xl font-bold text-foreground">
-            Job Hunt Buddy
-            <span className="ml-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full align-middle">
-              beta
-            </span>
+        <div className="flex items-center gap-3">
+          <h1 className="font-display text-display text-foreground">
+            Your Jobs
           </h1>
+          <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
+            beta
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -174,12 +166,6 @@ export function BoardView() {
             <Plus className="w-4 h-4 mr-1" />
             Add Job
           </Button>
-          {isFeatureEnabled('jobSearch', settings) && (
-            <Button onClick={openJobFinderModal} size="sm" variant="secondary">
-              <Search className="w-4 h-4 mr-1" />
-              Find Jobs
-            </Button>
-          )}
           <Button onClick={openBatchScannerModal} size="sm" variant="secondary" title="Scan multiple career pages">
             <ListChecks className="w-4 h-4 mr-1" />
             Batch Scan
@@ -188,7 +174,7 @@ export function BoardView() {
             type="button"
             onClick={() => useCommandBarStore.getState().open()}
             className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted
-              hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              hover:bg-surface-raised rounded-lg transition-colors duration-fast"
             title="Open AI Agent (Ctrl+K)"
           >
             <Sparkles className="w-4 h-4" />
@@ -200,28 +186,13 @@ export function BoardView() {
           {/* Active AI Model Indicator */}
           <div
             className="flex items-center gap-1.5 px-2 py-1 text-xs text-foreground-muted
-              bg-surface-raised rounded-md border border-slate-200 dark:border-slate-600"
+              bg-surface-raised rounded-lg border border-border"
             title={`Active AI: ${settings.providers[settings.activeProvider]?.model || 'Not configured'}`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="font-medium">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="font-medium font-body">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
           </div>
           <EmbeddingStatus />
-          <Button variant="ghost" size="sm" onClick={openGettingStartedModal} title="Getting Started">
-            <HelpCircle className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openFeatureGuideModal} title="Feature Guide">
-            <BookOpen className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openCareerCoachModal} title="Career Coach">
-            <GraduationCap className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openPrivacyModal} title="Privacy & Terms">
-            <Shield className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={openSettingsModal} title="Settings">
-            <Settings className="w-4 h-4" />
-          </Button>
         </div>
       </header>
 
