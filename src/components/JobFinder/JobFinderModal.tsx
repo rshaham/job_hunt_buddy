@@ -28,6 +28,7 @@ import type { EnrichedSearchResult } from '../../types/jobSearch';
 export function JobFinderModal() {
   const {
     isJobFinderModalOpen,
+    jobFinderInitialTab,
     closeJobFinderModal,
     openSettingsModal,
     settings,
@@ -80,6 +81,16 @@ export function JobFinderModal() {
 
   // State for preview modal
   const [previewJob, setPreviewJob] = useState<EnrichedSearchResult | null>(null);
+
+  // Tab state - controlled by store's initial value
+  const [activeTab, setActiveTab] = useState<string>(jobFinderInitialTab);
+
+  // Set active tab when modal opens with a specific tab
+  useEffect(() => {
+    if (isJobFinderModalOpen) {
+      setActiveTab(jobFinderInitialTab);
+    }
+  }, [isJobFinderModalOpen, jobFinderInitialTab]);
 
   // Clear results when modal closes
   useEffect(() => {
@@ -167,7 +178,7 @@ export function JobFinderModal() {
       size="full"
     >
       <div className="flex flex-col h-full">
-        <Tabs defaultValue="search" className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           {/* Tab Navigation */}
           <div className="px-4 pt-4 border-b border-border bg-surface">
             <TabsList>

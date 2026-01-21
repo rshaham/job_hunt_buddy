@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Plus, Sparkles, Search, ArrowUpDown, X } from 'lucide-react';
+import { Plus, Sparkles, Search, ArrowUpDown, X, ScanLine } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
@@ -30,6 +30,7 @@ export function BoardView() {
     moveJob,
     selectJob,
     openAddJobModal,
+    openJobFinderModal,
   } = useAppStore();
 
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -150,11 +151,36 @@ export function BoardView() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-end px-6 py-4 bg-surface border-b border-border">
-        <div className="flex items-center gap-2">
+      <header
+        className="relative flex items-center justify-end px-6 py-5 bg-primary-subtle"
+      >
+        {/* Wireframe mesh pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(74, 158, 143, 0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(74, 158, 143, 0.5) 1px, transparent 1px),
+              linear-gradient(45deg, rgba(74, 158, 143, 0.25) 1px, transparent 1px),
+              linear-gradient(-45deg, rgba(74, 158, 143, 0.25) 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px, 20px 20px, 28px 28px, 28px 28px',
+          }}
+        />
+        {/* Bottom accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary" />
+        <div className="relative z-10 flex items-center gap-2">
           <Button onClick={openAddJobModal} size="sm">
             <Plus className="w-4 h-4 mr-1" />
             Add Job
+          </Button>
+          <Button
+            onClick={() => openJobFinderModal('batch')}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+          >
+            <ScanLine className="w-4 h-4 mr-1" />
+            Batch Scan
           </Button>
           <button
             type="button"
