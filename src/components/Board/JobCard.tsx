@@ -1,9 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
 import type { Job } from '../../types';
 import { Badge } from '../ui';
 import { formatTimeAgo, getJobTypeIcon, getGradeColor } from '../../utils/helpers';
+import { cn } from '../../utils/helpers';
 
 interface JobCardProps {
   job: Job;
@@ -23,7 +23,6 @@ export function JobCard({ job, onClick }: JobCardProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   const jobType = job.summary?.jobType || 'unknown';
@@ -33,53 +32,53 @@ export function JobCard({ job, onClick }: JobCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative bg-surface rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'relative bg-surface rounded-card border border-border p-4',
+        'hover:shadow-card-hover hover:border-primary/30',
+        'transition-all duration-fast ease-out',
+        'cursor-pointer active:cursor-grabbing',
+        isDragging && 'opacity-50 rotate-2 shadow-lg'
+      )}
       onClick={onClick}
     >
-      <div className="p-3">
-        {/* Header: Company + Job Type */}
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium text-foreground truncate">
-            {job.company}
-          </span>
-          <div className="flex items-center gap-1">
-            <span className="text-xs">{getJobTypeIcon(jobType)}</span>
-            <span className="text-xs text-slate-500 capitalize">{jobType}</span>
-          </div>
-        </div>
-
-        {/* Title */}
-        <p className="text-xs text-foreground-muted truncate mb-2">
-          {job.title}
-        </p>
-
-        {/* Divider */}
-        <div className="border-t border-slate-100 dark:border-slate-700 mb-2" />
-
-        {/* Footer: Grade, Time, Salary */}
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            {grade && (
-              <Badge className={getGradeColor(grade)}>{grade}</Badge>
-            )}
-            <span className="text-slate-500">{formatTimeAgo(new Date(job.dateAdded))}</span>
-          </div>
-          {job.summary?.salary && (
-            <span className="text-slate-500 truncate max-w-[80px]">
-              {job.summary.salary}
-            </span>
-          )}
+      {/* Header: Company (teal) + Job Type */}
+      <div className="flex items-center justify-between mb-1">
+        <span className="font-display text-heading text-primary truncate">
+          {job.company}
+        </span>
+        <div className="flex items-center gap-1 text-foreground-subtle">
+          <span className="text-xs">{getJobTypeIcon(jobType)}</span>
+          <span className="text-xs font-body capitalize">{jobType}</span>
         </div>
       </div>
 
-      {/* Drag Handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <GripVertical className="w-4 h-4 text-slate-400" />
+      {/* Title */}
+      <p className="font-body text-sm text-foreground truncate mb-3">
+        {job.title}
+      </p>
+
+      {/* Divider */}
+      <div className="border-t border-border mb-3" />
+
+      {/* Footer: Grade, Time, Salary */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {grade && (
+            <Badge className={cn(getGradeColor(grade), 'font-body text-xs font-medium uppercase tracking-tight')}>
+              {grade}
+            </Badge>
+          )}
+          <span className="font-body text-xs text-foreground-subtle">
+            {formatTimeAgo(new Date(job.dateAdded))}
+          </span>
+        </div>
+        {job.summary?.salary && (
+          <span className="font-body text-xs text-foreground-muted truncate max-w-[80px]">
+            {job.summary.salary}
+          </span>
+        )}
       </div>
     </div>
   );

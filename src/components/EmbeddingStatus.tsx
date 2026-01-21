@@ -80,7 +80,7 @@ export function EmbeddingStatus() {
       {/* Compact status indicator */}
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted
           hover:bg-surface-raised rounded-lg transition-colors"
         title="Semantic Search Status"
       >

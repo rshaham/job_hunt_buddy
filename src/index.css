@@ -1,34 +1,44 @@
 /* CSS Custom Properties for automatic dark mode */
 :root {
-  /* Text colors */
-  --color-foreground: 15 23 42;          /* slate-900 */
-  --color-foreground-muted: 100 116 139; /* slate-500 */
-  --color-foreground-subtle: 148 163 184; /* slate-400 */
+  /* Primary (Sage/Teal) */
+  --color-primary: 74 158 143;           /* #4A9E8F */
+  --color-primary-hover: 61 133 119;     /* #3D8577 */
+  --color-primary-subtle: 232 245 242;   /* #E8F5F2 */
 
-  /* Background colors */
-  --color-background: 255 255 255;       /* white */
-  --color-surface: 248 250 252;          /* slate-50 */
-  --color-surface-raised: 241 245 249;   /* slate-100 */
+  /* Text colors (Warm) */
+  --color-foreground: 44 44 42;          /* #2C2C2A */
+  --color-foreground-muted: 107 107 102; /* #6B6B66 */
+  --color-foreground-subtle: 156 156 150; /* #9C9C96 */
 
-  /* Border colors */
-  --color-border: 226 232 240;           /* slate-200 */
-  --color-border-muted: 203 213 225;     /* slate-300 */
+  /* Background colors (Warm white) */
+  --color-background: 250 250 248;       /* #FAFAF8 */
+  --color-surface: 255 255 255;          /* #FFFFFF */
+  --color-surface-raised: 245 245 243;   /* #F5F5F3 */
+
+  /* Border colors (Warm) */
+  --color-border: 229 228 225;           /* #E5E4E1 */
+  --color-border-muted: 203 213 225;     /* slate-300 for compatibility */
 }
 
 .dark {
-  /* Text colors */
-  --color-foreground: 248 250 252;       /* slate-50 */
-  --color-foreground-muted: 148 163 184; /* slate-400 */
-  --color-foreground-subtle: 203 213 225; /* slate-300 */
+  /* Primary (Sage/Teal - lighter for dark mode) */
+  --color-primary: 93 184 167;           /* #5DB8A7 */
+  --color-primary-hover: 111 196 181;    /* #6FC4B5 */
+  --color-primary-subtle: 26 47 43;      /* #1A2F2B */
 
-  /* Background colors */
-  --color-background: 15 23 42;          /* slate-900 */
-  --color-surface: 30 41 59;             /* slate-800 */
-  --color-surface-raised: 51 65 85;      /* slate-700 */
+  /* Text colors */
+  --color-foreground: 245 245 243;       /* #F5F5F3 */
+  --color-foreground-muted: 163 163 158; /* #A3A39E */
+  --color-foreground-subtle: 107 107 102; /* #6B6B66 */
+
+  /* Background colors (Dark warm) */
+  --color-background: 28 28 26;          /* #1C1C1A */
+  --color-surface: 37 37 35;             /* #252523 */
+  --color-surface-raised: 46 46 43;      /* #2E2E2B */
 
   /* Border colors */
-  --color-border: 51 65 85;              /* slate-700 */
-  --color-border-muted: 71 85 105;       /* slate-600 */
+  --color-border: 58 58 54;              /* #3A3A36 */
+  --color-border-muted: 71 85 105;       /* slate-600 for compatibility */
 }
 
 @tailwind base;
@@ -46,7 +56,16 @@
   }
 
   .text-label {
-    @apply text-foreground-muted text-xs font-medium uppercase;
+    @apply text-foreground-muted text-xs font-medium uppercase tracking-wide;
+  }
+
+  /* Typography presets */
+  .font-display {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Source Sans 3', system-ui, sans-serif;
   }
 }
 
@@ -61,20 +80,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #E5E4E1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9C9C96;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #3A3A36;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #6B6B66;
 }
 
 /* Smooth transitions for theme changes */
