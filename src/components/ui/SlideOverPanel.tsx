@@ -8,7 +8,7 @@ interface SlideOverPanelProps {
   title?: string;
   children: ReactNode;
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
 export function SlideOverPanel({
@@ -53,6 +53,7 @@ export function SlideOverPanel({
             'w-full max-w-md': size === 'md',
             'w-full max-w-lg': size === 'lg',
             'w-[60%] max-w-4xl': size === 'xl',
+            'w-full': size === 'full',
           },
           className
         )}

@@ -37,7 +37,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
       <SlideOverPanel
         isOpen={true}
         onClose={handleClose}
-        size="xl"
+        size="full"
       >
         {/* Custom Header */}
         <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface sticky top-0 z-10">
