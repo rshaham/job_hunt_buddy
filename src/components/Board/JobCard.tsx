@@ -1,6 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
 import type { Job } from '../../types';
 import { Badge } from '../ui';
 import { formatTimeAgo, getJobTypeIcon, getGradeColor } from '../../utils/helpers';
@@ -33,10 +32,13 @@ export function JobCard({ job, onClick }: JobCardProps) {
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
         'relative bg-surface rounded-card border border-border p-4',
         'hover:shadow-card-hover hover:border-primary/30',
-        'transition-all duration-fast ease-out cursor-pointer group',
+        'transition-all duration-fast ease-out',
+        'cursor-pointer active:cursor-grabbing',
         isDragging && 'opacity-50 rotate-2 shadow-lg'
       )}
       onClick={onClick}
@@ -77,20 +79,6 @@ export function JobCard({ job, onClick }: JobCardProps) {
             {job.summary.salary}
           </span>
         )}
-      </div>
-
-      {/* Drag Handle - 6 dots pattern, left edge */}
-      <div
-        {...attributes}
-        {...listeners}
-        className={cn(
-          'absolute left-1 top-1/2 -translate-y-1/2 p-1',
-          'opacity-0 group-hover:opacity-100 transition-opacity duration-fast',
-          'cursor-grab active:cursor-grabbing'
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <GripVertical className="w-4 h-4 text-foreground-subtle" />
       </div>
     </div>
   );
