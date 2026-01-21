@@ -150,16 +150,7 @@ export function BoardView() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border">
-        <div className="flex items-center gap-3">
-          <h1 className="font-display text-display text-foreground">
-            Your Jobs
-          </h1>
-          <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
-            beta
-          </span>
-        </div>
-
+      <header className="flex items-center justify-end px-6 py-4 bg-surface border-b border-border">
         <div className="flex items-center gap-2">
           <Button onClick={openAddJobModal} size="sm">
             <Plus className="w-4 h-4 mr-1" />
