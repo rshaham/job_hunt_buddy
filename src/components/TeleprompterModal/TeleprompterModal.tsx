@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Play, ChevronDown } from 'lucide-react';
+import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
 import { generateRealtimeTeleprompterKeywords } from '../../services/ai';
-import type { Job, TeleprompterInterviewType, CustomInterviewType } from '../../types';
+import type { Job, TeleprompterInterviewType, CustomInterviewType, TeleprompterRoundupItem } from '../../types';
 import { TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../../types';
 
 type ModalState = 'setup' | 'active' | 'roundup';
@@ -481,15 +481,173 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
   );
 }
 
-function RoundupScreen({ onComplete }: { onComplete: () => void }) {
+interface RoundupScreenProps {
+  onComplete: () => void;
+}
+
+function RoundupScreen({ onComplete }: RoundupScreenProps) {
+  const {
+    endTeleprompterSession,
+    saveTeleprompterFeedback,
+    saveCustomInterviewType,
+    teleprompterSession,
+  } = useAppStore();
+
+  const [roundupItems, setRoundupItems] = useState<TeleprompterRoundupItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [askSaveCustomType, setAskSaveCustomType] = useState(false);
+
+  // Load roundup items on mount
+  useEffect(() => {
+    const loadRoundup = async () => {
+      const items = await endTeleprompterSession();
+      setRoundupItems(items);
+
+      // Check if custom type should be saved
+      if (teleprompterSession?.interviewType === 'custom' && teleprompterSession.customInterviewType) {
+        setAskSaveCustomType(true);
+      }
+    };
+    loadRoundup();
+  }, [endTeleprompterSession, teleprompterSession]);
+
+  const toggleHelpful = useCallback((index: number, helpful: boolean) => {
+    setRoundupItems(items => items.map((item, i) =>
+      i === index ? { ...item, helpful: item.helpful === helpful ? undefined : helpful } : item
+    ));
+  }, []);
+
+  const toggleSaveToProfile = useCallback((index: number) => {
+    setRoundupItems(items => items.map((item, i) =>
+      i === index ? { ...item, saveToProfile: !item.saveToProfile } : item
+    ));
+  }, []);
+
+  const handleComplete = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await saveTeleprompterFeedback(roundupItems);
+      onComplete();
+    } finally {
+      setIsSaving(false);
+    }
+  }, [roundupItems, saveTeleprompterFeedback, onComplete]);
+
+  const handleSaveCustomType = useCallback(async () => {
+    if (teleprompterSession?.customInterviewType) {
+      await saveCustomInterviewType(teleprompterSession.customInterviewType);
+    }
+    setAskSaveCustomType(false);
+  }, [teleprompterSession, saveCustomInterviewType]);
+
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <p className="text-xl text-foreground-muted mb-4">Roundup Screen - Coming in Task 8</p>
+    <div className="max-w-2xl mx-auto">
+      <div className="text-center mb-6">
+        <h3 className="text-3xl font-bold text-foreground mb-2">
+          Interview Complete!
+        </h3>
+        <p className="text-lg text-foreground-muted">
+          Review which keywords helped you. This feedback improves future suggestions.
+        </p>
+      </div>
+
+      {/* Custom type save prompt */}
+      {askSaveCustomType && (
+        <div className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-between">
+          <p className="text-foreground">
+            Save "{teleprompterSession?.customInterviewType}" as a custom interview type?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAskSaveCustomType(false)}
+              className="px-3 py-1 text-foreground-muted hover:text-foreground"
+            >
+              No
+            </button>
+            <button
+              onClick={handleSaveCustomType}
+              className="px-3 py-1 bg-primary text-white rounded hover:bg-primary/90"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Roundup items */}
+      <div className="space-y-3 mb-6">
+        {roundupItems.length === 0 ? (
+          <p className="text-center text-foreground-muted py-8">
+            No keywords were displayed during this interview.
+          </p>
+        ) : (
+          roundupItems.map((item, index) => (
+            <div
+              key={item.keyword.id}
+              className="flex items-center gap-4 p-4 bg-surface-raised rounded-lg border border-border"
+            >
+              <div className="flex-1">
+                <p className="text-xl font-medium text-foreground">
+                  {item.keyword.text}
+                </p>
+                <p className="text-sm text-foreground-muted">
+                  {item.categoryName}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Helpful buttons */}
+                <button
+                  onClick={() => toggleHelpful(index, true)}
+                  className={cn(
+                    'p-2 rounded-lg transition-colors',
+                    item.helpful === true
+                      ? 'bg-green-500 text-white'
+                      : 'bg-surface hover:bg-green-100 dark:hover:bg-green-900/30 text-foreground-muted'
+                  )}
+                  title="Helpful"
+                >
+                  <ThumbsUp className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => toggleHelpful(index, false)}
+                  className={cn(
+                    'p-2 rounded-lg transition-colors',
+                    item.helpful === false
+                      ? 'bg-red-500 text-white'
+                      : 'bg-surface hover:bg-red-100 dark:hover:bg-red-900/30 text-foreground-muted'
+                  )}
+                  title="Not helpful"
+                >
+                  <ThumbsDown className="w-5 h-5" />
+                </button>
+
+                {/* Save to profile */}
+                <button
+                  onClick={() => toggleSaveToProfile(index)}
+                  className={cn(
+                    'p-2 rounded-lg transition-colors',
+                    item.saveToProfile
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-surface hover:bg-amber-100 dark:hover:bg-amber-900/30 text-foreground-muted'
+                  )}
+                  title="Save to profile"
+                >
+                  <Bookmark className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Done button */}
       <button
-        onClick={onComplete}
-        className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+        onClick={handleComplete}
+        disabled={isSaving}
+        className="w-full py-4 text-xl font-bold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
       >
-        Complete (placeholder)
+        {isSaving ? 'Saving...' : 'Done'}
       </button>
     </div>
   );
