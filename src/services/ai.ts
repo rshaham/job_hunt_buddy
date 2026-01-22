@@ -20,6 +20,8 @@ import {
   LEARNING_TASK_CATEGORY_DETECTION_PROMPT,
   LEARNING_TASK_PREP_PROMPTS,
   LEARNING_TASK_PREP_SUMMARY_PROMPT,
+  TELEPROMPTER_INITIAL_KEYWORDS_PROMPT,
+  TELEPROMPTER_REALTIME_ASSIST_PROMPT,
 } from '../utils/prompts';
 import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
@@ -1260,4 +1262,60 @@ export async function summarizePrepSession(
     question: (parsed.question as string) || `${task.skill} - ${task.description}`,
     answer: (parsed.answer as string) || 'Preparation session notes',
   };
+}
+
+// ============================================================================
+// Teleprompter Functions
+// ============================================================================
+
+/**
+ * Generate initial keywords for the teleprompter based on interview context.
+ * Returns keywords organized by category to help the user during their interview.
+ */
+export async function generateTeleprompterKeywords(
+  interviewType: string,
+  job: Job | null,
+  categories: Array<{ id: string; name: string }>,
+  userSkills: string[],
+  userStories: Array<{ question: string; answer: string }>
+): Promise<Array<{ categoryId: string; keywords: string[] }>> {
+  const prompt = TELEPROMPTER_INITIAL_KEYWORDS_PROMPT
+    .replace('{interviewType}', interviewType)
+    .replace('{company}', job?.company || 'Unknown Company')
+    .replace('{title}', job?.title || 'Unknown Role')
+    .replace('{requirements}', job?.summary?.requirements?.join(', ') || 'Not specified')
+    .replace('{userSkills}', userSkills.join(', ') || 'Not provided')
+    .replace('{userStories}', userStories.map(s => `${s.question}: ${s.answer}`).join('\n') || 'Not provided')
+    .replace('{categories}', categories.map(c => `- ${c.name} (id: ${c.id})`).join('\n'));
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+  return parsed.categories || [];
+}
+
+/**
+ * Generate real-time keyword suggestions based on user input during an interview.
+ * Returns new keywords that aren't already displayed to help the user recall relevant points.
+ */
+export async function generateRealtimeTeleprompterKeywords(
+  userInput: string,
+  interviewType: string,
+  company: string,
+  currentKeywords: string[],
+  userBackground: string,
+  categoryIds: string[]
+): Promise<Array<{ text: string; categoryId: string }>> {
+  const prompt = TELEPROMPTER_REALTIME_ASSIST_PROMPT
+    .replace('{interviewType}', interviewType)
+    .replace('{company}', company)
+    .replace('{userInput}', userInput)
+    .replace('{currentKeywords}', currentKeywords.join(', ') || 'None')
+    .replace('{userBackground}', userBackground)
+    .replace('{categoryIds}', categoryIds.join(', '));
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+  return parsed.keywords || [];
 }
