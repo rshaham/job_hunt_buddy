@@ -77,6 +77,7 @@ interface AppState {
   isBatchScannerModalOpen: boolean;
   isRejectionModalOpen: boolean;
   isOfferModalOpen: boolean;
+  isProfileHubOpen: boolean;
   pendingStatusChange: { jobId: string; newStatus: string } | null;
 
   // Career Coach State
@@ -148,6 +149,8 @@ interface AppState {
   closeRejectionModal: () => void;
   openOfferModal: () => void;
   closeOfferModal: () => void;
+  openProfileHub: () => void;
+  closeProfileHub: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -187,6 +190,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isBatchScannerModalOpen: false,
   isRejectionModalOpen: false,
   isOfferModalOpen: false,
+  isProfileHubOpen: false,
   pendingStatusChange: null,
   careerCoachState: { history: [] },
 
@@ -636,6 +640,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeRejectionModal: () => set({ isRejectionModalOpen: false, pendingStatusChange: null }),
   openOfferModal: () => set({ isOfferModalOpen: true }),
   closeOfferModal: () => set({ isOfferModalOpen: false, pendingStatusChange: null }),
+  openProfileHub: () => set({ isProfileHubOpen: true }),
+  closeProfileHub: () => set({ isProfileHubOpen: false }),
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {
