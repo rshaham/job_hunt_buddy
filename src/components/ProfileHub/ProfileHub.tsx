@@ -9,6 +9,7 @@ import { ResumeSection } from './ResumeSection';
 import { DocumentsSection } from './DocumentsSection';
 import { AboutMeSection } from './AboutMeSection';
 import { SkillsSection } from './SkillsSection';
+import { QuizSection } from './QuizSection';
 import type { SavedStory } from '../../types';
 
 type ProfileSection = 'resume' | 'stories' | 'documents' | 'about' | 'skills' | 'quiz';
@@ -132,7 +133,7 @@ export function ProfileHub(): JSX.Element | null {
             {activeSection === 'documents' && <DocumentsSection />}
             {activeSection === 'about' && <AboutMeSection />}
             {activeSection === 'skills' && <SkillsSection />}
-            {activeSection === 'quiz' && <div>AI Quiz Section (TODO)</div>}
+            {activeSection === 'quiz' && <QuizSection />}
           </div>
         </div>
       </div>
