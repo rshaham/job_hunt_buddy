@@ -10,6 +10,7 @@ import {
   REFINE_COVER_LETTER_PROMPT,
   CONVERT_RESUME_TO_MARKDOWN_PROMPT,
   REWRITE_FOR_MEMORY_PROMPT,
+  EXTRACT_STORY_METADATA_PROMPT,
   INTERVIEWER_ANALYSIS_PROMPT,
   EMAIL_DRAFT_PROMPT,
   REFINE_EMAIL_PROMPT,
@@ -24,6 +25,9 @@ import {
   TELEPROMPTER_REALTIME_ASSIST_PROMPT,
   TELEPROMPTER_SEMANTIC_KEYWORDS_PROMPT,
   TELEPROMPTER_FLAT_INITIAL_KEYWORDS_PROMPT,
+  CONFIDENCE_CHECK_PROMPT,
+  GAP_FINDER_PROMPT,
+  BEHAVIORAL_CATEGORIES,
 } from '../utils/prompts';
 import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
@@ -505,14 +509,66 @@ export async function convertResumeToMarkdown(plainText: string): Promise<string
   return markdown.trim();
 }
 
+// Convert plain text document to markdown format
+export async function convertDocumentToMarkdown(plainText: string, documentName: string): Promise<string> {
+  const prompt = `Convert this document text to well-structured markdown format.
+
+Document name: ${documentName}
+Document text (extracted from PDF):
+${plainText}
+
+Rules:
+- Use # for the document title or main heading
+- Use ## for major sections
+- Use ### for subsections
+- Use **bold** for important terms, names, dates
+- Use bullet points (-) for lists
+- Preserve ALL original content - do not add or remove any information
+- Clean up any formatting artifacts from PDF extraction (extra spaces, broken lines, etc.)
+- Maintain logical section ordering
+- If this appears to be a performance review, preserve the review structure
+- If this appears to be a project document, preserve the project structure
+
+Return ONLY the markdown-formatted document. No explanations, no code blocks, no extra text.`;
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+
+  // Clean up response - remove any markdown code blocks if present
+  let markdown = response.trim();
+  if (markdown.startsWith('```markdown')) {
+    markdown = markdown.slice(11);
+  } else if (markdown.startsWith('```')) {
+    markdown = markdown.slice(3);
+  }
+  if (markdown.endsWith('```')) {
+    markdown = markdown.slice(0, -3);
+  }
+
+  return markdown.trim();
+}
+
 // Rewrite Q&A into a clean, reusable memory for profile
 export async function rewriteForMemory(
   originalQuestion: string,
-  originalAnswer: string
-): Promise<{ question: string; answer: string }> {
+  originalAnswer: string,
+  jobContext?: { company?: string; title?: string }
+): Promise<{
+  question: string;
+  answer: string;
+  company?: string;
+  role?: string;
+  timeframe?: string;
+  outcome?: string;
+  skills?: string[];
+}> {
+  const jobContextStr = jobContext
+    ? `Company: ${jobContext.company || 'Unknown'}, Role: ${jobContext.title || 'Unknown'}`
+    : 'None';
+
   const prompt = REWRITE_FOR_MEMORY_PROMPT
     .replace('{question}', originalQuestion)
-    .replace('{answer}', originalAnswer);
+    .replace('{answer}', originalAnswer)
+    .replace('{jobContext}', jobContextStr);
 
   const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
@@ -528,7 +584,35 @@ export async function rewriteForMemory(
   return {
     question: (parsed.question as string) || originalQuestion,
     answer: (parsed.answer as string) || originalAnswer,
+    company: parsed.company as string | undefined,
+    role: parsed.role as string | undefined,
+    timeframe: parsed.timeframe as string | undefined,
+    outcome: parsed.outcome as string | undefined,
+    skills: Array.isArray(parsed.skills) ? (parsed.skills as string[]) : undefined,
   };
+}
+
+// Extract story metadata using AI
+export async function extractStoryMetadata(rawText: string): Promise<{
+  question?: string;
+  answer?: string;
+  company?: string;
+  role?: string;
+  timeframe?: string;
+  outcome?: string;
+  skills?: string[];
+}> {
+  const prompt = EXTRACT_STORY_METADATA_PROMPT.replace('{rawText}', rawText);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+
+  try {
+    const cleanedJson = extractJSON(response);
+    return JSON.parse(cleanedJson);
+  } catch (error) {
+    console.error('Failed to parse story metadata:', error);
+    return { answer: rawText };
+  }
 }
 
 // Analyze interviewer profile for interview prep
@@ -1371,3 +1455,195 @@ export async function generateFlatInitialTeleprompterKeywords(
   const parsed = JSON.parse(jsonStr);
   return parsed.keywords || [];
 }
+
+// ============================================================================
+// Quiz Feature Functions (Confidence Check & Gap Finder)
+// ============================================================================
+
+export interface ConfidenceCheckResult {
+  answer: string;
+  sources: string[];
+  confidence: number;
+  missingInfo: string | null;
+}
+
+/**
+ * Answer a confidence check question using all available profile context.
+ * Tests if AI can accurately recall user's experiences.
+ */
+export async function answerConfidenceQuestion(
+  question: string
+): Promise<ConfidenceCheckResult> {
+  const { settings } = useAppStore.getState();
+
+  // Build context from all available sources
+  const resumeText = settings.defaultResumeText || 'No resume provided';
+  const additionalContext = settings.additionalContext || 'None provided';
+
+  // Format saved stories
+  const savedStories = settings.savedStories?.length
+    ? settings.savedStories
+        .map(s => {
+          let storyText = `Story ID: ${s.id}\nQuestion: ${s.question}\nAnswer: ${s.answer}`;
+          if (s.company) storyText += `\nCompany: ${s.company}`;
+          if (s.role) storyText += `\nRole: ${s.role}`;
+          if (s.timeframe) storyText += `\nTimeframe: ${s.timeframe}`;
+          if (s.outcome) storyText += `\nOutcome: ${s.outcome}`;
+          if (s.skills?.length) storyText += `\nSkills: ${s.skills.join(', ')}`;
+          return storyText;
+        })
+        .join('\n\n---\n\n')
+    : 'No saved stories';
+
+  // Format context documents
+  const contextDocuments = settings.contextDocuments?.length
+    ? settings.contextDocuments
+        .map(doc => {
+          const content = (doc.useSummary && doc.summary) ? doc.summary : doc.fullText;
+          return `Document: ${doc.name}\n${content}`;
+        })
+        .join('\n\n---\n\n')
+    : 'No context documents';
+
+  const prompt = CONFIDENCE_CHECK_PROMPT
+    .replace('{resumeText}', resumeText)
+    .replace('{additionalContext}', additionalContext)
+    .replace('{savedStories}', savedStories)
+    .replace('{contextDocuments}', contextDocuments)
+    .replace('{question}', question);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse confidence check response:', { response, jsonStr, error: e });
+    return {
+      answer: response,
+      sources: [],
+      confidence: 50,
+      missingInfo: null,
+    };
+  }
+
+  return {
+    answer: (parsed.answer as string) || response,
+    sources: (parsed.sources as string[]) || [],
+    confidence: (parsed.confidence as number) || 50,
+    missingInfo: (parsed.missingInfo as string | null) || null,
+  };
+}
+
+export interface BehavioralCategory {
+  id: string;
+  label: string;
+  examples: string[];
+}
+
+export interface CategoryCoverage {
+  id: string;
+  label: string;
+  covered: boolean;
+  storyCount: number;
+  storyIds: string[];
+}
+
+export interface StoryGapAnalysis {
+  categories: CategoryCoverage[];
+  suggestions: string[];
+  overallCoverage: number;
+  storyAnalysis: Array<{
+    storyId: string;
+    categories: string[];
+    primaryCategory: string;
+    reasoning: string;
+  }>;
+}
+
+/**
+ * Analyze saved stories to find gaps in behavioral interview category coverage.
+ */
+export async function analyzeStoryGaps(
+  stories: Array<{ id: string; question: string; answer: string; company?: string; skills?: string[] }>
+): Promise<StoryGapAnalysis> {
+  // If no stories, return all categories as gaps
+  if (!stories.length) {
+    return {
+      categories: BEHAVIORAL_CATEGORIES.map(cat => ({
+        id: cat.id,
+        label: cat.label,
+        covered: false,
+        storyCount: 0,
+        storyIds: [],
+      })),
+      suggestions: [
+        'Start by adding a story about a time you led a project or team.',
+        'Think of a challenge you overcame - failures and lessons learned make great stories.',
+        'Consider adding stories about collaboration, working under pressure, and problem-solving.',
+      ],
+      overallCoverage: 0,
+      storyAnalysis: [],
+    };
+  }
+
+  // Format stories for the prompt
+  const storiesText = stories
+    .map(s => {
+      let text = `ID: ${s.id}\nQuestion: ${s.question}\nAnswer: ${s.answer}`;
+      if (s.company) text += `\nCompany: ${s.company}`;
+      if (s.skills?.length) text += `\nSkills: ${s.skills.join(', ')}`;
+      return text;
+    })
+    .join('\n\n---\n\n');
+
+  const prompt = GAP_FINDER_PROMPT.replace('{stories}', storiesText);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse gap analysis response:', { response, jsonStr, error: e });
+    // Return a basic analysis
+    return {
+      categories: BEHAVIORAL_CATEGORIES.map(cat => ({
+        id: cat.id,
+        label: cat.label,
+        covered: false,
+        storyCount: 0,
+        storyIds: [],
+      })),
+      suggestions: ['Could not analyze stories. Please try again.'],
+      overallCoverage: 0,
+      storyAnalysis: [],
+    };
+  }
+
+  // Parse category coverage
+  const categoryCoverage = parsed.categoryCoverage as Record<string, { covered: boolean; storyCount: number; storyIds: string[] }> || {};
+
+  const categories: CategoryCoverage[] = BEHAVIORAL_CATEGORIES.map(cat => {
+    const coverage = categoryCoverage[cat.id];
+    return {
+      id: cat.id,
+      label: cat.label,
+      covered: coverage?.covered || false,
+      storyCount: coverage?.storyCount || 0,
+      storyIds: coverage?.storyIds || [],
+    };
+  });
+
+  return {
+    categories,
+    suggestions: (parsed.suggestions as string[]) || [],
+    overallCoverage: (parsed.overallCoverage as number) || 0,
+    storyAnalysis: (parsed.storyAnalysis as StoryGapAnalysis['storyAnalysis']) || [],
+  };
+}
+
+// Re-export behavioral categories for use in UI
+export { BEHAVIORAL_CATEGORIES };

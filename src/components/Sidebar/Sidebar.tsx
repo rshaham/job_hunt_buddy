@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutGrid, Compass, Sparkles, Settings, Sun, Moon, HelpCircle, Radio } from 'lucide-react';
+import { LayoutGrid, Compass, Sparkles, Settings, Sun, Moon, HelpCircle, Radio, User } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
 
@@ -23,6 +23,7 @@ export function Sidebar() {
     openFeatureGuideModal,
     openPrivacyModal,
     openTeleprompterModal,
+    openProfileHub,
   } = useAppStore();
 
   const mainItems: SidebarItem[] = [
@@ -30,6 +31,7 @@ export function Sidebar() {
     { id: 'find', icon: Compass, label: 'Find Jobs', onClick: openJobFinderModal },
     { id: 'coach', icon: Sparkles, label: 'Coach', onClick: openCareerCoachModal },
     { id: 'teleprompter', icon: Radio, label: 'Teleprompter', onClick: () => openTeleprompterModal() },
+    { id: 'profile', icon: User, label: 'My Profile', onClick: openProfileHub },
     { id: 'settings', icon: Settings, label: 'Settings', onClick: openSettingsModal },
   ];
 
