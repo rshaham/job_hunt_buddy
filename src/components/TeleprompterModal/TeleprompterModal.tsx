@@ -328,18 +328,27 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Top bar with job info and end button */}
-      <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
-        <div>
-          <h3 className="text-2xl font-bold text-foreground">
+      {/* Top bar with job info and controls */}
+      <div className="pb-4 border-b border-border mb-4 space-y-2">
+        {/* Row 1: Title + End button */}
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-2xl font-bold text-foreground min-w-0 break-words">
             {job ? `${job.company} - ${job.title}` : 'Interview Mode'}
           </h3>
+          <button
+            onClick={() => setShowEndConfirm(true)}
+            className="flex-shrink-0 px-6 py-3 text-lg font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            End Interview
+          </button>
+        </div>
+
+        {/* Row 2: Interview type + View toggle */}
+        <div className="flex items-center justify-between">
           <p className="text-lg text-foreground-muted">
             {TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType]}
             {teleprompterSession.customInterviewType && `: ${teleprompterSession.customInterviewType}`}
           </p>
-        </div>
-        <div className="flex items-center gap-4">
           {/* View mode toggle */}
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button
@@ -365,12 +374,6 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
               Flat
             </button>
           </div>
-          <button
-            onClick={() => setShowEndConfirm(true)}
-            className="px-6 py-3 text-lg font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-          >
-            End Interview
-          </button>
         </div>
       </div>
 
