@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
+import { saveSession, getCustomInterviewTypes, saveCustomInterviewType as saveCustomInterviewTypeDB, saveFeedbackBatch } from '../services/db';
 import { generateId } from '../utils/helpers';
 import { useEmbeddingStore } from '../services/embeddings';
 import { useCommandBarStore } from './commandBarStore';
@@ -56,6 +57,32 @@ function triggerJobEmbeddingRemoval(jobId: string): void {
   }, 0);
 }
 
+// ============================================================================
+// Teleprompter Helper Function
+// ============================================================================
+
+function getCategoriesForInterviewType(interviewType: TeleprompterInterviewType): TeleprompterCategory[] {
+  const categoryMap: Record<TeleprompterInterviewType, string[]> = {
+    phone_screen: ['Company Research', 'Role Fit', 'Questions to Ask', 'Salary Expectations'],
+    behavioral: ['Leadership', 'Problem-Solving', 'Collaboration', 'Conflict Resolution', 'Growth Mindset'],
+    technical: ['Architecture', 'Problem-Solving', 'Technical Decisions', 'Trade-offs', 'Metrics'],
+    case_study: ['Framework', 'Assumptions', 'Analysis', 'Recommendations'],
+    panel: ['Key Stakeholders', 'Department Focus', 'Cross-functional', 'Questions'],
+    hiring_manager: ['Team Dynamics', 'Expectations', 'Growth Path', 'Working Style'],
+    culture_fit: ['Values', 'Work Environment', 'Team Collaboration', 'Company Mission'],
+    final_round: ['Key Differentiators', 'Closing Points', 'Questions', 'Next Steps'],
+    custom: ['General', 'Key Points', 'Questions'],
+  };
+
+  const categoryNames = categoryMap[interviewType] || categoryMap.custom;
+  return categoryNames.map(name => ({
+    id: crypto.randomUUID(),
+    name,
+    keywords: [],
+    isExpanded: true,
+  }));
+}
+
 interface AppState {
   // Jobs
   jobs: Job[];
@@ -81,6 +108,12 @@ interface AppState {
 
   // Career Coach State
   careerCoachState: CareerCoachState;
+
+  // Teleprompter state
+  isTeleprompterModalOpen: boolean;
+  teleprompterSession: TeleprompterSession | null;
+  teleprompterPreSelectedJobId: string | null;
+  customInterviewTypes: CustomInterviewType[];
 
   // Actions
   loadData: () => Promise<void>;
@@ -149,6 +182,20 @@ interface AppState {
   openOfferModal: () => void;
   closeOfferModal: () => void;
 
+  // Teleprompter actions
+  openTeleprompterModal: (jobId?: string) => void;
+  closeTeleprompterModal: () => void;
+  startTeleprompterSession: (jobId: string | null, interviewType: TeleprompterInterviewType, customType?: string) => Promise<void>;
+  endTeleprompterSession: () => Promise<TeleprompterRoundupItem[]>;
+  promoteKeywordFromStaging: (keywordId: string, categoryId: string) => void;
+  dismissStagingKeyword: (keywordId: string) => void;
+  dismissDisplayedKeyword: (categoryId: string, keywordId: string) => void;
+  addKeywordsFromAI: (keywords: Array<{ text: string; categoryId: string }>) => void;
+  toggleCategory: (categoryId: string) => void;
+  saveTeleprompterFeedback: (items: TeleprompterRoundupItem[]) => Promise<void>;
+  loadCustomInterviewTypes: () => Promise<void>;
+  saveCustomInterviewType: (name: string) => Promise<void>;
+
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
   clearCareerCoachHistory: () => void;
@@ -189,6 +236,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   isOfferModalOpen: false,
   pendingStatusChange: null,
   careerCoachState: { history: [] },
+  isTeleprompterModalOpen: false,
+  teleprompterSession: null,
+  teleprompterPreSelectedJobId: null,
+  customInterviewTypes: [],
 
   // Load initial data
   loadData: async () => {
@@ -636,6 +687,211 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeRejectionModal: () => set({ isRejectionModalOpen: false, pendingStatusChange: null }),
   openOfferModal: () => set({ isOfferModalOpen: true }),
   closeOfferModal: () => set({ isOfferModalOpen: false, pendingStatusChange: null }),
+
+  // Teleprompter actions
+  openTeleprompterModal: (jobId?: string) => set({
+    isTeleprompterModalOpen: true,
+    teleprompterPreSelectedJobId: jobId || null,
+  }),
+
+  closeTeleprompterModal: () => set({
+    isTeleprompterModalOpen: false,
+    teleprompterPreSelectedJobId: null,
+  }),
+
+  startTeleprompterSession: async (jobId, interviewType, customType) => {
+    const session: TeleprompterSession = {
+      id: crypto.randomUUID(),
+      jobId,
+      interviewType,
+      customInterviewType: customType,
+      categories: getCategoriesForInterviewType(interviewType),
+      stagingKeywords: [],
+      dismissedKeywordIds: [],
+      startedAt: new Date(),
+      isActive: true,
+    };
+    await saveSession(session);
+    set({ teleprompterSession: session });
+  },
+
+  endTeleprompterSession: async () => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return [];
+
+    // Collect all displayed keywords for roundup
+    const roundupItems: TeleprompterRoundupItem[] = [];
+    for (const category of teleprompterSession.categories) {
+      for (const keyword of category.keywords.filter(k => !k.inStaging)) {
+        roundupItems.push({
+          keyword,
+          categoryName: category.name,
+        });
+      }
+    }
+
+    // Mark session as inactive
+    const updatedSession = { ...teleprompterSession, isActive: false };
+    await saveSession(updatedSession);
+
+    return roundupItems;
+  },
+
+  promoteKeywordFromStaging: (keywordId, categoryId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const keyword = teleprompterSession.stagingKeywords.find(k => k.id === keywordId);
+    if (!keyword) return;
+
+    const promotedKeyword = { ...keyword, inStaging: false };
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, keywords: [...cat.keywords, promotedKeyword] };
+      }
+      return cat;
+    });
+
+    const updatedSession = {
+      ...teleprompterSession,
+      categories: updatedCategories,
+      stagingKeywords: teleprompterSession.stagingKeywords.filter(k => k.id !== keywordId),
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  dismissStagingKeyword: (keywordId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedSession = {
+      ...teleprompterSession,
+      stagingKeywords: teleprompterSession.stagingKeywords.filter(k => k.id !== keywordId),
+      dismissedKeywordIds: [...teleprompterSession.dismissedKeywordIds, keywordId],
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  dismissDisplayedKeyword: (categoryId, keywordId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, keywords: cat.keywords.filter(k => k.id !== keywordId) };
+      }
+      return cat;
+    });
+
+    const updatedSession = {
+      ...teleprompterSession,
+      categories: updatedCategories,
+      dismissedKeywordIds: [...teleprompterSession.dismissedKeywordIds, keywordId],
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  addKeywordsFromAI: (keywords) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    // Add directly to categories (real-time AI assist goes straight to display)
+    const updatedCategories = [...teleprompterSession.categories];
+    for (const { text, categoryId } of keywords) {
+      const catIndex = updatedCategories.findIndex(c => c.id === categoryId);
+      if (catIndex >= 0) {
+        const newKeyword: TeleprompterKeyword = {
+          id: crypto.randomUUID(),
+          text,
+          source: 'ai-realtime',
+          inStaging: false,
+        };
+        updatedCategories[catIndex] = {
+          ...updatedCategories[catIndex],
+          keywords: [...updatedCategories[catIndex].keywords, newKeyword],
+        };
+      }
+    }
+
+    const updatedSession = { ...teleprompterSession, categories: updatedCategories };
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  toggleCategory: (categoryId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, isExpanded: !cat.isExpanded };
+      }
+      return cat;
+    });
+
+    const updatedSession = { ...teleprompterSession, categories: updatedCategories };
+    set({ teleprompterSession: updatedSession });
+  },
+
+  saveTeleprompterFeedback: async (items) => {
+    const { teleprompterSession, settings } = get();
+    if (!teleprompterSession) return;
+
+    const feedbackRecords: TeleprompterFeedback[] = items
+      .filter(item => item.helpful !== undefined)
+      .map(item => ({
+        id: crypto.randomUUID(),
+        sessionId: teleprompterSession.id,
+        interviewType: teleprompterSession.interviewType,
+        keywordText: item.keyword.text,
+        helpful: item.helpful!,
+        savedToProfile: item.saveToProfile || false,
+        timestamp: new Date(),
+      }));
+
+    await saveFeedbackBatch(feedbackRecords);
+
+    // Save keywords marked for profile to savedStories
+    const storiesToAdd = items
+      .filter(item => item.saveToProfile)
+      .map(item => ({
+        id: crypto.randomUUID(),
+        question: item.categoryName,
+        answer: item.keyword.text,
+        category: teleprompterSession.interviewType,
+        createdAt: new Date(),
+      }));
+
+    if (storiesToAdd.length > 0) {
+      const updatedStories = [...(settings.savedStories || []), ...storiesToAdd];
+      await get().updateSettings({ savedStories: updatedStories });
+    }
+
+    // Clear session
+    set({ teleprompterSession: null });
+  },
+
+  loadCustomInterviewTypes: async () => {
+    const types = await getCustomInterviewTypes();
+    set({ customInterviewTypes: types });
+  },
+
+  saveCustomInterviewType: async (name) => {
+    const newType: CustomInterviewType = {
+      id: crypto.randomUUID(),
+      name,
+      createdAt: new Date(),
+    };
+    await saveCustomInterviewTypeDB(newType);
+    const { customInterviewTypes } = get();
+    set({ customInterviewTypes: [...customInterviewTypes, newType] });
+  },
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {
