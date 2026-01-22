@@ -10,6 +10,7 @@ import { PrepTab } from './PrepTab';
 import { NotesTab } from './NotesTab';
 import { ContactsEventsTab } from './ContactsEventsTab';
 import { LearningTasksTab } from './LearningTasksTab';
+import { InterviewsTab } from './InterviewsTab';
 import type { Job } from '../../types';
 
 interface JobDetailViewProps {
@@ -17,11 +18,11 @@ interface JobDetailViewProps {
 }
 
 export function JobDetailView({ job }: JobDetailViewProps) {
-  const { selectJob, updateJob, deleteJob, settings } = useAppStore();
+  const { selectJob, deleteJob, settings, initiateStatusChange } = useAppStore();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const handleStatusChange = async (newStatus: string) => {
-    await updateJob(job.id, { status: newStatus });
+  const handleStatusChange = (newStatus: string) => {
+    initiateStatusChange(job.id, newStatus);
   };
 
   const handleDelete = async () => {
@@ -87,6 +88,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
                 <TabsTrigger value="cover">Cover Letter</TabsTrigger>
                 <TabsTrigger value="emails">Emails</TabsTrigger>
                 <TabsTrigger value="prep">Prep & Q&A</TabsTrigger>
+                <TabsTrigger value="interviews">Interviews</TabsTrigger>
                 <TabsTrigger value="learning">Learning</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts & Events</TabsTrigger>
@@ -108,6 +110,9 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               </TabsContent>
               <TabsContent value="prep">
                 <PrepTab job={job} />
+              </TabsContent>
+              <TabsContent value="interviews">
+                <InterviewsTab job={job} />
               </TabsContent>
               <TabsContent value="learning">
                 <LearningTasksTab job={job} />

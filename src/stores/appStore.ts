@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -75,6 +75,9 @@ interface AppState {
   isJobFinderModalOpen: boolean;
   jobFinderInitialTab: 'search' | 'batch';
   isBatchScannerModalOpen: boolean;
+  isRejectionModalOpen: boolean;
+  isOfferModalOpen: boolean;
+  pendingStatusChange: { jobId: string; newStatus: string } | null;
 
   // Career Coach State
   careerCoachState: CareerCoachState;
@@ -111,6 +114,19 @@ interface AppState {
   updatePrepSession: (jobId: string, taskId: string, sessionId: string, updates: Partial<LearningTaskPrepSession>) => Promise<void>;
   savePrepToMaterials: (jobId: string, taskId: string, sessionId: string, title: string, content: string) => Promise<void>;
 
+  // Interview round actions
+  addInterviewRound: (jobId: string, round: Omit<InterviewRound, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateInterviewRound: (jobId: string, roundId: string, updates: Partial<InterviewRound>) => Promise<void>;
+  deleteInterviewRound: (jobId: string, roundId: string) => Promise<void>;
+
+  // Status change flow (intercepts Rejected/Offer moves)
+  initiateStatusChange: (jobId: string, newStatus: string) => void;
+  confirmStatusChange: (rejectionDetails?: RejectionDetails, offerDetails?: OfferDetails) => Promise<void>;
+  cancelStatusChange: () => void;
+
+  // Source tracking
+  updateJobSource: (jobId: string, sourceInfo: SourceInfo) => Promise<void>;
+
   // UI actions
   openAddJobModal: () => void;
   closeAddJobModal: () => void;
@@ -128,6 +144,10 @@ interface AppState {
   closeJobFinderModal: () => void;
   openBatchScannerModal: () => void;
   closeBatchScannerModal: () => void;
+  openRejectionModal: () => void;
+  closeRejectionModal: () => void;
+  openOfferModal: () => void;
+  closeOfferModal: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -165,6 +185,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   isJobFinderModalOpen: false,
   jobFinderInitialTab: 'search',
   isBatchScannerModalOpen: false,
+  isRejectionModalOpen: false,
+  isOfferModalOpen: false,
+  pendingStatusChange: null,
   careerCoachState: { history: [] },
 
   // Load initial data
@@ -493,6 +516,105 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().updatePrepSession(jobId, taskId, sessionId, { savedToBank: true });
   },
 
+  // Interview round actions
+  addInterviewRound: async (jobId, round) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const newRound: InterviewRound = {
+      ...round,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const updatedInterviews = [...(job.interviews || []), newRound];
+    await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  updateInterviewRound: async (jobId, roundId, updates) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedInterviews = (job.interviews || []).map((round) =>
+      round.id === roundId ? { ...round, ...updates, updatedAt: new Date() } : round
+    );
+    await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  deleteInterviewRound: async (jobId, roundId) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedInterviews = (job.interviews || []).filter((round) => round.id !== roundId);
+    await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  // Status change flow
+  initiateStatusChange: (jobId, newStatus) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job || job.status === newStatus) return;
+
+    // Check if we need to show a modal
+    if (newStatus === 'Rejected') {
+      set({
+        pendingStatusChange: { jobId, newStatus },
+        isRejectionModalOpen: true,
+      });
+    } else if (newStatus === 'Offer') {
+      set({
+        pendingStatusChange: { jobId, newStatus },
+        isOfferModalOpen: true,
+      });
+    } else {
+      // No modal needed, just move the job
+      get().moveJob(jobId, newStatus);
+    }
+  },
+
+  confirmStatusChange: async (rejectionDetails, offerDetails) => {
+    const { pendingStatusChange } = get();
+    if (!pendingStatusChange) return;
+
+    const { jobId, newStatus } = pendingStatusChange;
+    const updates: Partial<Job> = { status: newStatus };
+
+    if (newStatus === 'Rejected' && rejectionDetails) {
+      updates.rejectionDetails = {
+        ...rejectionDetails,
+        rejectedAt: new Date(),
+      };
+    } else if (newStatus === 'Offer' && offerDetails) {
+      updates.offerDetails = {
+        ...offerDetails,
+        offeredAt: new Date(),
+      };
+    }
+
+    await db.updateJob(jobId, updates);
+    set((state) => ({
+      jobs: state.jobs.map((job) =>
+        job.id === jobId ? { ...job, ...updates, lastUpdated: new Date() } : job
+      ),
+      pendingStatusChange: null,
+      isRejectionModalOpen: false,
+      isOfferModalOpen: false,
+    }));
+  },
+
+  cancelStatusChange: () => {
+    set({
+      pendingStatusChange: null,
+      isRejectionModalOpen: false,
+      isOfferModalOpen: false,
+    });
+  },
+
+  // Source tracking
+  updateJobSource: async (jobId, sourceInfo) => {
+    await get().updateJob(jobId, { sourceInfo });
+  },
+
   // UI actions
   openAddJobModal: () => set({ isAddJobModalOpen: true }),
   closeAddJobModal: () => set({ isAddJobModalOpen: false }),
@@ -510,6 +632,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeJobFinderModal: () => set({ isJobFinderModalOpen: false }),
   openBatchScannerModal: () => set({ isBatchScannerModalOpen: true }),
   closeBatchScannerModal: () => set({ isBatchScannerModalOpen: false }),
+  openRejectionModal: () => set({ isRejectionModalOpen: true }),
+  closeRejectionModal: () => set({ isRejectionModalOpen: false, pendingStatusChange: null }),
+  openOfferModal: () => set({ isOfferModalOpen: true }),
+  closeOfferModal: () => set({ isOfferModalOpen: false, pendingStatusChange: null }),
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {

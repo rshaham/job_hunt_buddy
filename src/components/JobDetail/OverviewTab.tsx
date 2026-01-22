@@ -7,6 +7,7 @@ import { Badge, Button } from '../ui';
 import { format } from 'date-fns';
 import { htmlToMarkdown } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
+import { SourceSelector } from './SourceSelector';
 
 interface OverviewTabProps {
   job: Job;
@@ -146,6 +147,9 @@ export function OverviewTab({ job }: OverviewTabProps) {
           </div>
         </div>
       )}
+
+      {/* Source */}
+      <SourceSelector job={job} />
 
       {/* Summary Card */}
       {summary && (
