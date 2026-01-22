@@ -14,6 +14,8 @@ import { CommandBar } from './components/CommandBar';
 import { JobFinderModal } from './components/JobFinder';
 import { ToastContainer } from './components/ui';
 import { Sidebar } from './components/Sidebar';
+import { RejectionModal } from './components/JobDetail/RejectionModal';
+import { OfferModal } from './components/JobDetail/OfferModal';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
@@ -123,6 +125,8 @@ function App() {
       <FeatureGuideModal />
       <CareerCoachModal />
       <JobFinderModal />
+      <RejectionModal />
+      <OfferModal />
       <CommandBar />
       <ToastContainer />
       <Analytics />

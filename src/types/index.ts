@@ -46,6 +46,12 @@ export interface Job {
   emailDraftType?: EmailType;
   emailDraftCustomType?: string; // User-specified custom email type
   emailDraftHistory?: EmailDraftEntry[];
+
+  // Workflow tracking
+  interviews?: InterviewRound[];
+  rejectionDetails?: RejectionDetails;
+  offerDetails?: OfferDetails;
+  sourceInfo?: SourceInfo;
 }
 
 export interface JobSummary {
@@ -205,6 +211,102 @@ export interface EmailDraftEntry {
 }
 
 export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
+
+// Workflow tracking types
+export type RejectionReason = 'ghosted' | 'skills_mismatch' | 'culture_fit' | 'salary' | 'position_filled' | 'other';
+export type InterviewType = 'phone_screen' | 'recruiter_call' | 'technical' | 'behavioral' | 'system_design' | 'onsite' | 'panel' | 'final' | 'other';
+export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+export type InterviewOutcome = 'passed' | 'failed' | 'pending' | 'unknown';
+export type JobSource = 'referral' | 'linkedin' | 'company_site' | 'job_board' | 'recruiter_outreach' | 'networking' | 'other';
+
+export interface RejectionDetails {
+  reason?: RejectionReason;
+  stageRejectedAt?: string;
+  feedbackReceived?: string;
+  lessonsLearned?: string;
+  rejectedAt?: Date;
+}
+
+export interface OfferDetails {
+  baseSalary?: number;
+  bonus?: number;
+  bonusType?: 'percentage' | 'fixed';
+  equity?: string;
+  benefitsSummary?: string;
+  offerDeadline?: Date;
+  startDate?: Date;
+  negotiationNotes?: string;
+  offeredAt?: Date;
+}
+
+export interface InterviewRound {
+  id: string;
+  roundNumber: number;
+  type: InterviewType;
+  scheduledAt?: Date;
+  duration?: number; // in minutes
+  interviewerIds?: string[]; // IDs of contacts
+  location?: string;
+  status: InterviewStatus;
+  outcome: InterviewOutcome;
+  notes?: string;
+  feedback?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SourceInfo {
+  source: JobSource;
+  referredByContactId?: string;
+  sourcePlatform?: string; // e.g., "Indeed", "Glassdoor" for job_board
+  sourceNotes?: string;
+}
+
+// Human-readable labels for workflow types
+export const REJECTION_REASON_LABELS: Record<RejectionReason, string> = {
+  ghosted: 'Ghosted',
+  skills_mismatch: 'Skills Mismatch',
+  culture_fit: 'Culture Fit',
+  salary: 'Salary Expectations',
+  position_filled: 'Position Filled',
+  other: 'Other',
+};
+
+export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
+  phone_screen: 'Phone Screen',
+  recruiter_call: 'Recruiter Call',
+  technical: 'Technical Interview',
+  behavioral: 'Behavioral Interview',
+  system_design: 'System Design',
+  onsite: 'Onsite',
+  panel: 'Panel Interview',
+  final: 'Final Round',
+  other: 'Other',
+};
+
+export const INTERVIEW_STATUS_LABELS: Record<InterviewStatus, string> = {
+  scheduled: 'Scheduled',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rescheduled: 'Rescheduled',
+};
+
+export const INTERVIEW_OUTCOME_LABELS: Record<InterviewOutcome, string> = {
+  passed: 'Passed',
+  failed: 'Failed',
+  pending: 'Pending',
+  unknown: 'Unknown',
+};
+
+export const JOB_SOURCE_LABELS: Record<JobSource, string> = {
+  referral: 'Referral',
+  linkedin: 'LinkedIn',
+  company_site: 'Company Website',
+  job_board: 'Job Board',
+  recruiter_outreach: 'Recruiter Outreach',
+  networking: 'Networking',
+  other: 'Other',
+};
 
 // Career Coach types
 export interface CareerCoachEntry {
