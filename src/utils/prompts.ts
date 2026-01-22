@@ -228,6 +228,30 @@ Guidelines:
 
 Return ONLY valid JSON.`;
 
+export const EXTRACT_STORY_METADATA_PROMPT = `Extract structured metadata from this story/experience for a job application memory bank.
+
+Raw text:
+{rawText}
+
+Return ONLY valid JSON with this exact structure:
+{
+  "question": "A clear behavioral interview question this story answers (e.g., 'Tell me about a time you led a difficult project')",
+  "answer": "Clean, first-person narrative of the experience with specific details. Remove conversational filler.",
+  "company": "Company name if mentioned, or null",
+  "role": "Job title/role if mentioned, or null",
+  "timeframe": "When this happened (e.g., 'Q2 2023', '2022-2023'), or null",
+  "outcome": "The result or impact of this experience, or null",
+  "skills": ["skill1", "skill2"] // Skills demonstrated (e.g., "leadership", "problem-solving", "technical")
+}
+
+Guidelines:
+- Extract the core experience, not AI responses or conversational filler
+- Include specific metrics and outcomes if mentioned
+- Skills should be general categories like: leadership, technical, communication, problem-solving, teamwork, conflict-resolution, initiative
+- If information isn't clearly stated, use null rather than guessing
+
+Return ONLY valid JSON.`;
+
 export const CONVERT_RESUME_TO_MARKDOWN_PROMPT = `Convert this resume text to well-structured markdown format.
 
 Resume text (extracted from PDF):

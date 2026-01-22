@@ -10,6 +10,7 @@ import {
   REFINE_COVER_LETTER_PROMPT,
   CONVERT_RESUME_TO_MARKDOWN_PROMPT,
   REWRITE_FOR_MEMORY_PROMPT,
+  EXTRACT_STORY_METADATA_PROMPT,
   INTERVIEWER_ANALYSIS_PROMPT,
   EMAIL_DRAFT_PROMPT,
   REFINE_EMAIL_PROMPT,
@@ -525,6 +526,29 @@ export async function rewriteForMemory(
     question: (parsed.question as string) || originalQuestion,
     answer: (parsed.answer as string) || originalAnswer,
   };
+}
+
+// Extract story metadata using AI
+export async function extractStoryMetadata(rawText: string): Promise<{
+  question?: string;
+  answer?: string;
+  company?: string;
+  role?: string;
+  timeframe?: string;
+  outcome?: string;
+  skills?: string[];
+}> {
+  const prompt = EXTRACT_STORY_METADATA_PROMPT.replace('{rawText}', rawText);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+
+  try {
+    const cleanedJson = extractJSON(response);
+    return JSON.parse(cleanedJson);
+  } catch (error) {
+    console.error('Failed to parse story metadata:', error);
+    return { answer: rawText };
+  }
 }
 
 // Analyze interviewer profile for interview prep
