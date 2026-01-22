@@ -505,11 +505,25 @@ export async function convertResumeToMarkdown(plainText: string): Promise<string
 // Rewrite Q&A into a clean, reusable memory for profile
 export async function rewriteForMemory(
   originalQuestion: string,
-  originalAnswer: string
-): Promise<{ question: string; answer: string }> {
+  originalAnswer: string,
+  jobContext?: { company?: string; title?: string }
+): Promise<{
+  question: string;
+  answer: string;
+  company?: string;
+  role?: string;
+  timeframe?: string;
+  outcome?: string;
+  skills?: string[];
+}> {
+  const jobContextStr = jobContext
+    ? `Company: ${jobContext.company || 'Unknown'}, Role: ${jobContext.title || 'Unknown'}`
+    : 'None';
+
   const prompt = REWRITE_FOR_MEMORY_PROMPT
     .replace('{question}', originalQuestion)
-    .replace('{answer}', originalAnswer);
+    .replace('{answer}', originalAnswer)
+    .replace('{jobContext}', jobContextStr);
 
   const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
@@ -525,6 +539,11 @@ export async function rewriteForMemory(
   return {
     question: (parsed.question as string) || originalQuestion,
     answer: (parsed.answer as string) || originalAnswer,
+    company: parsed.company as string | undefined,
+    role: parsed.role as string | undefined,
+    timeframe: parsed.timeframe as string | undefined,
+    outcome: parsed.outcome as string | undefined,
+    skills: Array.isArray(parsed.skills) ? (parsed.skills as string[]) : undefined,
   };
 }
 

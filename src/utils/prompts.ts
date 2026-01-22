@@ -213,10 +213,17 @@ Original question/context: {question}
 
 Original answer/response: {answer}
 
+Job context (if available): {jobContext}
+
 Return ONLY valid JSON with this exact structure:
 {
   "question": "Clear, concise topic/title (e.g., 'Leadership experience at startup', 'Handling cross-team conflicts')",
-  "answer": "Clean, factual summary of the experience with specific details, metrics, and outcomes. Written in first person. Remove any conversational filler, AI responses, or back-and-forth. Focus on the candidate's actual experience and achievements."
+  "answer": "Clean, factual summary of the experience with specific details, metrics, and outcomes. Written in first person. Remove any conversational filler, AI responses, or back-and-forth. Focus on the candidate's actual experience and achievements.",
+  "company": "Company name if mentioned in the context, or null",
+  "role": "Job title if mentioned, or null",
+  "timeframe": "When this happened if mentioned (e.g., 'Q2 2023'), or null",
+  "outcome": "The measurable result or impact, or null",
+  "skills": ["skill1", "skill2"]
 }
 
 Guidelines:
@@ -225,6 +232,7 @@ Guidelines:
 - Write in a reusable format that provides context for any AI reading it later
 - Keep it concise but complete
 - If the original has multiple experiences, focus on the most substantial one
+- Skills should be general categories: leadership, technical, communication, problem-solving, teamwork, conflict-resolution, initiative
 
 Return ONLY valid JSON.`;
 
