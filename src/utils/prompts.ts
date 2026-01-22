@@ -803,3 +803,59 @@ Guidelines:
 - Include specific metrics, outcomes, and details
 - Structure appropriately (STAR format for behavioral, key points for technical)
 - Make it reusable for future interviews`;
+
+// ============================================================================
+// Teleprompter Prompts
+// ============================================================================
+
+export const TELEPROMPTER_INITIAL_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Generate memory-jogging keywords and short phrases for their interview teleprompter.
+
+INTERVIEW CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+Job Title: {title}
+Job Requirements: {requirements}
+User's Key Skills: {userSkills}
+User's Stories/Experiences: {userStories}
+
+Generate 3-5 relevant keywords or short phrases (max 6 words each) for EACH of these categories:
+{categories}
+
+The keywords should:
+- Be memory joggers, NOT full sentences
+- Reference specific experiences, metrics, or accomplishments from the user's background
+- Be directly relevant to the interview type and job requirements
+- Help the candidate recall their best talking points
+
+Return ONLY valid JSON with this exact structure:
+{
+  "categories": [
+    {
+      "categoryId": "the-category-id",
+      "keywords": ["keyword1", "keyword2", "keyword3"]
+    }
+  ]
+}`;
+
+export const TELEPROMPTER_REALTIME_ASSIST_PROMPT = `You are helping someone DURING a live job interview. They just typed a keyword and need quick memory joggers.
+
+CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+User typed: {userInput}
+Current keywords on display: {currentKeywords}
+User's background: {userBackground}
+
+Generate 3-5 SHORT memory-jogging phrases (max 6 words each) related to their input.
+- Pull from their actual experience when possible
+- Make them scannable at a glance
+- Do NOT repeat keywords already on display
+
+Assign each to the most appropriate category from: {categoryIds}
+
+Return ONLY valid JSON:
+{
+  "keywords": [
+    { "text": "phrase here", "categoryId": "category-id" }
+  ]
+}`;
