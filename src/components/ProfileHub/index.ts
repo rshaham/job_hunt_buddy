@@ -5,3 +5,5 @@ export { AddStoryModal } from './AddStoryModal';
 export { ResumeSection } from './ResumeSection';
 export { DocumentsSection } from './DocumentsSection';
 export { AboutMeSection } from './AboutMeSection';
+export { SkillsSection } from './SkillsSection';
+export { QuizSection } from './QuizSection';
