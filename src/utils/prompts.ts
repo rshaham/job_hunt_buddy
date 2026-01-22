@@ -808,6 +808,30 @@ Guidelines:
 // Teleprompter Prompts
 // ============================================================================
 
+export const TELEPROMPTER_FLAT_INITIAL_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Generate memory-jogging keywords and short phrases as a flat list (no categories) for their interview teleprompter.
+
+INTERVIEW CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+Job Title: {title}
+Job Requirements: {requirements}
+User's Key Skills: {userSkills}
+User's Stories/Experiences: {userStories}
+
+Generate 8-12 highly relevant keywords or short phrases (max 6 words each) that will help the candidate during their interview.
+
+The keywords should:
+- Be memory joggers, NOT full sentences
+- Reference specific experiences, metrics, or accomplishments from the user's background
+- Be directly relevant to the interview type and job requirements
+- Help the candidate recall their best talking points
+- Cover a variety of topics (skills, achievements, stories, metrics)
+
+Return ONLY valid JSON with this exact structure:
+{
+  "keywords": ["keyword1", "keyword2", "keyword3", ...]
+}`;
+
 export const TELEPROMPTER_INITIAL_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Generate memory-jogging keywords and short phrases for their interview teleprompter.
 
 INTERVIEW CONTEXT:

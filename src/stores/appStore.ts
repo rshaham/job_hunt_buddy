@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword } from '../types';
 import { DEFAULT_SETTINGS, TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../types';
-import { generateSemanticTeleprompterKeywords } from '../services/ai';
+import { generateFlatInitialTeleprompterKeywords } from '../services/ai';
 import * as db from '../services/db';
 import { saveSession, getCustomInterviewTypes, saveCustomInterviewType as saveCustomInterviewTypeDB, saveFeedbackBatch } from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -192,7 +192,8 @@ interface AppState {
   promoteKeywordFromStaging: (keywordId: string, categoryId?: string) => void;
   dismissStagingKeyword: (keywordId: string) => void;
   dismissDisplayedKeyword: (categoryId: string, keywordId: string) => void;
-  addKeywordsFromAI: (keywords: Array<{ text: string; categoryId: string }>) => void;
+  addKeywordsFromAI: (categoryName: string, keywords: string[]) => void;
+  addManualKeyword: (categoryId: string, text: string) => void;
   toggleCategory: (categoryId: string) => void;
   saveTeleprompterFeedback: (items: TeleprompterRoundupItem[]) => Promise<void>;
   loadCustomInterviewTypes: () => Promise<void>;
@@ -709,7 +710,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { jobs, settings } = get();
     const job = jobId ? jobs.find(j => j.id === jobId) ?? null : null;
 
-    // Create session with empty categories initially so UI can render immediately
+    // Create session with empty categories and loading state
     const session: TeleprompterSession = {
       id: crypto.randomUUID(),
       jobId,
@@ -722,66 +723,50 @@ export const useAppStore = create<AppState>((set, get) => ({
       isActive: true,
       viewMode: 'categorized',
       isStagingCollapsed: false,
+      isGeneratingInitialKeywords: true,
     };
 
-    // Save initial session immediately so UI can render
+    // Save initial session immediately so UI can render (with loading state)
     await saveSession(session);
     set({ teleprompterSession: session });
 
-    // Generate categories and keywords in background (don't block)
+    // Generate flat keywords in background (no categories initially)
     try {
       const userSkills = settings.additionalContext?.split(',').map(s => s.trim()).filter(Boolean) || [];
       const userStories = (settings.savedStories || []).map(s => ({ question: s.question, answer: s.answer }));
 
-      const semanticCategories = await generateSemanticTeleprompterKeywords(
+      const flatKeywords = await generateFlatInitialTeleprompterKeywords(
         TELEPROMPTER_INTERVIEW_TYPE_LABELS[interviewType] + (customType ? `: ${customType}` : ''),
         job,
         userSkills,
         userStories
       );
 
-      // Convert AI response to TeleprompterCategory[] with UUIDs
-      const categories: TeleprompterCategory[] = semanticCategories.map(cat => ({
+      // Create staging keywords without category assignment (flat list)
+      const stagingKeywords: TeleprompterKeyword[] = flatKeywords.map(text => ({
         id: crypto.randomUUID(),
-        name: cat.name,
-        keywords: [],
-        isExpanded: true,
+        text,
+        source: 'ai-initial',
+        inStaging: true,
       }));
-
-      // Create staging keywords with suggestedCategoryName preserved
-      const stagingKeywords: TeleprompterKeyword[] = [];
-      for (const cat of semanticCategories) {
-        for (const text of cat.keywords) {
-          stagingKeywords.push({
-            id: crypto.randomUUID(),
-            text,
-            source: 'ai-initial',
-            inStaging: true,
-            suggestedCategoryName: cat.name,
-          });
-        }
-      }
 
       // Get current session (might have been updated)
       const currentSession = get().teleprompterSession;
       if (currentSession && currentSession.id === session.id) {
-        const updatedSession = { ...currentSession, categories, stagingKeywords };
+        const updatedSession = {
+          ...currentSession,
+          stagingKeywords,
+          isGeneratingInitialKeywords: false,
+        };
         await saveSession(updatedSession);
         set({ teleprompterSession: updatedSession });
       }
     } catch (error) {
-      console.error('[Teleprompter] Error generating semantic keywords:', error);
-      // Fallback: create minimal categories if AI fails
-      const fallbackCategories: TeleprompterCategory[] = ['Key Points', 'Questions'].map(name => ({
-        id: crypto.randomUUID(),
-        name,
-        keywords: [],
-        isExpanded: true,
-      }));
-
+      console.error('[Teleprompter] Error generating initial keywords:', error);
+      // Set loading to false even on error
       const currentSession = get().teleprompterSession;
       if (currentSession && currentSession.id === session.id) {
-        const updatedSession = { ...currentSession, categories: fallbackCategories };
+        const updatedSession = { ...currentSession, isGeneratingInitialKeywords: false };
         await saveSession(updatedSession);
         set({ teleprompterSession: updatedSession });
       }
@@ -817,22 +802,34 @@ export const useAppStore = create<AppState>((set, get) => ({
     const keyword = teleprompterSession.stagingKeywords.find(k => k.id === keywordId);
     if (!keyword) return;
 
+    let updatedCategories = [...teleprompterSession.categories];
+
     // Determine target category: use provided categoryId, or find by suggestedCategoryName, or fallback to first category
     let targetCategoryId = categoryId;
     if (!targetCategoryId && keyword.suggestedCategoryName) {
-      const suggestedCategory = teleprompterSession.categories.find(
+      const suggestedCategory = updatedCategories.find(
         cat => cat.name === keyword.suggestedCategoryName
       );
       targetCategoryId = suggestedCategory?.id;
     }
-    // Fallback to first category if still not found
-    if (!targetCategoryId && teleprompterSession.categories.length > 0) {
-      targetCategoryId = teleprompterSession.categories[0].id;
+    // Fallback to first category if exists
+    if (!targetCategoryId && updatedCategories.length > 0) {
+      targetCategoryId = updatedCategories[0].id;
     }
-    if (!targetCategoryId) return; // No categories exist
+    // If no categories exist, create a "Suggestions" category
+    if (!targetCategoryId) {
+      const newCategory: TeleprompterCategory = {
+        id: crypto.randomUUID(),
+        name: 'Suggestions',
+        keywords: [],
+        isExpanded: true,
+      };
+      updatedCategories = [newCategory];
+      targetCategoryId = newCategory.id;
+    }
 
     const promotedKeyword = { ...keyword, inStaging: false };
-    const updatedCategories = teleprompterSession.categories.map(cat => {
+    updatedCategories = updatedCategories.map(cat => {
       if (cat.id === targetCategoryId) {
         return { ...cat, keywords: [...cat.keywords, promotedKeyword] };
       }
@@ -884,27 +881,62 @@ export const useAppStore = create<AppState>((set, get) => ({
     saveSession(updatedSession);
   },
 
-  addKeywordsFromAI: (keywords) => {
+  addKeywordsFromAI: (categoryName, keywords) => {
     const { teleprompterSession } = get();
     if (!teleprompterSession) return;
 
-    // Add directly to categories (real-time AI assist goes straight to display)
-    const updatedCategories = [...teleprompterSession.categories];
-    for (const { text, categoryId } of keywords) {
-      const catIndex = updatedCategories.findIndex(c => c.id === categoryId);
-      if (catIndex >= 0) {
-        const newKeyword: TeleprompterKeyword = {
-          id: crypto.randomUUID(),
-          text,
-          source: 'ai-realtime',
-          inStaging: false,
-        };
-        updatedCategories[catIndex] = {
-          ...updatedCategories[catIndex],
-          keywords: [...updatedCategories[catIndex].keywords, newKeyword],
-        };
-      }
+    // User's prompt becomes the category name - create category if it doesn't exist
+    let updatedCategories = [...teleprompterSession.categories];
+    let targetCategory = updatedCategories.find(c => c.name === categoryName);
+
+    if (!targetCategory) {
+      // Create new category with the prompt text as the name
+      targetCategory = {
+        id: crypto.randomUUID(),
+        name: categoryName,
+        keywords: [],
+        isExpanded: true,
+      };
+      updatedCategories = [...updatedCategories, targetCategory];
     }
+
+    // Add keywords to the target category
+    const newKeywords: TeleprompterKeyword[] = keywords.map(text => ({
+      id: crypto.randomUUID(),
+      text,
+      source: 'ai-realtime',
+      inStaging: false,
+    }));
+
+    updatedCategories = updatedCategories.map(cat => {
+      if (cat.id === targetCategory!.id) {
+        return { ...cat, keywords: [...cat.keywords, ...newKeywords] };
+      }
+      return cat;
+    });
+
+    const updatedSession = { ...teleprompterSession, categories: updatedCategories };
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  addManualKeyword: (categoryId, text) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession || !text.trim()) return;
+
+    const newKeyword: TeleprompterKeyword = {
+      id: crypto.randomUUID(),
+      text: text.trim(),
+      source: 'manual',
+      inStaging: false,
+    };
+
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, keywords: [...cat.keywords, newKeyword] };
+      }
+      return cat;
+    });
 
     const updatedSession = { ...teleprompterSession, categories: updatedCategories };
     set({ teleprompterSession: updatedSession });
@@ -1019,17 +1051,27 @@ export const useAppStore = create<AppState>((set, get) => ({
   promoteAllStagingKeywords: () => {
     const { teleprompterSession } = get();
     if (!teleprompterSession) return;
-    if (teleprompterSession.categories.length === 0) return; // No categories to promote to
+    if (teleprompterSession.stagingKeywords.length === 0) return; // Nothing to promote
+
+    // Build updated categories with promoted keywords
+    let updatedCategories = teleprompterSession.categories.map(cat => ({ ...cat, keywords: [...cat.keywords] }));
+
+    // If no categories exist, create a "Suggestions" category
+    if (updatedCategories.length === 0) {
+      updatedCategories = [{
+        id: crypto.randomUUID(),
+        name: 'Suggestions',
+        keywords: [],
+        isExpanded: true,
+      }];
+    }
 
     // Create a map of category name to category id for quick lookup
     const categoryNameToId = new Map<string, string>();
-    for (const cat of teleprompterSession.categories) {
+    for (const cat of updatedCategories) {
       categoryNameToId.set(cat.name, cat.id);
     }
-    const firstCategoryId = teleprompterSession.categories[0].id;
-
-    // Build updated categories with promoted keywords
-    const updatedCategories = teleprompterSession.categories.map(cat => ({ ...cat, keywords: [...cat.keywords] }));
+    const firstCategoryId = updatedCategories[0].id;
 
     for (const keyword of teleprompterSession.stagingKeywords) {
       // Find target category by suggestedCategoryName, or fallback to first category

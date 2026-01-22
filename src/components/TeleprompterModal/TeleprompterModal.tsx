@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark } from 'lucide-react';
+import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark, Plus, Loader2 } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
 import { generateRealtimeTeleprompterKeywords } from '../../services/ai';
@@ -252,7 +252,7 @@ function SetupScreen({
         ) : (
           <>
             <Play className="w-7 h-7" />
-            Start Interview
+            Get Ready
           </>
         )}
       </button>
@@ -274,6 +274,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
     dismissStagingKeyword,
     dismissDisplayedKeyword,
     addKeywordsFromAI,
+    addManualKeyword,
     toggleCategory,
     toggleStagingCollapsed,
     promoteAllStagingKeywords,
@@ -284,6 +285,9 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  // State for manual keyword input per category
+  const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
+  const [manualKeywordInput, setManualKeywordInput] = useState('');
 
   const job = teleprompterSession?.jobId
     ? jobs.find(j => j.id === teleprompterSession.jobId)
@@ -292,23 +296,24 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
   const handleInputSubmit = useCallback(async () => {
     if (!inputValue.trim() || !teleprompterSession || isGenerating) return;
 
+    const promptText = inputValue.trim();
     setIsGenerating(true);
     try {
       const currentKeywords = teleprompterSession.categories
         .flatMap(c => c.keywords.map(k => k.text));
 
-      const categoryIds = teleprompterSession.categories.map(c => c.id);
-
-      const keywords = await generateRealtimeTeleprompterKeywords(
-        inputValue,
+      const result = await generateRealtimeTeleprompterKeywords(
+        promptText,
         TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType],
         job?.company || 'Unknown',
         currentKeywords,
         settings.additionalContext || settings.defaultResumeText || '',
-        categoryIds
+        [] // No category IDs needed - we use the prompt as category name
       );
 
-      addKeywordsFromAI(keywords);
+      // User's prompt becomes the category name, keywords go into that category
+      const keywordTexts = result.map(k => k.text);
+      addKeywordsFromAI(promptText, keywordTexts);
       setInputValue('');
     } catch (error) {
       console.error('Error generating keywords:', error);
@@ -316,6 +321,13 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
       setIsGenerating(false);
     }
   }, [inputValue, teleprompterSession, job, settings, isGenerating, addKeywordsFromAI]);
+
+  const handleManualKeywordSubmit = useCallback((categoryId: string) => {
+    if (!manualKeywordInput.trim()) return;
+    addManualKeyword(categoryId, manualKeywordInput);
+    setManualKeywordInput('');
+    setAddingToCategoryId(null);
+  }, [manualKeywordInput, addManualKeyword]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -378,7 +390,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
       </div>
 
       {/* Staging area for initial suggestions */}
-      {teleprompterSession.stagingKeywords.length > 0 && (
+      {(teleprompterSession.isGeneratingInitialKeywords || teleprompterSession.stagingKeywords.length > 0) && (
         <div className="mb-4 bg-surface-raised rounded-lg border border-border overflow-hidden">
           {/* Collapsible header */}
           <button
@@ -386,49 +398,51 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors"
           >
             <span className="text-sm font-medium text-foreground-muted">
-              AI Suggestions ({teleprompterSession.stagingKeywords.length})
+              {teleprompterSession.isGeneratingInitialKeywords
+                ? 'Generating suggestions...'
+                : `AI Suggestions (${teleprompterSession.stagingKeywords.length})`}
             </span>
             <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  promoteAllStagingKeywords();
-                }}
-                className="px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded transition-colors"
-              >
-                Add All
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  dismissAllStagingKeywords();
-                }}
-                className="px-2 py-1 text-xs font-medium text-foreground-muted hover:bg-surface-raised rounded transition-colors"
-              >
-                Dismiss All
-              </button>
-              <ChevronDown
-                className={cn(
-                  'w-5 h-5 text-foreground-muted transition-transform',
-                  teleprompterSession.isStagingCollapsed && 'rotate-180'
-                )}
-              />
+              {teleprompterSession.isGeneratingInitialKeywords ? (
+                <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              ) : (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      promoteAllStagingKeywords();
+                    }}
+                    className="px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded transition-colors"
+                  >
+                    Add All
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dismissAllStagingKeywords();
+                    }}
+                    className="px-2 py-1 text-xs font-medium text-foreground-muted hover:bg-surface-raised rounded transition-colors"
+                  >
+                    Dismiss All
+                  </button>
+                  <ChevronDown
+                    className={cn(
+                      'w-5 h-5 text-foreground-muted transition-transform',
+                      teleprompterSession.isStagingCollapsed && 'rotate-180'
+                    )}
+                  />
+                </>
+              )}
             </div>
           </button>
 
-          {/* Keywords content - hidden when collapsed */}
-          {!teleprompterSession.isStagingCollapsed && (
+          {/* Keywords content - hidden when collapsed or loading */}
+          {!teleprompterSession.isStagingCollapsed && !teleprompterSession.isGeneratingInitialKeywords && (
             <div className="px-4 pb-4 flex flex-wrap gap-2">
               {teleprompterSession.stagingKeywords.map((keyword) => (
                 <button
                   key={keyword.id}
-                  onClick={() => {
-                    // Find appropriate category (first one for now)
-                    const firstCategory = teleprompterSession.categories[0];
-                    if (firstCategory) {
-                      promoteKeywordFromStaging(keyword.id, firstCategory.id);
-                    }
-                  }}
+                  onClick={() => promoteKeywordFromStaging(keyword.id)}
                   className="px-3 py-2 text-base bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
                 >
                   {keyword.text}
@@ -456,27 +470,71 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
             {teleprompterSession.categories.map((category) => (
               <div key={category.id} className="border border-border rounded-lg overflow-hidden">
                 {/* Category header */}
-                <button
-                  onClick={() => toggleCategory(category.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-surface-raised hover:bg-surface transition-colors"
-                >
-                  <span className="text-xl font-semibold text-foreground">
-                    {category.name}
-                  </span>
-                  <ChevronDown
+                <div className="flex items-center bg-surface-raised">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors"
+                  >
+                    <span className="text-xl font-semibold text-foreground">
+                      {category.name}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        'w-6 h-6 text-foreground-muted transition-transform',
+                        category.isExpanded && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                  {/* Add keyword button */}
+                  <button
+                    onClick={() => setAddingToCategoryId(addingToCategoryId === category.id ? null : category.id)}
                     className={cn(
-                      'w-6 h-6 text-foreground-muted transition-transform',
-                      category.isExpanded && 'rotate-180'
+                      'px-3 py-3 border-l border-border hover:bg-surface transition-colors',
+                      addingToCategoryId === category.id && 'bg-primary/10 text-primary'
                     )}
-                  />
-                </button>
+                    title="Add keyword"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Manual keyword input */}
+                {addingToCategoryId === category.id && (
+                  <div className="px-4 py-3 border-t border-border bg-surface flex gap-2">
+                    <input
+                      type="text"
+                      value={manualKeywordInput}
+                      onChange={(e) => setManualKeywordInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleManualKeywordSubmit(category.id);
+                        }
+                        if (e.key === 'Escape') {
+                          setAddingToCategoryId(null);
+                          setManualKeywordInput('');
+                        }
+                      }}
+                      placeholder="Type keyword and press Enter..."
+                      autoFocus
+                      className="flex-1 px-3 py-2 text-base border border-border rounded bg-surface text-foreground focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      onClick={() => handleManualKeywordSubmit(category.id)}
+                      disabled={!manualKeywordInput.trim()}
+                      className="px-4 py-2 text-sm font-medium bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
 
                 {/* Keywords */}
                 {category.isExpanded && (
                   <div className="p-4 flex flex-wrap gap-3">
                     {category.keywords.filter(k => !k.inStaging).length === 0 ? (
                       <p className="text-lg text-foreground-muted italic">
-                        No keywords yet. Type below to add some.
+                        No keywords yet. Type below to add some or click + above.
                       </p>
                     ) : (
                       category.keywords
@@ -491,7 +549,8 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
                               keyword.source === 'profile' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
                               keyword.source === 'ai-initial' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
                               keyword.source === 'ai-realtime' && 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
-                              keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
+                              keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200',
+                              keyword.source === 'manual' && 'bg-slate-100 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200'
                             )}
                           >
                             {keyword.text}
@@ -520,7 +579,8 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
                       keyword.source === 'profile' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
                       keyword.source === 'ai-initial' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
                       keyword.source === 'ai-realtime' && 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
-                      keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
+                      keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200',
+                      keyword.source === 'manual' && 'bg-slate-100 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200'
                     )}
                   >
                     {keyword.text}

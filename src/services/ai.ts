@@ -23,6 +23,7 @@ import {
   TELEPROMPTER_INITIAL_KEYWORDS_PROMPT,
   TELEPROMPTER_REALTIME_ASSIST_PROMPT,
   TELEPROMPTER_SEMANTIC_KEYWORDS_PROMPT,
+  TELEPROMPTER_FLAT_INITIAL_KEYWORDS_PROMPT,
 } from '../utils/prompts';
 import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
@@ -1345,4 +1346,28 @@ export async function generateSemanticTeleprompterKeywords(
   const jsonStr = extractJSON(response);
   const parsed = JSON.parse(jsonStr);
   return parsed.categories || [];
+}
+
+/**
+ * Generate flat initial keywords for the teleprompter (no categories).
+ * Used on session start to provide initial suggestions without structure.
+ */
+export async function generateFlatInitialTeleprompterKeywords(
+  interviewType: string,
+  job: Job | null,
+  userSkills: string[],
+  userStories: Array<{ question: string; answer: string }>
+): Promise<string[]> {
+  const prompt = TELEPROMPTER_FLAT_INITIAL_KEYWORDS_PROMPT
+    .replace('{interviewType}', interviewType)
+    .replace('{company}', job?.company || 'Unknown Company')
+    .replace('{title}', job?.title || 'Unknown Role')
+    .replace('{requirements}', job?.summary?.requirements?.join(', ') || 'Not specified')
+    .replace('{userSkills}', userSkills.join(', ') || 'Not provided')
+    .replace('{userStories}', userStories.map(s => `${s.question}: ${s.answer}`).join('\n') || 'Not provided');
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+  return parsed.keywords || [];
 }
