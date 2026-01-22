@@ -22,8 +22,9 @@ import {
   LEARNING_TASK_PREP_SUMMARY_PROMPT,
   TELEPROMPTER_INITIAL_KEYWORDS_PROMPT,
   TELEPROMPTER_REALTIME_ASSIST_PROMPT,
+  TELEPROMPTER_SEMANTIC_KEYWORDS_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -1318,4 +1319,30 @@ export async function generateRealtimeTeleprompterKeywords(
   const jsonStr = extractJSON(response);
   const parsed = JSON.parse(jsonStr);
   return parsed.keywords || [];
+}
+
+/**
+ * Generate semantic keyword categories based on interview context.
+ * Unlike generateTeleprompterKeywords which requires predefined categories,
+ * this function uses AI to generate both categories AND keywords based on
+ * the user's actual background and the job requirements.
+ */
+export async function generateSemanticTeleprompterKeywords(
+  interviewType: string,
+  job: Job | null,
+  userSkills: string[],
+  userStories: Array<{ question: string; answer: string }>
+): Promise<SemanticCategoryResponse[]> {
+  const prompt = TELEPROMPTER_SEMANTIC_KEYWORDS_PROMPT
+    .replace('{interviewType}', interviewType)
+    .replace('{company}', job?.company || 'Unknown Company')
+    .replace('{title}', job?.title || 'Unknown Role')
+    .replace('{requirements}', job?.summary?.requirements?.join(', ') || 'Not specified')
+    .replace('{userSkills}', userSkills.join(', ') || 'Not provided')
+    .replace('{userStories}', userStories.map(s => `${s.question}: ${s.answer}`).join('\n') || 'Not provided');
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+  const parsed = JSON.parse(jsonStr);
+  return parsed.categories || [];
 }

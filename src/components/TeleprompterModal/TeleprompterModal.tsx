@@ -146,6 +146,12 @@ function SetupScreen({
 }: SetupScreenProps) {
   const interviewTypes = Object.entries(TELEPROMPTER_INTERVIEW_TYPE_LABELS) as [TeleprompterInterviewType, string][];
 
+  // Only show jobs that are in interview-relevant stages
+  const RELEVANT_STATUSES = ['applied', 'screening', 'interviewing'];
+  const relevantJobs = jobs.filter(job =>
+    RELEVANT_STATUSES.includes(job.status.toLowerCase())
+  );
+
   return (
     <div className="max-w-xl mx-auto space-y-8">
       <div className="text-center">
@@ -168,7 +174,7 @@ function SetupScreen({
           className="w-full px-4 py-4 text-xl border border-border rounded-lg bg-surface text-foreground focus:ring-2 focus:ring-primary focus:border-primary"
         >
           <option value="">No job selected</option>
-          {jobs.map((job) => (
+          {relevantJobs.map((job) => (
             <option key={job.id} value={job.id}>
               {job.company} - {job.title}
             </option>
@@ -269,6 +275,10 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
     dismissDisplayedKeyword,
     addKeywordsFromAI,
     toggleCategory,
+    toggleStagingCollapsed,
+    promoteAllStagingKeywords,
+    dismissAllStagingKeywords,
+    setTeleprompterViewMode,
   } = useAppStore();
 
   const [inputValue, setInputValue] = useState('');
@@ -329,100 +339,198 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
             {teleprompterSession.customInterviewType && `: ${teleprompterSession.customInterviewType}`}
           </p>
         </div>
-        <button
-          onClick={() => setShowEndConfirm(true)}
-          className="px-6 py-3 text-lg font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-        >
-          End Interview
-        </button>
+        <div className="flex items-center gap-4">
+          {/* View mode toggle */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setTeleprompterViewMode('categorized')}
+              className={cn(
+                'px-4 py-2 text-sm font-medium transition-colors',
+                teleprompterSession.viewMode === 'categorized'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface text-foreground-muted hover:bg-surface-raised'
+              )}
+            >
+              Categorized
+            </button>
+            <button
+              onClick={() => setTeleprompterViewMode('flat')}
+              className={cn(
+                'px-4 py-2 text-sm font-medium transition-colors',
+                teleprompterSession.viewMode === 'flat'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface text-foreground-muted hover:bg-surface-raised'
+              )}
+            >
+              Flat
+            </button>
+          </div>
+          <button
+            onClick={() => setShowEndConfirm(true)}
+            className="px-6 py-3 text-lg font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            End Interview
+          </button>
+        </div>
       </div>
 
       {/* Staging area for initial suggestions */}
       {teleprompterSession.stagingKeywords.length > 0 && (
-        <div className="mb-4 p-4 bg-surface-raised rounded-lg border border-border">
-          <p className="text-sm text-foreground-muted mb-2">
-            AI Suggestions (click to add to display):
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {teleprompterSession.stagingKeywords.map((keyword) => (
+        <div className="mb-4 bg-surface-raised rounded-lg border border-border overflow-hidden">
+          {/* Collapsible header */}
+          <button
+            onClick={toggleStagingCollapsed}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface transition-colors"
+          >
+            <span className="text-sm font-medium text-foreground-muted">
+              AI Suggestions ({teleprompterSession.stagingKeywords.length})
+            </span>
+            <div className="flex items-center gap-2">
               <button
-                key={keyword.id}
-                onClick={() => {
-                  // Find appropriate category (first one for now)
-                  const firstCategory = teleprompterSession.categories[0];
-                  if (firstCategory) {
-                    promoteKeywordFromStaging(keyword.id, firstCategory.id);
-                  }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  promoteAllStagingKeywords();
                 }}
-                className="px-3 py-2 text-base bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
+                className="px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded transition-colors"
               >
-                {keyword.text}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    dismissStagingKeyword(keyword.id);
-                  }}
-                  className="ml-2 text-primary/60 hover:text-primary"
-                >
-                  ×
-                </button>
+                Add All
               </button>
-            ))}
-          </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dismissAllStagingKeywords();
+                }}
+                className="px-2 py-1 text-xs font-medium text-foreground-muted hover:bg-surface-raised rounded transition-colors"
+              >
+                Dismiss All
+              </button>
+              <ChevronDown
+                className={cn(
+                  'w-5 h-5 text-foreground-muted transition-transform',
+                  teleprompterSession.isStagingCollapsed && 'rotate-180'
+                )}
+              />
+            </div>
+          </button>
+
+          {/* Keywords content - hidden when collapsed */}
+          {!teleprompterSession.isStagingCollapsed && (
+            <div className="px-4 pb-4 flex flex-wrap gap-2">
+              {teleprompterSession.stagingKeywords.map((keyword) => (
+                <button
+                  key={keyword.id}
+                  onClick={() => {
+                    // Find appropriate category (first one for now)
+                    const firstCategory = teleprompterSession.categories[0];
+                    if (firstCategory) {
+                      promoteKeywordFromStaging(keyword.id, firstCategory.id);
+                    }
+                  }}
+                  className="px-3 py-2 text-base bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
+                >
+                  {keyword.text}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dismissStagingKeyword(keyword.id);
+                    }}
+                    className="ml-2 text-primary/60 hover:text-primary"
+                  >
+                    ×
+                  </button>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Main keyword display - categories */}
-      <div className="flex-1 overflow-y-auto space-y-4">
-        {teleprompterSession.categories.map((category) => (
-          <div key={category.id} className="border border-border rounded-lg overflow-hidden">
-            {/* Category header */}
-            <button
-              onClick={() => toggleCategory(category.id)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-surface-raised hover:bg-surface transition-colors"
-            >
-              <span className="text-xl font-semibold text-foreground">
-                {category.name}
-              </span>
-              <ChevronDown
-                className={cn(
-                  'w-6 h-6 text-foreground-muted transition-transform',
-                  category.isExpanded && 'rotate-180'
-                )}
-              />
-            </button>
+      {/* Main keyword display */}
+      <div className="flex-1 overflow-y-auto">
+        {teleprompterSession.viewMode === 'categorized' ? (
+          /* Categorized view - keywords organized by category */
+          <div className="space-y-4">
+            {teleprompterSession.categories.map((category) => (
+              <div key={category.id} className="border border-border rounded-lg overflow-hidden">
+                {/* Category header */}
+                <button
+                  onClick={() => toggleCategory(category.id)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-surface-raised hover:bg-surface transition-colors"
+                >
+                  <span className="text-xl font-semibold text-foreground">
+                    {category.name}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      'w-6 h-6 text-foreground-muted transition-transform',
+                      category.isExpanded && 'rotate-180'
+                    )}
+                  />
+                </button>
 
-            {/* Keywords */}
-            {category.isExpanded && (
-              <div className="p-4 flex flex-wrap gap-3">
-                {category.keywords.filter(k => !k.inStaging).length === 0 ? (
-                  <p className="text-lg text-foreground-muted italic">
-                    No keywords yet. Type below to add some.
-                  </p>
-                ) : (
-                  category.keywords
-                    .filter(k => !k.inStaging)
-                    .map((keyword) => (
-                      <button
-                        key={keyword.id}
-                        onClick={() => dismissDisplayedKeyword(category.id, keyword.id)}
-                        className={cn(
-                          'px-4 py-3 text-2xl font-medium rounded-lg transition-all',
-                          'hover:opacity-70 hover:line-through cursor-pointer',
-                          keyword.source === 'profile' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
-                          keyword.source === 'ai-initial' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
-                          keyword.source === 'ai-realtime' && 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
-                          keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
-                        )}
-                      >
-                        {keyword.text}
-                      </button>
-                    ))
+                {/* Keywords */}
+                {category.isExpanded && (
+                  <div className="p-4 flex flex-wrap gap-3">
+                    {category.keywords.filter(k => !k.inStaging).length === 0 ? (
+                      <p className="text-lg text-foreground-muted italic">
+                        No keywords yet. Type below to add some.
+                      </p>
+                    ) : (
+                      category.keywords
+                        .filter(k => !k.inStaging)
+                        .map((keyword) => (
+                          <button
+                            key={keyword.id}
+                            onClick={() => dismissDisplayedKeyword(category.id, keyword.id)}
+                            className={cn(
+                              'px-4 py-3 text-2xl font-medium rounded-lg transition-all',
+                              'hover:opacity-70 hover:line-through cursor-pointer',
+                              keyword.source === 'profile' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
+                              keyword.source === 'ai-initial' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+                              keyword.source === 'ai-realtime' && 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+                              keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
+                            )}
+                          >
+                            {keyword.text}
+                          </button>
+                        ))
+                    )}
+                  </div>
                 )}
               </div>
+            ))}
+          </div>
+        ) : (
+          /* Flat view - all keywords in a single container */
+          <div className="p-4 flex flex-wrap gap-3">
+            {teleprompterSession.categories.flatMap(category =>
+              category.keywords
+                .filter(k => !k.inStaging)
+                .map(keyword => (
+                  <button
+                    key={keyword.id}
+                    title={category.name}
+                    onClick={() => dismissDisplayedKeyword(category.id, keyword.id)}
+                    className={cn(
+                      'px-4 py-3 text-2xl font-medium rounded-lg transition-all',
+                      'hover:opacity-70 hover:line-through cursor-pointer',
+                      keyword.source === 'profile' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
+                      keyword.source === 'ai-initial' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+                      keyword.source === 'ai-realtime' && 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+                      keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
+                    )}
+                  >
+                    {keyword.text}
+                  </button>
+                ))
+            )}
+            {teleprompterSession.categories.every(c => c.keywords.filter(k => !k.inStaging).length === 0) && (
+              <p className="text-lg text-foreground-muted italic">
+                No keywords yet. Type below to add some.
+              </p>
             )}
           </div>
-        ))}
+        )}
       </div>
 
       {/* Input area - always visible at bottom */}

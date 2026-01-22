@@ -859,3 +859,51 @@ Return ONLY valid JSON:
     { "text": "phrase here", "categoryId": "category-id" }
   ]
 }`;
+
+export const TELEPROMPTER_SEMANTIC_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Analyze their background and the job requirements to create SEMANTICALLY MEANINGFUL keyword categories specific to THIS candidate and THIS role.
+
+INTERVIEW CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+Job Title: {title}
+Job Requirements: {requirements}
+User's Key Skills: {userSkills}
+User's Stories/Experiences: {userStories}
+
+YOUR TASK:
+Create 3-6 keyword categories that are SPECIFIC to this candidate's actual experience and the job requirements. Then generate 3-5 memory-jogging keywords for each category.
+
+CRITICAL: Categories must be SPECIFIC, not generic.
+BAD examples (too generic):
+- "Leadership"
+- "Technical Skills"
+- "Problem-Solving"
+- "Communication"
+
+GOOD examples (specific to actual content):
+- "AWS Migration at Acme Corp"
+- "React/TypeScript Frontend Work"
+- "Team Lead Experience at StartupX"
+- "E-commerce Platform Scaling"
+- "Customer Churn Reduction Project"
+
+Guidelines for categories:
+- Derive category names from ACTUAL content in their background and stories
+- Include company names, technologies, or project names when relevant
+- Make categories instantly recognizable to the candidate
+- Each category should map to real experiences they can speak about
+
+Guidelines for keywords:
+- Be memory joggers, NOT full sentences (max 6 words each)
+- Reference specific metrics, outcomes, or accomplishments
+- Help the candidate recall their best talking points
+
+Return ONLY valid JSON with this exact structure:
+{
+  "categories": [
+    {
+      "name": "Specific Category Name Here",
+      "keywords": ["keyword1", "metric or outcome", "specific detail"]
+    }
+  ]
+}`;

@@ -388,6 +388,7 @@ export interface TeleprompterKeyword {
   text: string;
   source: 'ai-initial' | 'ai-realtime' | 'user' | 'profile';
   inStaging: boolean;  // true = in staging area, false = on main display
+  suggestedCategoryName?: string;  // AI's suggested category (for staging promotion)
 }
 
 // Active teleprompter session
@@ -401,6 +402,14 @@ export interface TeleprompterSession {
   dismissedKeywordIds: string[];  // track to avoid re-suggesting
   startedAt: Date;
   isActive: boolean;
+  viewMode: 'categorized' | 'flat';
+  isStagingCollapsed: boolean;
+}
+
+// Response shape for AI semantic category generation
+export interface SemanticCategoryResponse {
+  name: string;
+  keywords: string[];
 }
 
 // Feedback from post-interview roundup
