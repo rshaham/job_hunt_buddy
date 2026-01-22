@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
-import { Target } from 'lucide-react';
-import { Badge } from '../ui';
+import { useMemo, useState } from 'react';
+import { Target, RefreshCw, Plus, X } from 'lucide-react';
+import { Badge, Button, Input } from '../ui';
 import { useAppStore } from '../../stores/appStore';
+import { extractUserSkills } from '../../services/ai';
+import { showToast } from '../../stores/toastStore';
 import { cn } from '../../utils/helpers';
+import type { SkillEntry } from '../../types';
 
 const categoryColors: Record<string, string> = {
   technical: 'bg-primary-subtle text-primary',
@@ -17,9 +20,46 @@ const categoryLabels: Record<string, string> = {
 };
 
 export function SkillsSection(): JSX.Element {
-  const { settings, careerCoachState } = useAppStore();
+  const { settings, careerCoachState, updateSkillProfile, addSkill, removeSkill } = useAppStore();
   const skillProfile = careerCoachState?.skillProfile;
   const savedStories = settings.savedStories;
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
+  const [newCategory, setNewCategory] = useState<SkillEntry['category']>('technical');
+
+  async function handleAnalyzeSkills(): Promise<void> {
+    setIsAnalyzing(true);
+    try {
+      const existingSkills = skillProfile?.skills || [];
+      const profile = await extractUserSkills(existingSkills);
+      updateSkillProfile(profile);
+      showToast(`Found ${profile.skills.length} skills`, 'success');
+    } catch (error) {
+      console.error('Failed to analyze skills:', error);
+      showToast('Failed to analyze skills', 'error');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
+  function handleAddSkill(): void {
+    if (!newSkill.trim()) return;
+    addSkill(newSkill.trim(), newCategory);
+    setNewSkill('');
+    showToast('Skill added', 'success');
+  }
+
+  function handleRemoveSkill(skillName: string): void {
+    removeSkill(skillName);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent): void {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
+    }
+  }
 
   // Aggregate skills from stories
   const storySkills = useMemo(() => {
@@ -85,22 +125,76 @@ export function SkillsSection(): JSX.Element {
         <h3 className="font-display text-heading-lg text-foreground mb-2">
           No skills detected yet
         </h3>
-        <p className="text-foreground-muted max-w-md mb-6">
-          Upload a resume or add stories to build your skill profile.
+        <p className="text-foreground-muted max-w-md mb-4">
+          Analyze your resume and documents to extract skills, or add them manually.
         </p>
+        <div className="flex flex-col gap-4 items-center">
+          <Button onClick={handleAnalyzeSkills} disabled={isAnalyzing}>
+            <RefreshCw className={cn('w-4 h-4 mr-2', isAnalyzing && 'animate-spin')} />
+            {isAnalyzing ? 'Analyzing...' : 'Analyze Skills'}
+          </Button>
+          <div className="flex gap-2 items-center">
+            <Input
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Add skill manually..."
+              className="w-48"
+            />
+            <select
+              value={newCategory}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewCategory(e.target.value as SkillEntry['category'])}
+              className="w-32 px-3 py-2 bg-surface border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="technical">Technical</option>
+              <option value="soft">Soft</option>
+              <option value="domain">Domain</option>
+            </select>
+            <Button onClick={handleAddSkill} disabled={!newSkill.trim()} size="sm">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h3 className="font-display text-heading-lg text-foreground">Skills Profile</h3>
           <p className="text-sm text-foreground-muted">
             {allSkills.size} skills from resume and stories
           </p>
         </div>
+        <Button onClick={handleAnalyzeSkills} disabled={isAnalyzing} variant="secondary" size="sm">
+          <RefreshCw className={cn('w-4 h-4 mr-2', isAnalyzing && 'animate-spin')} />
+          {isAnalyzing ? 'Analyzing...' : 'Re-analyze'}
+        </Button>
+      </div>
+
+      <div className="flex gap-2 items-center">
+        <Input
+          value={newSkill}
+          onChange={(e) => setNewSkill(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Add skill..."
+          className="flex-1 max-w-xs"
+        />
+        <select
+          value={newCategory}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewCategory(e.target.value as SkillEntry['category'])}
+          className="w-32 px-3 py-2 bg-surface border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="technical">Technical</option>
+          <option value="soft">Soft</option>
+          <option value="domain">Domain</option>
+        </select>
+        <Button onClick={handleAddSkill} disabled={!newSkill.trim()} size="sm">
+          <Plus className="w-4 h-4 mr-1" />
+          Add
+        </Button>
       </div>
 
       {(['technical', 'soft', 'domain'] as const).map((category) => {
@@ -114,9 +208,20 @@ export function SkillsSection(): JSX.Element {
             </h4>
             <div className="flex flex-wrap gap-2">
               {skills.map(({ skill, sources }) => (
-                <span key={skill} title={`Sources: ${sources.join(', ')}`}>
-                  <Badge className={cn(categoryColors[category], 'text-sm')}>
+                <span
+                  key={skill}
+                  title={`Sources: ${sources.join(', ')}`}
+                  className="group relative"
+                >
+                  <Badge className={cn(categoryColors[category], 'text-sm pr-6')}>
                     {skill}
+                    <button
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove skill"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </Badge>
                 </span>
               ))}

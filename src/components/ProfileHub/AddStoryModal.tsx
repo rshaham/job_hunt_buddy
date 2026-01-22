@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -28,6 +28,20 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
   const [timeframe, setTimeframe] = useState(editingStory?.timeframe || '');
   const [outcome, setOutcome] = useState(editingStory?.outcome || '');
   const [skillsInput, setSkillsInput] = useState(editingStory?.skills?.join(', ') || '');
+
+  // Sync editingStory prop to form state when story changes
+  useEffect(() => {
+    if (editingStory) {
+      setQuestion(editingStory.question);
+      setAnswer(editingStory.answer);
+      setCompany(editingStory.company || '');
+      setRole(editingStory.role || '');
+      setTimeframe(editingStory.timeframe || '');
+      setOutcome(editingStory.outcome || '');
+      setSkillsInput(editingStory.skills?.join(', ') || '');
+      setShowForm(true);
+    }
+  }, [editingStory?.id]);
 
   function resetForm(): void {
     setRawText('');
@@ -153,7 +167,7 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={editingStory ? 'Edit Story' : 'Add Story'}>
+    <Modal isOpen={isOpen} onClose={handleClose} title={editingStory ? 'Edit Story' : 'Add Story'} size="xl">
       <div className="p-4 space-y-4">
         {!showForm ? (
           <>

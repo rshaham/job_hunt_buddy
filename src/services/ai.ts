@@ -502,6 +502,44 @@ export async function convertResumeToMarkdown(plainText: string): Promise<string
   return markdown.trim();
 }
 
+// Convert plain text document to markdown format
+export async function convertDocumentToMarkdown(plainText: string, documentName: string): Promise<string> {
+  const prompt = `Convert this document text to well-structured markdown format.
+
+Document name: ${documentName}
+Document text (extracted from PDF):
+${plainText}
+
+Rules:
+- Use # for the document title or main heading
+- Use ## for major sections
+- Use ### for subsections
+- Use **bold** for important terms, names, dates
+- Use bullet points (-) for lists
+- Preserve ALL original content - do not add or remove any information
+- Clean up any formatting artifacts from PDF extraction (extra spaces, broken lines, etc.)
+- Maintain logical section ordering
+- If this appears to be a performance review, preserve the review structure
+- If this appears to be a project document, preserve the project structure
+
+Return ONLY the markdown-formatted document. No explanations, no code blocks, no extra text.`;
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+
+  // Clean up response - remove any markdown code blocks if present
+  let markdown = response.trim();
+  if (markdown.startsWith('```markdown')) {
+    markdown = markdown.slice(11);
+  } else if (markdown.startsWith('```')) {
+    markdown = markdown.slice(3);
+  }
+  if (markdown.endsWith('```')) {
+    markdown = markdown.slice(0, -3);
+  }
+
+  return markdown.trim();
+}
+
 // Rewrite Q&A into a clean, reusable memory for profile
 export async function rewriteForMemory(
   originalQuestion: string,

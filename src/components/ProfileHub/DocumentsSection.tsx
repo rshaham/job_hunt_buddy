@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
-import { Plus, FileText, Trash2, Loader2, Eye, Sparkles } from 'lucide-react';
-import { Button, ConfirmModal, Modal } from '../ui';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, FileText, Trash2, Loader2, Eye, Sparkles, RefreshCw, Wand2 } from 'lucide-react';
+import MDEditor from '@uiw/react-md-editor';
+import { Button, ConfirmModal, Modal, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractTextFromPDF } from '../../services/pdfParser';
-import { summarizeDocument } from '../../services/ai';
+import { summarizeDocument, convertDocumentToMarkdown } from '../../services/ai';
 import { showToast } from '../../stores/toastStore';
 import type { ContextDocument } from '../../types';
 
@@ -15,7 +16,22 @@ export function DocumentsSection(): JSX.Element {
   const [summarizingDocId, setSummarizingDocId] = useState<string | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<ContextDocument | null>(null);
+  const [viewTab, setViewTab] = useState<'full' | 'summary'>('full');
+  const [editedFullText, setEditedFullText] = useState('');
+  const [editedSummary, setEditedSummary] = useState('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isSavingDoc, setIsSavingDoc] = useState(false);
+  const [isFormatting, setIsFormatting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync viewing doc to edit state
+  useEffect(() => {
+    if (viewingDoc) {
+      setEditedFullText(viewingDoc.fullText);
+      setEditedSummary(viewingDoc.summary || '');
+      setViewTab(viewingDoc.summary ? 'summary' : 'full');
+    }
+  }, [viewingDoc?.id]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
@@ -91,7 +107,71 @@ export function DocumentsSection(): JSX.Element {
 
   function closeViewModal(): void {
     setViewingDoc(null);
+    setEditedFullText('');
+    setEditedSummary('');
   }
+
+  async function handleRegenerateSummary(): Promise<void> {
+    if (!viewingDoc) return;
+    setIsRegenerating(true);
+    try {
+      const summary = await summarizeDocument(editedFullText, viewingDoc.name);
+      setEditedSummary(summary);
+      showToast('Summary regenerated', 'success');
+    } catch (error) {
+      console.error('Failed to regenerate summary:', error);
+      showToast('Failed to regenerate summary', 'error');
+    } finally {
+      setIsRegenerating(false);
+    }
+  }
+
+  async function handleFormatAsMarkdown(): Promise<void> {
+    if (!viewingDoc) return;
+    setIsFormatting(true);
+    try {
+      const formatted = await convertDocumentToMarkdown(editedFullText, viewingDoc.name);
+      setEditedFullText(formatted);
+      showToast('Formatted as markdown', 'success');
+    } catch (error) {
+      console.error('Failed to format document:', error);
+      showToast('Failed to format document', 'error');
+    } finally {
+      setIsFormatting(false);
+    }
+  }
+
+  async function handleSaveDocChanges(): Promise<void> {
+    if (!viewingDoc) return;
+    setIsSavingDoc(true);
+    try {
+      const updates: Partial<ContextDocument> = {
+        fullText: editedFullText,
+        wordCount: editedFullText.split(/\s+/).filter(Boolean).length,
+      };
+      if (editedSummary) {
+        updates.summary = editedSummary;
+        updates.summaryWordCount = editedSummary.split(/\s+/).filter(Boolean).length;
+      }
+      await updateContextDocument(viewingDoc.id, updates);
+      // Update local viewing doc state
+      setViewingDoc({
+        ...viewingDoc,
+        ...updates,
+      } as ContextDocument);
+      showToast('Changes saved', 'success');
+    } catch (error) {
+      console.error('Failed to save changes:', error);
+      showToast('Failed to save changes', 'error');
+    } finally {
+      setIsSavingDoc(false);
+    }
+  }
+
+  const hasDocChanges = viewingDoc && (
+    editedFullText !== viewingDoc.fullText ||
+    editedSummary !== (viewingDoc.summary || '')
+  );
 
   if (documents.length === 0) {
     return (
@@ -232,13 +312,79 @@ export function DocumentsSection(): JSX.Element {
         isOpen={!!viewingDoc}
         onClose={closeViewModal}
         title={viewingDoc?.name || 'Document'}
+        size="full"
       >
-        <div className="max-h-[60vh] overflow-y-auto">
-          <pre className="whitespace-pre-wrap text-sm text-foreground-muted font-body">
-            {viewingDoc?.useSummary && viewingDoc?.summary
-              ? viewingDoc.summary
-              : viewingDoc?.fullText}
-          </pre>
+        <div className="flex flex-col h-full" data-color-mode={settings.theme}>
+          <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'full' | 'summary')} className="flex flex-col flex-1">
+            <TabsList className="px-4 pt-2">
+              <TabsTrigger value="full">
+                Full Document ({viewingDoc?.wordCount?.toLocaleString() || 0} words)
+              </TabsTrigger>
+              {(viewingDoc?.summary || editedSummary) && (
+                <TabsTrigger value="summary">
+                  Summary ({(editedSummary || viewingDoc?.summary || '').split(/\s+/).filter(Boolean).length} words)
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            <TabsContent value="full" className="flex-1 px-4 overflow-hidden">
+              <MDEditor
+                value={editedFullText}
+                onChange={(val) => setEditedFullText(val || '')}
+                preview="preview"
+                height="100%"
+                visibleDragbar={false}
+              />
+            </TabsContent>
+
+            <TabsContent value="summary" className="flex-1 px-4 overflow-hidden">
+              <MDEditor
+                value={editedSummary}
+                onChange={(val) => setEditedSummary(val || '')}
+                preview="preview"
+                height="100%"
+                visibleDragbar={false}
+              />
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-2 p-4 border-t border-border">
+            {viewTab === 'full' && (
+              <Button
+                variant="secondary"
+                onClick={handleFormatAsMarkdown}
+                disabled={isFormatting || !editedFullText.trim()}
+              >
+                {isFormatting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Wand2 className="w-4 h-4 mr-2" />
+                )}
+                Format
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              onClick={handleRegenerateSummary}
+              disabled={isRegenerating || !editedFullText.trim()}
+            >
+              {isRegenerating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Regenerate Summary
+            </Button>
+            <Button
+              onClick={handleSaveDocChanges}
+              disabled={isSavingDoc || !hasDocChanges}
+            >
+              {isSavingDoc ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Save Changes
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

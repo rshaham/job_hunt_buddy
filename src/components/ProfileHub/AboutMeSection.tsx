@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Save, Loader2 } from 'lucide-react';
-import { Textarea, Button } from '../ui';
+import MDEditor from '@uiw/react-md-editor';
+import { Button } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { showToast } from '../../stores/toastStore';
 
@@ -68,20 +69,22 @@ export function AboutMeSection(): JSX.Element {
         )}
       </div>
 
-      <div className="bg-surface-raised rounded-lg border border-border p-1">
-        <Textarea
+      <div className="bg-surface-raised rounded-lg border border-border overflow-hidden" data-color-mode={settings.theme}>
+        <MDEditor
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(val) => setContent(val || '')}
           onBlur={handleBlur}
-          placeholder={`Add context the AI should know about you that's not in your resume:
+          preview="edit"
+          height={300}
+          textareaProps={{
+            placeholder: `Add context the AI should know about you that's not in your resume:
 
 • Career goals and what you're looking for
 • Work style preferences (remote, team size, culture)
 • Unique background or perspectives
 • Skills you're developing or interested in
-• Anything else relevant to your job search...`}
-          rows={15}
-          className="border-0 bg-transparent focus:ring-0"
+• Anything else relevant to your job search...`,
+          }}
         />
       </div>
 

@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import MDEditor from '@uiw/react-md-editor';
 import { Button, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractTextFromPDF } from '../../services/pdfParser';
@@ -166,12 +165,14 @@ export function ResumeSection(): JSX.Element {
       </div>
 
       {showPreview && (
-        <div className="bg-surface-raised rounded-lg border border-border p-6 max-h-[600px] overflow-y-auto">
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {settings.defaultResumeText}
-            </ReactMarkdown>
-          </div>
+        <div className="bg-surface-raised rounded-lg border border-border overflow-hidden" data-color-mode={settings.theme}>
+          <MDEditor
+            value={settings.defaultResumeText}
+            preview="preview"
+            hideToolbar
+            height={500}
+            visibleDragbar={false}
+          />
         </div>
       )}
 
