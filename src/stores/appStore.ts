@@ -77,6 +77,7 @@ interface AppState {
   isBatchScannerModalOpen: boolean;
   isRejectionModalOpen: boolean;
   isOfferModalOpen: boolean;
+  isProfileHubOpen: boolean;
   pendingStatusChange: { jobId: string; newStatus: string } | null;
 
   // Career Coach State
@@ -103,6 +104,8 @@ interface AppState {
 
   // Saved story actions
   updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
+  addSavedStory: (story: Omit<SavedStory, 'id' | 'createdAt'>) => Promise<SavedStory>;
+  deleteSavedStory: (id: string) => Promise<void>;
 
   // Learning task actions
   updateLearningTask: (jobId: string, taskId: string, updates: Partial<LearningTask>) => Promise<void>;
@@ -148,6 +151,8 @@ interface AppState {
   closeRejectionModal: () => void;
   openOfferModal: () => void;
   closeOfferModal: () => void;
+  openProfileHub: () => void;
+  closeProfileHub: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -187,6 +192,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isBatchScannerModalOpen: false,
   isRejectionModalOpen: false,
   isOfferModalOpen: false,
+  isProfileHubOpen: false,
   pendingStatusChange: null,
   careerCoachState: { history: [] },
 
@@ -215,6 +221,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       set({ jobs, settings, isLoading: false });
+
+      // Restore skillProfile from persisted settings
+      if (settings.skillProfile) {
+        set((state) => ({
+          careerCoachState: {
+            ...state.careerCoachState,
+            skillProfile: settings.skillProfile,
+          },
+        }));
+      }
 
       // Initialize agent chat from persisted settings
       if (settings.agentChatHistory || settings.agentMessages) {
@@ -413,6 +429,33 @@ export const useAppStore = create<AppState>((set, get) => ({
         triggerStoryEmbedding(story);
       }
     }
+  },
+
+  addSavedStory: async (storyData) => {
+    const newStory: SavedStory = {
+      ...storyData,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: storyData.source || 'manual',
+    };
+    const newStories = [...(get().settings.savedStories || []), newStory];
+    await get().updateSettings({ savedStories: newStories });
+    triggerStoryEmbedding(newStory);
+    return newStory;
+  },
+
+  deleteSavedStory: async (id) => {
+    const newStories = (get().settings.savedStories || []).filter((s) => s.id !== id);
+    await get().updateSettings({ savedStories: newStories });
+    // Remove embedding
+    setTimeout(() => {
+      import('../services/embeddings').then(({ removeEmbeddingsByEntity }) => {
+        removeEmbeddingsByEntity('story', id).catch((error) => {
+          console.warn('[AppStore] Failed to remove story embedding:', error);
+        });
+      });
+    }, 0);
   },
 
   // Learning task actions
@@ -636,6 +679,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeRejectionModal: () => set({ isRejectionModalOpen: false, pendingStatusChange: null }),
   openOfferModal: () => set({ isOfferModalOpen: true }),
   closeOfferModal: () => set({ isOfferModalOpen: false, pendingStatusChange: null }),
+  openProfileHub: () => set({ isProfileHubOpen: true }),
+  closeProfileHub: () => set({ isProfileHubOpen: false }),
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {
@@ -669,65 +714,74 @@ export const useAppStore = create<AppState>((set, get) => ({
         skillProfile: profile,
       },
     }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: profile });
   },
 
   addSkill: (skill, category) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      // Check for duplicates (case-insensitive)
-      if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
-        return state; // Don't add duplicate
-      }
-      const newSkill: SkillEntry = {
-        skill,
-        category,
-        source: 'manual',
-        addedAt: new Date(),
-      };
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: [...existingSkills, newSkill],
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    // Check for duplicates (case-insensitive)
+    if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
+      return; // Don't add duplicate
+    }
+    const newSkill: SkillEntry = {
+      skill,
+      category,
+      source: 'manual',
+      addedAt: new Date(),
+    };
+    const newProfile = {
+      skills: [...existingSkills, newSkill],
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   removeSkill: (skillName) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    const newProfile = {
+      skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   updateSkillCategory: (skillName, category) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: existingSkills.map(s =>
-              s.skill.toLowerCase() === skillName.toLowerCase()
-                ? { ...s, category }
-                : s
-            ),
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    const newProfile = {
+      skills: existingSkills.map(s =>
+        s.skill.toLowerCase() === skillName.toLowerCase()
+          ? { ...s, category }
+          : s
+      ),
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   // Career project actions

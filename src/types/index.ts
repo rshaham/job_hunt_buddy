@@ -344,7 +344,33 @@ export interface SavedStory {
   answer: string;    // The user's experience/story
   category?: string; // Optional: "leadership", "technical", "conflict", etc.
   createdAt: Date;
+
+  // Time & Place
+  company?: string;
+  role?: string;
+  projectName?: string;
+  timeframe?: string;
+
+  // Impact
+  outcome?: string;
+  lessonsLearned?: string;
+
+  // Classification
+  skills?: string[];
+
+  // Metadata
+  source?: 'manual' | 'chat' | 'import';
+  sourceJobId?: string;
+  updatedAt?: Date;
 }
+
+export type StorySkillCategory = 'technical' | 'soft' | 'domain';
+
+export const STORY_SKILL_CATEGORIES: Record<StorySkillCategory, { label: string; color: string }> = {
+  technical: { label: 'Technical', color: 'bg-primary-subtle text-primary' },
+  soft: { label: 'Soft Skills', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
+  domain: { label: 'Domain', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+};
 
 // Career development project types
 export type ProjectStatus = 'idea' | 'in_progress' | 'completed';
@@ -451,6 +477,9 @@ export interface AppSettings {
 
   // Onboarding
   onboardingCompleted: boolean;
+
+  // Skill profile persistence (persisted from careerCoachState)
+  skillProfile?: UserSkillProfile;
 
   // Privacy consent for external services
   externalServicesConsent?: {
