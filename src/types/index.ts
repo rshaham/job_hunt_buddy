@@ -478,6 +478,9 @@ export interface AppSettings {
   // Onboarding
   onboardingCompleted: boolean;
 
+  // Skill profile persistence (persisted from careerCoachState)
+  skillProfile?: UserSkillProfile;
+
   // Privacy consent for external services
   externalServicesConsent?: {
     jobSearch?: boolean;    // SerApi job search consent

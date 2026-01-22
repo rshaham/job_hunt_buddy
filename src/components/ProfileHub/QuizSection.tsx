@@ -12,6 +12,7 @@ import {
   Plus,
   RefreshCw,
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Button, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { showToast } from '../../stores/toastStore';
@@ -362,7 +363,11 @@ function ConfidenceCheckUI({
 
             {/* AI Answer */}
             <div className="px-4 py-3">
-              <p className="text-foreground-muted text-sm whitespace-pre-wrap">{q.aiAnswer}</p>
+              <div className="text-foreground-muted text-sm prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown>
+                  {q.aiAnswer}
+                </ReactMarkdown>
+              </div>
 
               {/* Sources */}
               {q.sources.length > 0 && (

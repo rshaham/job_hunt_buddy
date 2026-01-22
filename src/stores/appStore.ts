@@ -222,6 +222,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       set({ jobs, settings, isLoading: false });
 
+      // Restore skillProfile from persisted settings
+      if (settings.skillProfile) {
+        set((state) => ({
+          careerCoachState: {
+            ...state.careerCoachState,
+            skillProfile: settings.skillProfile,
+          },
+        }));
+      }
+
       // Initialize agent chat from persisted settings
       if (settings.agentChatHistory || settings.agentMessages) {
         useCommandBarStore.getState().initializeFromSettings(settings);
@@ -704,65 +714,74 @@ export const useAppStore = create<AppState>((set, get) => ({
         skillProfile: profile,
       },
     }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: profile });
   },
 
   addSkill: (skill, category) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      // Check for duplicates (case-insensitive)
-      if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
-        return state; // Don't add duplicate
-      }
-      const newSkill: SkillEntry = {
-        skill,
-        category,
-        source: 'manual',
-        addedAt: new Date(),
-      };
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: [...existingSkills, newSkill],
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    // Check for duplicates (case-insensitive)
+    if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
+      return; // Don't add duplicate
+    }
+    const newSkill: SkillEntry = {
+      skill,
+      category,
+      source: 'manual',
+      addedAt: new Date(),
+    };
+    const newProfile = {
+      skills: [...existingSkills, newSkill],
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   removeSkill: (skillName) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    const newProfile = {
+      skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   updateSkillCategory: (skillName, category) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: existingSkills.map(s =>
-              s.skill.toLowerCase() === skillName.toLowerCase()
-                ? { ...s, category }
-                : s
-            ),
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    const newProfile = {
+      skills: existingSkills.map(s =>
+        s.skill.toLowerCase() === skillName.toLowerCase()
+          ? { ...s, category }
+          : s
+      ),
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   // Career project actions
