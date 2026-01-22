@@ -835,3 +835,91 @@ Guidelines:
 - Include specific metrics, outcomes, and details
 - Structure appropriately (STAR format for behavioral, key points for technical)
 - Make it reusable for future interviews`;
+
+// ============================================================================
+// Quiz Feature Prompts (Confidence Check & Gap Finder)
+// ============================================================================
+
+export const CONFIDENCE_CHECK_PROMPT = `You are an AI assistant helping to validate that you accurately understand the user's professional experience.
+
+The user is asking you a question about their background. Answer based ONLY on the context provided below. Do NOT make up or assume any information not explicitly stated.
+
+User's Resume:
+{resumeText}
+
+Additional Context (About Me):
+{additionalContext}
+
+Saved Stories & Experiences:
+{savedStories}
+
+Context Documents:
+{contextDocuments}
+
+User's Question: {question}
+
+IMPORTANT RULES:
+1. Only use information explicitly provided in the context above
+2. If you don't have information to answer the question, say "I don't have information about that in your profile"
+3. Be specific - cite where the information comes from (resume, stories, documents)
+4. If you're uncertain, express your uncertainty level
+5. Do NOT fabricate, assume, or infer information not stated
+
+Return ONLY valid JSON with this exact structure:
+{
+  "answer": "Your response based on the provided context",
+  "sources": ["List of sources used (e.g., 'Resume - Work Experience', 'Story: Leadership at Company X', 'Document: Performance Review')"],
+  "confidence": number from 0 to 100,
+  "missingInfo": "What additional information would help answer this better, or null if fully answered"
+}`;
+
+export const BEHAVIORAL_CATEGORIES = [
+  { id: 'leadership', label: 'Leadership & Management', examples: ['Led a team', 'Mentored others', 'Made difficult decisions'] },
+  { id: 'conflict', label: 'Conflict Resolution', examples: ['Disagreement with colleague', 'Difficult stakeholder', 'Resolved team tension'] },
+  { id: 'failure', label: 'Failure & Learning', examples: ['Made a mistake', 'Project failed', 'Learned from setback'] },
+  { id: 'achievement', label: 'Achievement & Impact', examples: ['Exceeded goals', 'Major accomplishment', 'Delivered results'] },
+  { id: 'teamwork', label: 'Teamwork & Collaboration', examples: ['Cross-functional work', 'Helped teammate', 'Built consensus'] },
+  { id: 'pressure', label: 'Working Under Pressure', examples: ['Tight deadline', 'Crisis situation', 'High-stakes decision'] },
+  { id: 'initiative', label: 'Initiative & Innovation', examples: ['Proposed new idea', 'Went above and beyond', 'Started something new'] },
+  { id: 'communication', label: 'Communication', examples: ['Presented to executives', 'Convinced stakeholders', 'Explained complex topics'] },
+  { id: 'adaptability', label: 'Adaptability & Change', examples: ['Pivoted approach', 'Learned new skill quickly', 'Handled ambiguity'] },
+  { id: 'problem_solving', label: 'Problem Solving', examples: ['Debugged complex issue', 'Found creative solution', 'Root cause analysis'] },
+] as const;
+
+export const GAP_FINDER_PROMPT = `You are an expert at analyzing behavioral interview stories and categorizing them.
+
+Analyze each story and determine which behavioral interview categories it covers. A story can cover multiple categories.
+
+Stories to analyze:
+{stories}
+
+Categories:
+- leadership: Leadership & Management (leading teams, mentoring, making decisions)
+- conflict: Conflict Resolution (disagreements, difficult situations, resolving tension)
+- failure: Failure & Learning (mistakes, setbacks, lessons learned)
+- achievement: Achievement & Impact (exceeding goals, major accomplishments, delivering results)
+- teamwork: Teamwork & Collaboration (cross-functional work, helping others, building consensus)
+- pressure: Working Under Pressure (tight deadlines, crisis situations, high stakes)
+- initiative: Initiative & Innovation (proposing ideas, going above and beyond, starting new things)
+- communication: Communication (presenting, convincing others, explaining complex topics)
+- adaptability: Adaptability & Change (pivoting, learning quickly, handling ambiguity)
+- problem_solving: Problem Solving (debugging, creative solutions, root cause analysis)
+
+Return ONLY valid JSON with this exact structure:
+{
+  "storyAnalysis": [
+    {
+      "storyId": "story_id",
+      "categories": ["category1", "category2"],
+      "primaryCategory": "the most relevant category",
+      "reasoning": "Brief explanation of why these categories apply"
+    }
+  ],
+  "categoryCoverage": {
+    "leadership": { "covered": true/false, "storyCount": number, "storyIds": ["id1", "id2"] },
+    "conflict": { "covered": true/false, "storyCount": number, "storyIds": [] },
+    ... (all 10 categories)
+  },
+  "overallCoverage": number from 0 to 100,
+  "suggestions": ["Suggestion 1 for what stories to add", "Suggestion 2"]
+}`;
