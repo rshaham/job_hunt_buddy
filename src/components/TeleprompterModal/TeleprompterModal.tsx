@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Play } from 'lucide-react';
+import { X, Play, ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
+import { generateRealtimeTeleprompterKeywords } from '../../services/ai';
 import type { Job, TeleprompterInterviewType, CustomInterviewType } from '../../types';
 import { TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../../types';
 
@@ -253,17 +254,229 @@ function SetupScreen({
   );
 }
 
-// Placeholder components - will be implemented in Tasks 7-8
-function ActiveScreen({ onEndInterview }: { onEndInterview: () => void }) {
+// Active Screen Component - main teleprompter display during interview
+interface ActiveScreenProps {
+  onEndInterview: () => void;
+}
+
+function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
+  const {
+    teleprompterSession,
+    jobs,
+    settings,
+    promoteKeywordFromStaging,
+    dismissStagingKeyword,
+    dismissDisplayedKeyword,
+    addKeywordsFromAI,
+    toggleCategory,
+  } = useAppStore();
+
+  const [inputValue, setInputValue] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+
+  const job = teleprompterSession?.jobId
+    ? jobs.find(j => j.id === teleprompterSession.jobId)
+    : null;
+
+  const handleInputSubmit = useCallback(async () => {
+    if (!inputValue.trim() || !teleprompterSession || isGenerating) return;
+
+    setIsGenerating(true);
+    try {
+      const currentKeywords = teleprompterSession.categories
+        .flatMap(c => c.keywords.map(k => k.text));
+
+      const categoryIds = teleprompterSession.categories.map(c => c.id);
+
+      const keywords = await generateRealtimeTeleprompterKeywords(
+        inputValue,
+        TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType],
+        job?.company || 'Unknown',
+        currentKeywords,
+        settings.additionalContext || settings.defaultResumeText || '',
+        categoryIds
+      );
+
+      addKeywordsFromAI(keywords);
+      setInputValue('');
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [inputValue, teleprompterSession, job, settings, isGenerating, addKeywordsFromAI]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleInputSubmit();
+    }
+  }, [handleInputSubmit]);
+
+  if (!teleprompterSession) return null;
+
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <p className="text-xl text-foreground-muted mb-4">Active Screen - Coming in Task 7</p>
-      <button
-        onClick={onEndInterview}
-        className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-      >
-        End Interview (placeholder)
-      </button>
+    <div className="h-full flex flex-col">
+      {/* Top bar with job info and end button */}
+      <div className="flex items-center justify-between pb-4 border-b border-border mb-4">
+        <div>
+          <h3 className="text-2xl font-bold text-foreground">
+            {job ? `${job.company} - ${job.title}` : 'Interview Mode'}
+          </h3>
+          <p className="text-lg text-foreground-muted">
+            {TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType]}
+            {teleprompterSession.customInterviewType && `: ${teleprompterSession.customInterviewType}`}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowEndConfirm(true)}
+          className="px-6 py-3 text-lg font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+        >
+          End Interview
+        </button>
+      </div>
+
+      {/* Staging area for initial suggestions */}
+      {teleprompterSession.stagingKeywords.length > 0 && (
+        <div className="mb-4 p-4 bg-surface-raised rounded-lg border border-border">
+          <p className="text-sm text-foreground-muted mb-2">
+            AI Suggestions (click to add to display):
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {teleprompterSession.stagingKeywords.map((keyword) => (
+              <button
+                key={keyword.id}
+                onClick={() => {
+                  // Find appropriate category (first one for now)
+                  const firstCategory = teleprompterSession.categories[0];
+                  if (firstCategory) {
+                    promoteKeywordFromStaging(keyword.id, firstCategory.id);
+                  }
+                }}
+                className="px-3 py-2 text-base bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
+              >
+                {keyword.text}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dismissStagingKeyword(keyword.id);
+                  }}
+                  className="ml-2 text-primary/60 hover:text-primary"
+                >
+                  ×
+                </button>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main keyword display - categories */}
+      <div className="flex-1 overflow-y-auto space-y-4">
+        {teleprompterSession.categories.map((category) => (
+          <div key={category.id} className="border border-border rounded-lg overflow-hidden">
+            {/* Category header */}
+            <button
+              onClick={() => toggleCategory(category.id)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-surface-raised hover:bg-surface transition-colors"
+            >
+              <span className="text-xl font-semibold text-foreground">
+                {category.name}
+              </span>
+              <ChevronDown
+                className={cn(
+                  'w-6 h-6 text-foreground-muted transition-transform',
+                  category.isExpanded && 'rotate-180'
+                )}
+              />
+            </button>
+
+            {/* Keywords */}
+            {category.isExpanded && (
+              <div className="p-4 flex flex-wrap gap-3">
+                {category.keywords.filter(k => !k.inStaging).length === 0 ? (
+                  <p className="text-lg text-foreground-muted italic">
+                    No keywords yet. Type below to add some.
+                  </p>
+                ) : (
+                  category.keywords
+                    .filter(k => !k.inStaging)
+                    .map((keyword) => (
+                      <button
+                        key={keyword.id}
+                        onClick={() => dismissDisplayedKeyword(category.id, keyword.id)}
+                        className={cn(
+                          'px-4 py-3 text-2xl font-medium rounded-lg transition-all',
+                          'hover:opacity-70 hover:line-through cursor-pointer',
+                          keyword.source === 'profile' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
+                          keyword.source === 'ai-initial' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+                          keyword.source === 'ai-realtime' && 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+                          keyword.source === 'user' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
+                        )}
+                      >
+                        {keyword.text}
+                      </button>
+                    ))
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Input area - always visible at bottom */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a keyword for AI suggestions..."
+            disabled={isGenerating}
+            className="flex-1 px-4 py-4 text-xl border border-border rounded-lg bg-surface text-foreground focus:ring-2 focus:ring-primary disabled:opacity-50"
+          />
+          <button
+            onClick={handleInputSubmit}
+            disabled={!inputValue.trim() || isGenerating}
+            className="px-6 py-4 text-xl font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isGenerating ? '...' : 'Add'}
+          </button>
+        </div>
+      </div>
+
+      {/* End confirmation modal */}
+      {showEndConfirm && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+          <div className="bg-surface rounded-lg p-6 max-w-md mx-4">
+            <h4 className="text-xl font-bold text-foreground mb-2">
+              End Interview?
+            </h4>
+            <p className="text-foreground-muted mb-4">
+              You'll be able to review which keywords were helpful before closing.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEndConfirm(false)}
+                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-surface-raised transition-colors"
+              >
+                Continue Interview
+              </button>
+              <button
+                onClick={() => {
+                  setShowEndConfirm(false);
+                  onEndInterview();
+                }}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                End Interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
