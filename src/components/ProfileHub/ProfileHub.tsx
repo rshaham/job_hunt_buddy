@@ -5,6 +5,7 @@ import { useAppStore } from '../../stores/appStore';
 import { cn } from '../../utils/helpers';
 import { StoriesSection } from './StoriesSection';
 import { AddStoryModal } from './AddStoryModal';
+import { ResumeSection } from './ResumeSection';
 import type { SavedStory } from '../../types';
 
 type ProfileSection = 'resume' | 'stories' | 'documents' | 'about' | 'skills' | 'quiz';
@@ -118,7 +119,7 @@ export function ProfileHub(): JSX.Element | null {
 
           {/* Section Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {activeSection === 'resume' && <div>Resume Section (TODO)</div>}
+            {activeSection === 'resume' && <ResumeSection />}
             {activeSection === 'stories' && (
               <StoriesSection
                 onAddStory={handleAddStory}
