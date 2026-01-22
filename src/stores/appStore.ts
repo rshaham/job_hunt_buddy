@@ -104,6 +104,8 @@ interface AppState {
 
   // Saved story actions
   updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
+  addSavedStory: (story: Omit<SavedStory, 'id' | 'createdAt'>) => Promise<SavedStory>;
+  deleteSavedStory: (id: string) => Promise<void>;
 
   // Learning task actions
   updateLearningTask: (jobId: string, taskId: string, updates: Partial<LearningTask>) => Promise<void>;
@@ -417,6 +419,33 @@ export const useAppStore = create<AppState>((set, get) => ({
         triggerStoryEmbedding(story);
       }
     }
+  },
+
+  addSavedStory: async (storyData) => {
+    const newStory: SavedStory = {
+      ...storyData,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: storyData.source || 'manual',
+    };
+    const newStories = [...(get().settings.savedStories || []), newStory];
+    await get().updateSettings({ savedStories: newStories });
+    triggerStoryEmbedding(newStory);
+    return newStory;
+  },
+
+  deleteSavedStory: async (id) => {
+    const newStories = (get().settings.savedStories || []).filter((s) => s.id !== id);
+    await get().updateSettings({ savedStories: newStories });
+    // Remove embedding
+    setTimeout(() => {
+      import('../services/embeddings').then(({ removeEmbeddingsByEntity }) => {
+        removeEmbeddingsByEntity('story', id).catch((error) => {
+          console.warn('[AppStore] Failed to remove story embedding:', error);
+        });
+      });
+    }, 0);
   },
 
   // Learning task actions
