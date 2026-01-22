@@ -12,12 +12,53 @@ A dedicated top-level screen for managing everything the AI knows about the user
 
 ## Structure
 
-### Navigation
-- New header item: "My Profile" (same level as Kanban board)
-- Settings modal links to Profile Hub for profile-related items
-- Entry points from empty states when profile data is needed
+### Navigation & Entry Point
 
-### Tabs (6 total)
+**Primary access:** New "My Profile" item in the left sidebar (between Coach and Settings), using a User icon. This follows the existing navigation pattern:
+- Jobs (board)
+- Find Jobs
+- Coach
+- **My Profile** ← NEW
+- Settings
+
+**Opens as:** Full-screen SlideOverPanel (same pattern as JobDetailView)
+
+**Secondary entry points:**
+- Settings modal links to Profile Hub for profile-related items
+- Empty state prompts when cover letter or prep needs context but profile is sparse
+
+### Internal Layout: Sidebar Navigation
+
+Rather than horizontal tabs (which would visually match JobDetailView and feel cramped with 6 items), Profile Hub uses **internal sidebar navigation** to differentiate it as the "who I am" space.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  My Profile                               [Close]   │
+├──────────┬──────────────────────────────────────────┤
+│          │                                          │
+│ 📄 Resume│   [Content area for selected section]   │
+│ 📚 Stories                                          │
+│ 📎 Docs  │                                          │
+│ 👤 About │                                          │
+│ ─────────│                                          │
+│ 🎯 Skills│                                          │
+│ 🧪 Quiz  │                                          │
+│          │                                          │
+└──────────┴──────────────────────────────────────────┘
+```
+
+**Section grouping:**
+- **Content sections** (top): Resume, Stories, Documents, About Me
+- **Insights sections** (bottom, after divider): Skills, AI Quiz
+
+**Visual treatment:**
+- Sidebar width: ~180px
+- Active section: Left border accent (3px primary color), background surface-raised
+- Content sections: Full opacity icons and labels
+- Insights sections: Slightly muted, with subtle section divider above
+- Hover: Background surface-raised
+
+### Sections (6 total)
 1. **Resume** - View/upload default resume, extracted skills
 2. **Stories** - Enriched experience bank (core improvement)
 3. **Documents** - Context PDFs with summaries
@@ -73,6 +114,40 @@ interface EnrichedStory {
 - Cards showing question, company, timeframe, skill tags
 - Filter by skill, company, or time period
 - Search across all story content
+
+#### Story Card Design
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ "Tell me about a time you led a difficult project"         │
+│                                                            │
+│ Acme Corp · Senior Engineer · Q2 2023                      │
+│                                                            │
+│ ┌──────────┐ ┌───────────┐ ┌──────────────┐               │
+│ │leadership│ │ technical │ │communication │               │
+│ └──────────┘ └───────────┘ └──────────────┘               │
+│                                                            │
+│ Outcome: Reduced costs by 40%, promoted afterward          │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Visual details:**
+- **Question**: Primary text (font-display, text-heading)
+- **Context line**: Company · Role · Timeframe in muted text, separated by interpuncts (·)
+- **Skill tags**: Small pills using Badge component
+- **Outcome**: Single line, truncated, in foreground-muted
+- **Hover state**: Subtle border-primary/30 highlight (matching JobCard pattern)
+- **Click**: Opens expanded view or slide-over with full story + edit capability
+
+**Skill tag colors by category:**
+- Technical skills: Teal (primary-subtle)
+- Soft skills: Amber (matching Notes section color scheme)
+- Domain skills: Purple (matching Timeline section color scheme)
+
+**Source indicator for chat-saved stories:**
+```
+💬 Saved from: Acme Corp prep chat
+```
 
 ### Story Add/Edit View
 - AI-assisted extraction from raw text
@@ -204,6 +279,57 @@ Optionally show which stories AI used: "Context included: Story X, Story Y, Stor
 - Additional context (`additionalContext`)
 - Skill profile
 
+## UI/UX Details
+
+### Profile Completeness Indicator
+
+Subtle progress indicator showing profile completeness:
+- Has resume? (+20%)
+- Has 3+ stories? (+30%)
+- Has additional context? (+20%)
+- Has context documents? (+15%)
+- Has run AI quiz? (+15%)
+
+This gamifies profile building and surfaces gaps proactively.
+
+### Empty States
+
+Each section needs a compelling empty state:
+
+**Stories empty:**
+> "Your story bank is empty. Add experiences the AI can reference when writing cover letters and preparing for interviews."
+> [Add Story] button
+
+**Quiz empty:**
+> "Test how well the AI knows your stories. Run a confidence check before your next interview."
+> [Start Quiz] button
+
+### AI Quiz Visual Treatment
+
+**Confidence Check mode:**
+- Split view: "AI's Recall" on left, "Your Actual Story" on right
+- Diff-style highlighting for matches/misses
+- Summary feedback at bottom
+
+**Gap Finder mode:**
+- Category cards showing coverage percentage
+- Empty categories highlighted in warning color (amber)
+- "Add story" button next to each gap
+
+### Animation & Polish
+
+**Page transition:** Profile Hub slides in from right as SlideOverPanel (same as JobDetailView)
+
+**Micro-interactions:**
+- Story cards: Subtle scale(1.01) on hover
+- Skill tags: Gentle fade-in with stagger when story card appears
+- Quiz results: Animated progress bars for coverage percentages
+- Save confirmation: Success toast with checkmark
+
+**Loading states:**
+- AI extraction: Use existing ThinkingBubble component
+- Quiz running: Pulsing skeleton for comparison view
+
 ## Data Migration
 
 - Existing data stays in `AppSettings` - same storage location
@@ -213,10 +339,10 @@ Optionally show which stories AI used: "Context included: Story X, Story Y, Stor
 
 ## Open Questions for Implementation
 
-1. **Tab layout:** Tabs recommended, but consult frontend-designer for final layout decision
-2. **Story card design:** How much metadata to show in list view vs. detail view?
-3. **Quiz scoring:** How to quantify confidence check results?
-4. **Skill linking:** Auto-link skills to stories, or require manual tagging?
+1. ~~**Tab layout:**~~ RESOLVED - Internal sidebar navigation (not horizontal tabs)
+2. ~~**Story card design:**~~ RESOLVED - See "Story Card Design" section above
+3. **Quiz scoring:** How to quantify confidence check results? (e.g., percentage match, categorical feedback)
+4. **Skill linking:** Auto-link skills to stories based on AI extraction, or require manual tagging?
 
 ## Success Criteria
 
