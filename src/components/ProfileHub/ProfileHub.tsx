@@ -3,6 +3,9 @@ import { FileText, BookOpen, Paperclip, User, Target, FlaskConical, X } from 'lu
 import { SlideOverPanel } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { cn } from '../../utils/helpers';
+import { StoriesSection } from './StoriesSection';
+import { AddStoryModal } from './AddStoryModal';
+import type { SavedStory } from '../../types';
 
 type ProfileSection = 'resume' | 'stories' | 'documents' | 'about' | 'skills' | 'quiz';
 
@@ -25,8 +28,23 @@ const insightSections: NavItem[] = [
 ];
 
 export function ProfileHub(): JSX.Element | null {
-  const { isProfileHubOpen, closeProfileHub } = useAppStore();
+  const { isProfileHubOpen, closeProfileHub, settings } = useAppStore();
   const [activeSection, setActiveSection] = useState<ProfileSection>('resume');
+  const [isAddStoryModalOpen, setIsAddStoryModalOpen] = useState(false);
+  const [editingStory, setEditingStory] = useState<SavedStory | null>(null);
+
+  const handleAddStory = () => {
+    setEditingStory(null);
+    setIsAddStoryModalOpen(true);
+  };
+
+  const handleEditStory = (storyId: string) => {
+    const story = settings.savedStories?.find((s) => s.id === storyId);
+    if (story) {
+      setEditingStory(story);
+      setIsAddStoryModalOpen(true);
+    }
+  };
 
   return (
     <SlideOverPanel isOpen={isProfileHubOpen} onClose={closeProfileHub} size="full">
@@ -101,7 +119,12 @@ export function ProfileHub(): JSX.Element | null {
           {/* Section Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {activeSection === 'resume' && <div>Resume Section (TODO)</div>}
-            {activeSection === 'stories' && <div>Stories Section (TODO)</div>}
+            {activeSection === 'stories' && (
+              <StoriesSection
+                onAddStory={handleAddStory}
+                onEditStory={handleEditStory}
+              />
+            )}
             {activeSection === 'documents' && <div>Documents Section (TODO)</div>}
             {activeSection === 'about' && <div>About Me Section (TODO)</div>}
             {activeSection === 'skills' && <div>Skills Section (TODO)</div>}
@@ -109,6 +132,14 @@ export function ProfileHub(): JSX.Element | null {
           </div>
         </div>
       </div>
+      <AddStoryModal
+        isOpen={isAddStoryModalOpen}
+        onClose={() => {
+          setIsAddStoryModalOpen(false);
+          setEditingStory(null);
+        }}
+        editingStory={editingStory}
+      />
     </SlideOverPanel>
   );
 }
