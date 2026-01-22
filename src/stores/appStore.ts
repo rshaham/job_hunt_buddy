@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword } from '../types';
-import { DEFAULT_SETTINGS } from '../types';
+import { DEFAULT_SETTINGS, TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../types';
+import { generateTeleprompterKeywords } from '../services/ai';
 import * as db from '../services/db';
 import { saveSession, getCustomInterviewTypes, saveCustomInterviewType as saveCustomInterviewTypeDB, saveFeedbackBatch } from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -700,19 +701,65 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   startTeleprompterSession: async (jobId, interviewType, customType) => {
+    const { jobs, settings } = get();
+    const job = jobId ? jobs.find(j => j.id === jobId) ?? null : null;
+
+    const categories = getCategoriesForInterviewType(interviewType);
+
     const session: TeleprompterSession = {
       id: crypto.randomUUID(),
       jobId,
       interviewType,
       customInterviewType: customType,
-      categories: getCategoriesForInterviewType(interviewType),
+      categories,
       stagingKeywords: [],
       dismissedKeywordIds: [],
       startedAt: new Date(),
       isActive: true,
     };
+
+    // Save initial session immediately so UI can render
     await saveSession(session);
     set({ teleprompterSession: session });
+
+    // Generate initial keywords in background (don't block)
+    try {
+      const categoryInfo = categories.map(c => ({ id: c.id, name: c.name }));
+      const userSkills = settings.additionalContext?.split(',').map(s => s.trim()).filter(Boolean) || [];
+      const userStories = settings.savedStories || [];
+
+      const keywordsByCategory = await generateTeleprompterKeywords(
+        TELEPROMPTER_INTERVIEW_TYPE_LABELS[interviewType] + (customType ? `: ${customType}` : ''),
+        job,
+        categoryInfo,
+        userSkills,
+        userStories
+      );
+
+      // Convert to staging keywords
+      const stagingKeywords: TeleprompterKeyword[] = [];
+      for (const { keywords } of keywordsByCategory) {
+        for (const text of keywords) {
+          stagingKeywords.push({
+            id: crypto.randomUUID(),
+            text,
+            source: 'ai-initial',
+            inStaging: true,
+          });
+        }
+      }
+
+      // Get current session (might have been updated)
+      const currentSession = get().teleprompterSession;
+      if (currentSession && currentSession.id === session.id) {
+        const updatedSession = { ...currentSession, stagingKeywords };
+        await saveSession(updatedSession);
+        set({ teleprompterSession: updatedSession });
+      }
+    } catch (error) {
+      console.error('[Teleprompter] Error generating initial keywords:', error);
+      // Continue without initial keywords - user can still type
+    }
   },
 
   endTeleprompterSession: async () => {
