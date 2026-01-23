@@ -301,7 +301,30 @@ Provide a concise "cheat sheet" for the candidate:
 
 5. **Common Ground**: Any potential shared interests, experiences, or connections with the candidate.
 
+6. **Red Flags to Avoid**: 2-3 things the candidate should NOT do or say based on this interviewer's apparent preferences (e.g., avoid vague answers if they're metrics-focused, don't ramble if they value brevity, skip buzzwords if they're technically deep).
+
 Be concise and actionable. Focus on insights that will help the candidate build rapport and communicate effectively.`;
+
+export const INTEL_TO_JSON_PROMPT = `Convert this interviewer analysis to JSON.
+
+Input:
+{markdown}
+
+Output the following JSON structure (no other text):
+{
+  "communicationStyle": "paragraph describing their communication preferences",
+  "whatTheyValue": ["item1", "item2", "item3"],
+  "talkingPoints": ["point1", "point2", "point3"],
+  "questionsToAsk": ["question1", "question2"],
+  "commonGround": ["shared interest 1", "shared interest 2"],
+  "redFlags": ["thing to avoid 1", "thing to avoid 2"]
+}
+
+Rules:
+- Extract content from the markdown sections
+- Keep items concise (under 100 chars each)
+- If a section is missing, use an empty array or empty string
+- Return ONLY valid JSON, no markdown or explanation`;
 
 export const EMAIL_DRAFT_PROMPT = `Write a professional {emailType} email for this job application.
 

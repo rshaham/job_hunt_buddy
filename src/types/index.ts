@@ -74,6 +74,17 @@ export interface ResumeAnalysis {
   missingKeywords?: string[];  // Keywords from JD NOT found in resume
 }
 
+// Structured interviewer intel (JSON format)
+// Parser detects JSON vs markdown for backwards compat with existing data
+export interface InterviewerIntel {
+  communicationStyle: string;   // Single paragraph describing preferred style
+  whatTheyValue: string[];      // 3-5 items they care about
+  talkingPoints: string[];      // 3-4 things candidate should mention
+  questionsToAsk: string[];     // 2-3 personalized questions
+  commonGround: string[];       // 1-3 shared interests/connections
+  redFlags: string[];           // 2-3 things to AVOID saying/doing
+}
+
 export interface Contact {
   id: string;
   name: string;
@@ -83,7 +94,7 @@ export interface Contact {
   linkedin?: string;
   notes?: string;
   linkedInBio?: string;       // Raw pasted bio text
-  interviewerIntel?: string;  // AI-generated analysis (markdown)
+  interviewerIntel?: string;  // AI-generated analysis (JSON string or legacy markdown)
   interviewRole?: string;     // Soft label like "Technical Round", "Hiring Manager"
 }
 

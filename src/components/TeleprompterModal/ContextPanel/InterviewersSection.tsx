@@ -94,7 +94,8 @@ interface InterviewerIntelContentProps {
 
 /**
  * Displays the parsed interviewer intel content directly.
- * Shows values as chips, talking points as buttons, questions as a list.
+ * Shows communication style as text, values as chips, talking points as buttons,
+ * questions as a list, and common ground as chips.
  */
 function InterviewerIntelContent({
   intel,
@@ -103,6 +104,18 @@ function InterviewerIntelContent({
 }: InterviewerIntelContentProps) {
   return (
     <div className="space-y-3 pt-2">
+      {/* Communication Style */}
+      {intel.communicationStyle && (
+        <div>
+          <p className="text-xs text-foreground-muted mb-1">Communication Style</p>
+          <p className="text-xs text-foreground leading-relaxed">
+            {intel.communicationStyle.length > 150
+              ? intel.communicationStyle.slice(0, 150) + '...'
+              : intel.communicationStyle}
+          </p>
+        </div>
+      )}
+
       {/* What They Value */}
       {intel.whatTheyValue.length > 0 && (
         <div>
@@ -169,6 +182,52 @@ function InterviewerIntelContent({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Common Ground */}
+      {intel.commonGround.length > 0 && (
+        <div>
+          <p className="text-xs text-foreground-muted mb-1">Common Ground</p>
+          <div className="flex flex-wrap gap-1">
+            {intel.commonGround.slice(0, 3).map((item, idx) => {
+              const isAdded = addedKeywords.has(item.toLowerCase());
+              return (
+                <button
+                  key={`ground-${idx}`}
+                  onClick={() => !isAdded && onAddKeyword(item)}
+                  disabled={isAdded}
+                  title={item}
+                  className={cn(
+                    'px-1.5 py-0.5 text-xs rounded transition-colors',
+                    isAdded
+                      ? 'bg-green-100/50 dark:bg-green-900/20 text-green-400 dark:text-green-600 cursor-default'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                  )}
+                >
+                  {item.length > 30 ? item.slice(0, 30) + '...' : item}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Red Flags to Avoid */}
+      {intel.redFlags.length > 0 && (
+        <div>
+          <p className="text-xs text-foreground-muted mb-1">Avoid</p>
+          <div className="flex flex-wrap gap-1">
+            {intel.redFlags.slice(0, 3).map((item, idx) => (
+              <span
+                key={`redflag-${idx}`}
+                title={item}
+                className="px-1.5 py-0.5 text-xs rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+              >
+                {item.length > 30 ? item.slice(0, 30) + '...' : item}
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>
