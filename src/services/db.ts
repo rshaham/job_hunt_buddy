@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { z } from 'zod';
-import type { Job, AppSettings, EmbeddingRecord, EmbeddableEntityType, ProviderType, ProviderSettings } from '../types';
+import type { Job, AppSettings, EmbeddingRecord, EmbeddableEntityType, ProviderType, ProviderSettings, TeleprompterSession, TeleprompterFeedback, CustomInterviewType } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 
 // Minimal import validation schema
@@ -24,6 +24,9 @@ export class JobHuntDB extends Dexie {
   jobs!: Table<Job, string>;
   settings!: Table<AppSettings, string>;
   embeddings!: Table<EmbeddingRecord, string>;
+  teleprompterSessions!: Table<TeleprompterSession, string>;
+  teleprompterFeedback!: Table<TeleprompterFeedback, string>;
+  customInterviewTypes!: Table<CustomInterviewType, string>;
 
   constructor() {
     super('JobHuntBuddy');
@@ -41,6 +44,16 @@ export class JobHuntDB extends Dexie {
       jobs: 'id, company, title, status, dateAdded, lastUpdated',
       settings: 'id',
       embeddings: 'id, [entityType+entityId], entityType, parentJobId, createdAt',
+    });
+
+    // Version 3: Add teleprompter tables
+    this.version(3).stores({
+      jobs: 'id, company, title, status, dateAdded, lastUpdated',
+      settings: 'id',
+      embeddings: 'id, [entityType+entityId], entityType, parentJobId, createdAt',
+      teleprompterSessions: 'id, jobId, isActive, startedAt',
+      teleprompterFeedback: 'id, sessionId, interviewType, timestamp',
+      customInterviewTypes: 'id, name, createdAt',
     });
   }
 }
@@ -284,4 +297,49 @@ export async function clearAllEmbeddings(): Promise<void> {
  */
 export async function getEmbeddingsCount(): Promise<number> {
   return await db.embeddings.count();
+}
+
+// ============================================================================
+// Teleprompter CRUD Operations
+// ============================================================================
+
+// Sessions
+export async function getActiveSession(): Promise<TeleprompterSession | undefined> {
+  // Filter in code since boolean indexing is unreliable across browsers
+  const sessions = await db.teleprompterSessions.toArray();
+  return sessions.find(s => s.isActive);
+}
+
+export async function saveSession(session: TeleprompterSession): Promise<void> {
+  await db.teleprompterSessions.put(session);
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  await db.teleprompterSessions.delete(id);
+}
+
+// Feedback
+export async function saveFeedback(feedback: TeleprompterFeedback): Promise<void> {
+  await db.teleprompterFeedback.put(feedback);
+}
+
+export async function saveFeedbackBatch(feedbackItems: TeleprompterFeedback[]): Promise<void> {
+  await db.teleprompterFeedback.bulkPut(feedbackItems);
+}
+
+export async function getFeedbackByInterviewType(interviewType: string): Promise<TeleprompterFeedback[]> {
+  return await db.teleprompterFeedback.where('interviewType').equals(interviewType).toArray();
+}
+
+// Custom Interview Types
+export async function getCustomInterviewTypes(): Promise<CustomInterviewType[]> {
+  return await db.customInterviewTypes.toArray();
+}
+
+export async function saveCustomInterviewType(type: CustomInterviewType): Promise<void> {
+  await db.customInterviewTypes.put(type);
+}
+
+export async function deleteCustomInterviewType(id: string): Promise<void> {
+  await db.customInterviewTypes.delete(id);
 }

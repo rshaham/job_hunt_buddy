@@ -213,10 +213,17 @@ Original question/context: {question}
 
 Original answer/response: {answer}
 
+Job context (if available): {jobContext}
+
 Return ONLY valid JSON with this exact structure:
 {
   "question": "Clear, concise topic/title (e.g., 'Leadership experience at startup', 'Handling cross-team conflicts')",
-  "answer": "Clean, factual summary of the experience with specific details, metrics, and outcomes. Written in first person. Remove any conversational filler, AI responses, or back-and-forth. Focus on the candidate's actual experience and achievements."
+  "answer": "Clean, factual summary of the experience with specific details, metrics, and outcomes. Written in first person. Remove any conversational filler, AI responses, or back-and-forth. Focus on the candidate's actual experience and achievements.",
+  "company": "Company name if mentioned in the context, or null",
+  "role": "Job title if mentioned, or null",
+  "timeframe": "When this happened if mentioned (e.g., 'Q2 2023'), or null",
+  "outcome": "The measurable result or impact, or null",
+  "skills": ["skill1", "skill2"]
 }
 
 Guidelines:
@@ -225,6 +232,31 @@ Guidelines:
 - Write in a reusable format that provides context for any AI reading it later
 - Keep it concise but complete
 - If the original has multiple experiences, focus on the most substantial one
+- Skills should be general categories: leadership, technical, communication, problem-solving, teamwork, conflict-resolution, initiative
+
+Return ONLY valid JSON.`;
+
+export const EXTRACT_STORY_METADATA_PROMPT = `Extract structured metadata from this story/experience for a job application memory bank.
+
+Raw text:
+{rawText}
+
+Return ONLY valid JSON with this exact structure:
+{
+  "question": "A clear behavioral interview question this story answers (e.g., 'Tell me about a time you led a difficult project')",
+  "answer": "Clean, first-person narrative of the experience with specific details. Remove conversational filler.",
+  "company": "Company name if mentioned, or null",
+  "role": "Job title/role if mentioned, or null",
+  "timeframe": "When this happened (e.g., 'Q2 2023', '2022-2023'), or null",
+  "outcome": "The result or impact of this experience, or null",
+  "skills": ["skill1", "skill2"] // Skills demonstrated (e.g., "leadership", "problem-solving", "technical")
+}
+
+Guidelines:
+- Extract the core experience, not AI responses or conversational filler
+- Include specific metrics and outcomes if mentioned
+- Skills should be general categories like: leadership, technical, communication, problem-solving, teamwork, conflict-resolution, initiative
+- If information isn't clearly stated, use null rather than guessing
 
 Return ONLY valid JSON.`;
 
@@ -803,3 +835,219 @@ Guidelines:
 - Include specific metrics, outcomes, and details
 - Structure appropriately (STAR format for behavioral, key points for technical)
 - Make it reusable for future interviews`;
+
+// ============================================================================
+// Teleprompter Prompts
+// ============================================================================
+
+export const TELEPROMPTER_FLAT_INITIAL_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Generate memory-jogging keywords and short phrases as a flat list (no categories) for their interview teleprompter.
+
+INTERVIEW CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+Job Title: {title}
+Job Requirements: {requirements}
+User's Key Skills: {userSkills}
+User's Stories/Experiences: {userStories}
+
+Generate 8-12 highly relevant keywords or short phrases (max 6 words each) that will help the candidate during their interview.
+
+The keywords should:
+- Be memory joggers, NOT full sentences
+- Reference specific experiences, metrics, or accomplishments from the user's background
+- Be directly relevant to the interview type and job requirements
+- Help the candidate recall their best talking points
+- Cover a variety of topics (skills, achievements, stories, metrics)
+
+Return ONLY valid JSON with this exact structure:
+{
+  "keywords": ["keyword1", "keyword2", "keyword3", ...]
+}`;
+
+export const TELEPROMPTER_INITIAL_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Generate memory-jogging keywords and short phrases for their interview teleprompter.
+
+INTERVIEW CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+Job Title: {title}
+Job Requirements: {requirements}
+User's Key Skills: {userSkills}
+User's Stories/Experiences: {userStories}
+
+Generate 3-5 relevant keywords or short phrases (max 6 words each) for EACH of these categories:
+{categories}
+
+The keywords should:
+- Be memory joggers, NOT full sentences
+- Reference specific experiences, metrics, or accomplishments from the user's background
+- Be directly relevant to the interview type and job requirements
+- Help the candidate recall their best talking points
+
+Return ONLY valid JSON with this exact structure:
+{
+  "categories": [
+    {
+      "categoryId": "the-category-id",
+      "keywords": ["keyword1", "keyword2", "keyword3"]
+    }
+  ]
+}`;
+
+export const TELEPROMPTER_REALTIME_ASSIST_PROMPT = `You are helping someone DURING a live job interview. They just typed a keyword and need quick memory joggers.
+
+CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+User typed: {userInput}
+Current keywords on display: {currentKeywords}
+User's background: {userBackground}
+
+Generate 3-5 SHORT memory-jogging phrases (max 6 words each) related to their input.
+- Pull from their actual experience when possible
+- Make them scannable at a glance
+- Do NOT repeat keywords already on display
+
+Assign each to the most appropriate category from: {categoryIds}
+
+Return ONLY valid JSON:
+{
+  "keywords": [
+    { "text": "phrase here", "categoryId": "category-id" }
+  ]
+}`;
+
+export const TELEPROMPTER_SEMANTIC_KEYWORDS_PROMPT = `You are helping someone prepare for a job interview. Analyze their background and the job requirements to create SEMANTICALLY MEANINGFUL keyword categories specific to THIS candidate and THIS role.
+
+INTERVIEW CONTEXT:
+Interview Type: {interviewType}
+Company: {company}
+Job Title: {title}
+Job Requirements: {requirements}
+User's Key Skills: {userSkills}
+User's Stories/Experiences: {userStories}
+
+YOUR TASK:
+Create 3-6 keyword categories that are SPECIFIC to this candidate's actual experience and the job requirements. Then generate 3-5 memory-jogging keywords for each category.
+
+CRITICAL: Categories must be SPECIFIC, not generic.
+BAD examples (too generic):
+- "Leadership"
+- "Technical Skills"
+- "Problem-Solving"
+- "Communication"
+
+GOOD examples (specific to actual content):
+- "AWS Migration at Acme Corp"
+- "React/TypeScript Frontend Work"
+- "Team Lead Experience at StartupX"
+- "E-commerce Platform Scaling"
+- "Customer Churn Reduction Project"
+
+Guidelines for categories:
+- Derive category names from ACTUAL content in their background and stories
+- Include company names, technologies, or project names when relevant
+- Make categories instantly recognizable to the candidate
+- Each category should map to real experiences they can speak about
+
+Guidelines for keywords:
+- Be memory joggers, NOT full sentences (max 6 words each)
+- Reference specific metrics, outcomes, or accomplishments
+- Help the candidate recall their best talking points
+
+Return ONLY valid JSON with this exact structure:
+{
+  "categories": [
+    {
+      "name": "Specific Category Name Here",
+      "keywords": ["keyword1", "metric or outcome", "specific detail"]
+    }
+  ]
+}`;
+
+// ============================================================================
+// Quiz Feature Prompts (Confidence Check & Gap Finder)
+// ============================================================================
+
+export const CONFIDENCE_CHECK_PROMPT = `You are an AI assistant helping to validate that you accurately understand the user's professional experience.
+
+The user is asking you a question about their background. Answer based ONLY on the context provided below. Do NOT make up or assume any information not explicitly stated.
+
+User's Resume:
+{resumeText}
+
+Additional Context (About Me):
+{additionalContext}
+
+Saved Stories & Experiences:
+{savedStories}
+
+Context Documents:
+{contextDocuments}
+
+User's Question: {question}
+
+IMPORTANT RULES:
+1. Only use information explicitly provided in the context above
+2. If you don't have information to answer the question, say "I don't have information about that in your profile"
+3. Be specific - cite where the information comes from (resume, stories, documents)
+4. If you're uncertain, express your uncertainty level
+5. Do NOT fabricate, assume, or infer information not stated
+
+Return ONLY valid JSON with this exact structure:
+{
+  "answer": "Your response based on the provided context",
+  "sources": ["List of sources used (e.g., 'Resume - Work Experience', 'Story: Leadership at Company X', 'Document: Performance Review')"],
+  "confidence": number from 0 to 100,
+  "missingInfo": "What additional information would help answer this better, or null if fully answered"
+}`;
+
+export const BEHAVIORAL_CATEGORIES = [
+  { id: 'leadership', label: 'Leadership & Management', examples: ['Led a team', 'Mentored others', 'Made difficult decisions'] },
+  { id: 'conflict', label: 'Conflict Resolution', examples: ['Disagreement with colleague', 'Difficult stakeholder', 'Resolved team tension'] },
+  { id: 'failure', label: 'Failure & Learning', examples: ['Made a mistake', 'Project failed', 'Learned from setback'] },
+  { id: 'achievement', label: 'Achievement & Impact', examples: ['Exceeded goals', 'Major accomplishment', 'Delivered results'] },
+  { id: 'teamwork', label: 'Teamwork & Collaboration', examples: ['Cross-functional work', 'Helped teammate', 'Built consensus'] },
+  { id: 'pressure', label: 'Working Under Pressure', examples: ['Tight deadline', 'Crisis situation', 'High-stakes decision'] },
+  { id: 'initiative', label: 'Initiative & Innovation', examples: ['Proposed new idea', 'Went above and beyond', 'Started something new'] },
+  { id: 'communication', label: 'Communication', examples: ['Presented to executives', 'Convinced stakeholders', 'Explained complex topics'] },
+  { id: 'adaptability', label: 'Adaptability & Change', examples: ['Pivoted approach', 'Learned new skill quickly', 'Handled ambiguity'] },
+  { id: 'problem_solving', label: 'Problem Solving', examples: ['Debugged complex issue', 'Found creative solution', 'Root cause analysis'] },
+] as const;
+
+export const GAP_FINDER_PROMPT = `You are an expert at analyzing behavioral interview stories and categorizing them.
+
+Analyze each story and determine which behavioral interview categories it covers. A story can cover multiple categories.
+
+Stories to analyze:
+{stories}
+
+Categories:
+- leadership: Leadership & Management (leading teams, mentoring, making decisions)
+- conflict: Conflict Resolution (disagreements, difficult situations, resolving tension)
+- failure: Failure & Learning (mistakes, setbacks, lessons learned)
+- achievement: Achievement & Impact (exceeding goals, major accomplishments, delivering results)
+- teamwork: Teamwork & Collaboration (cross-functional work, helping others, building consensus)
+- pressure: Working Under Pressure (tight deadlines, crisis situations, high stakes)
+- initiative: Initiative & Innovation (proposing ideas, going above and beyond, starting new things)
+- communication: Communication (presenting, convincing others, explaining complex topics)
+- adaptability: Adaptability & Change (pivoting, learning quickly, handling ambiguity)
+- problem_solving: Problem Solving (debugging, creative solutions, root cause analysis)
+
+Return ONLY valid JSON with this exact structure:
+{
+  "storyAnalysis": [
+    {
+      "storyId": "story_id",
+      "categories": ["category1", "category2"],
+      "primaryCategory": "the most relevant category",
+      "reasoning": "Brief explanation of why these categories apply"
+    }
+  ],
+  "categoryCoverage": {
+    "leadership": { "covered": true/false, "storyCount": number, "storyIds": ["id1", "id2"] },
+    "conflict": { "covered": true/false, "storyCount": number, "storyIds": [] },
+    ... (all 10 categories)
+  },
+  "overallCoverage": number from 0 to 100,
+  "suggestions": ["Suggestion 1 for what stories to add", "Suggestion 2"]
+}`;

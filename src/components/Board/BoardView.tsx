@@ -27,7 +27,7 @@ export function BoardView() {
   const {
     jobs,
     settings,
-    moveJob,
+    initiateStatusChange,
     selectJob,
     openAddJobModal,
     openJobFinderModal,
@@ -80,7 +80,7 @@ export function BoardView() {
 
     const job = jobs.find((j) => j.id === jobId);
     if (job && job.status !== newStatus) {
-      moveJob(jobId, newStatus);
+      initiateStatusChange(jobId, newStatus);
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Radio } from 'lucide-react';
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, ConfirmModal, SlideOverPanel } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { OverviewTab } from './OverviewTab';
@@ -10,6 +10,7 @@ import { PrepTab } from './PrepTab';
 import { NotesTab } from './NotesTab';
 import { ContactsEventsTab } from './ContactsEventsTab';
 import { LearningTasksTab } from './LearningTasksTab';
+import { InterviewsTab } from './InterviewsTab';
 import type { Job } from '../../types';
 
 interface JobDetailViewProps {
@@ -17,11 +18,11 @@ interface JobDetailViewProps {
 }
 
 export function JobDetailView({ job }: JobDetailViewProps) {
-  const { selectJob, updateJob, deleteJob, settings } = useAppStore();
+  const { selectJob, deleteJob, settings, initiateStatusChange, openTeleprompterModal } = useAppStore();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const handleStatusChange = async (newStatus: string) => {
-    await updateJob(job.id, { status: newStatus });
+  const handleStatusChange = (newStatus: string) => {
+    initiateStatusChange(job.id, newStatus);
   };
 
   const handleDelete = async () => {
@@ -62,6 +63,15 @@ export function JobDetailView({ job }: JobDetailViewProps) {
             ))}
           </select>
 
+          <button
+            onClick={() => openTeleprompterModal(job.id)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            title="Start Interview Mode"
+          >
+            <Radio className="w-4 h-4" />
+            <span className="hidden sm:inline">Interview</span>
+          </button>
+
           <Button variant="ghost" size="sm" onClick={() => setIsDeleteModalOpen(true)} className="text-danger">
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -87,6 +97,7 @@ export function JobDetailView({ job }: JobDetailViewProps) {
                 <TabsTrigger value="cover">Cover Letter</TabsTrigger>
                 <TabsTrigger value="emails">Emails</TabsTrigger>
                 <TabsTrigger value="prep">Prep & Q&A</TabsTrigger>
+                <TabsTrigger value="interviews">Interviews</TabsTrigger>
                 <TabsTrigger value="learning">Learning</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts & Events</TabsTrigger>
@@ -108,6 +119,9 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               </TabsContent>
               <TabsContent value="prep">
                 <PrepTab job={job} />
+              </TabsContent>
+              <TabsContent value="interviews">
+                <InterviewsTab job={job} />
               </TabsContent>
               <TabsContent value="learning">
                 <LearningTasksTab job={job} />

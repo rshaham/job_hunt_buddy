@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject } from '../types';
-import { DEFAULT_SETTINGS } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword } from '../types';
+import { DEFAULT_SETTINGS, TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../types';
+import { generateFlatInitialTeleprompterKeywords } from '../services/ai';
 import * as db from '../services/db';
+import { saveSession, getCustomInterviewTypes, saveCustomInterviewType as saveCustomInterviewTypeDB, saveFeedbackBatch } from '../services/db';
 import { generateId } from '../utils/helpers';
 import { useEmbeddingStore } from '../services/embeddings';
 import { useCommandBarStore } from './commandBarStore';
@@ -56,6 +58,33 @@ function triggerJobEmbeddingRemoval(jobId: string): void {
   }, 0);
 }
 
+// ============================================================================
+// Teleprompter Helper Function
+// ============================================================================
+
+// Exported for potential use in fallback scenarios or other components
+export function getCategoriesForInterviewType(interviewType: TeleprompterInterviewType): TeleprompterCategory[] {
+  const categoryMap: Record<TeleprompterInterviewType, string[]> = {
+    phone_screen: ['Company Research', 'Role Fit', 'Questions to Ask', 'Salary Expectations'],
+    behavioral: ['Leadership', 'Problem-Solving', 'Collaboration', 'Conflict Resolution', 'Growth Mindset'],
+    technical: ['Architecture', 'Problem-Solving', 'Technical Decisions', 'Trade-offs', 'Metrics'],
+    case_study: ['Framework', 'Assumptions', 'Analysis', 'Recommendations'],
+    panel: ['Key Stakeholders', 'Department Focus', 'Cross-functional', 'Questions'],
+    hiring_manager: ['Team Dynamics', 'Expectations', 'Growth Path', 'Working Style'],
+    culture_fit: ['Values', 'Work Environment', 'Team Collaboration', 'Company Mission'],
+    final_round: ['Key Differentiators', 'Closing Points', 'Questions', 'Next Steps'],
+    custom: ['General', 'Key Points', 'Questions'],
+  };
+
+  const categoryNames = categoryMap[interviewType] || categoryMap.custom;
+  return categoryNames.map(name => ({
+    id: crypto.randomUUID(),
+    name,
+    keywords: [],
+    isExpanded: true,
+  }));
+}
+
 interface AppState {
   // Jobs
   jobs: Job[];
@@ -75,9 +104,19 @@ interface AppState {
   isJobFinderModalOpen: boolean;
   jobFinderInitialTab: 'search' | 'batch';
   isBatchScannerModalOpen: boolean;
+  isRejectionModalOpen: boolean;
+  isOfferModalOpen: boolean;
+  isProfileHubOpen: boolean;
+  pendingStatusChange: { jobId: string; newStatus: string } | null;
 
   // Career Coach State
   careerCoachState: CareerCoachState;
+
+  // Teleprompter state
+  isTeleprompterModalOpen: boolean;
+  teleprompterSession: TeleprompterSession | null;
+  teleprompterPreSelectedJobId: string | null;
+  customInterviewTypes: CustomInterviewType[];
 
   // Actions
   loadData: () => Promise<void>;
@@ -100,6 +139,8 @@ interface AppState {
 
   // Saved story actions
   updateSavedStory: (id: string, updates: Partial<SavedStory>) => Promise<void>;
+  addSavedStory: (story: Omit<SavedStory, 'id' | 'createdAt'>) => Promise<SavedStory>;
+  deleteSavedStory: (id: string) => Promise<void>;
 
   // Learning task actions
   updateLearningTask: (jobId: string, taskId: string, updates: Partial<LearningTask>) => Promise<void>;
@@ -110,6 +151,19 @@ interface AppState {
   addPrepMessage: (jobId: string, taskId: string, sessionId: string, message: Omit<LearningTaskPrepMessage, 'id' | 'timestamp'>) => Promise<void>;
   updatePrepSession: (jobId: string, taskId: string, sessionId: string, updates: Partial<LearningTaskPrepSession>) => Promise<void>;
   savePrepToMaterials: (jobId: string, taskId: string, sessionId: string, title: string, content: string) => Promise<void>;
+
+  // Interview round actions
+  addInterviewRound: (jobId: string, round: Omit<InterviewRound, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateInterviewRound: (jobId: string, roundId: string, updates: Partial<InterviewRound>) => Promise<void>;
+  deleteInterviewRound: (jobId: string, roundId: string) => Promise<void>;
+
+  // Status change flow (intercepts Rejected/Offer moves)
+  initiateStatusChange: (jobId: string, newStatus: string) => void;
+  confirmStatusChange: (rejectionDetails?: RejectionDetails, offerDetails?: OfferDetails) => Promise<void>;
+  cancelStatusChange: () => void;
+
+  // Source tracking
+  updateJobSource: (jobId: string, sourceInfo: SourceInfo) => Promise<void>;
 
   // UI actions
   openAddJobModal: () => void;
@@ -128,6 +182,31 @@ interface AppState {
   closeJobFinderModal: () => void;
   openBatchScannerModal: () => void;
   closeBatchScannerModal: () => void;
+  openRejectionModal: () => void;
+  closeRejectionModal: () => void;
+  openOfferModal: () => void;
+  closeOfferModal: () => void;
+  openProfileHub: () => void;
+  closeProfileHub: () => void;
+
+  // Teleprompter actions
+  openTeleprompterModal: (jobId?: string) => void;
+  closeTeleprompterModal: () => void;
+  startTeleprompterSession: (jobId: string | null, interviewType: TeleprompterInterviewType, customType?: string) => Promise<void>;
+  endTeleprompterSession: () => Promise<TeleprompterRoundupItem[]>;
+  promoteKeywordFromStaging: (keywordId: string, categoryId?: string) => void;
+  dismissStagingKeyword: (keywordId: string) => void;
+  dismissDisplayedKeyword: (categoryId: string, keywordId: string) => void;
+  addKeywordsFromAI: (categoryName: string, keywords: string[]) => void;
+  addManualKeyword: (categoryId: string, text: string) => void;
+  toggleCategory: (categoryId: string) => void;
+  saveTeleprompterFeedback: (items: TeleprompterRoundupItem[]) => Promise<void>;
+  loadCustomInterviewTypes: () => Promise<void>;
+  saveCustomInterviewType: (name: string) => Promise<void>;
+  setTeleprompterViewMode: (mode: 'categorized' | 'flat') => void;
+  toggleStagingCollapsed: () => void;
+  dismissAllStagingKeywords: () => void;
+  promoteAllStagingKeywords: () => void;
 
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
@@ -165,7 +244,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   isJobFinderModalOpen: false,
   jobFinderInitialTab: 'search',
   isBatchScannerModalOpen: false,
+  isRejectionModalOpen: false,
+  isOfferModalOpen: false,
+  isProfileHubOpen: false,
+  pendingStatusChange: null,
   careerCoachState: { history: [] },
+  isTeleprompterModalOpen: false,
+  teleprompterSession: null,
+  teleprompterPreSelectedJobId: null,
+  customInterviewTypes: [],
 
   // Load initial data
   loadData: async () => {
@@ -192,6 +279,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       set({ jobs, settings, isLoading: false });
+
+      // Restore skillProfile from persisted settings
+      if (settings.skillProfile) {
+        set((state) => ({
+          careerCoachState: {
+            ...state.careerCoachState,
+            skillProfile: settings.skillProfile,
+          },
+        }));
+      }
 
       // Initialize agent chat from persisted settings
       if (settings.agentChatHistory || settings.agentMessages) {
@@ -392,6 +489,33 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  addSavedStory: async (storyData) => {
+    const newStory: SavedStory = {
+      ...storyData,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      source: storyData.source || 'manual',
+    };
+    const newStories = [...(get().settings.savedStories || []), newStory];
+    await get().updateSettings({ savedStories: newStories });
+    triggerStoryEmbedding(newStory);
+    return newStory;
+  },
+
+  deleteSavedStory: async (id) => {
+    const newStories = (get().settings.savedStories || []).filter((s) => s.id !== id);
+    await get().updateSettings({ savedStories: newStories });
+    // Remove embedding
+    setTimeout(() => {
+      import('../services/embeddings').then(({ removeEmbeddingsByEntity }) => {
+        removeEmbeddingsByEntity('story', id).catch((error) => {
+          console.warn('[AppStore] Failed to remove story embedding:', error);
+        });
+      });
+    }, 0);
+  },
+
   // Learning task actions
   updateLearningTask: async (jobId, taskId, updates) => {
     const job = get().jobs.find((j) => j.id === jobId);
@@ -493,6 +617,105 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().updatePrepSession(jobId, taskId, sessionId, { savedToBank: true });
   },
 
+  // Interview round actions
+  addInterviewRound: async (jobId, round) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const newRound: InterviewRound = {
+      ...round,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const updatedInterviews = [...(job.interviews || []), newRound];
+    await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  updateInterviewRound: async (jobId, roundId, updates) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedInterviews = (job.interviews || []).map((round) =>
+      round.id === roundId ? { ...round, ...updates, updatedAt: new Date() } : round
+    );
+    await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  deleteInterviewRound: async (jobId, roundId) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    const updatedInterviews = (job.interviews || []).filter((round) => round.id !== roundId);
+    await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  // Status change flow
+  initiateStatusChange: (jobId, newStatus) => {
+    const job = get().jobs.find((j) => j.id === jobId);
+    if (!job || job.status === newStatus) return;
+
+    // Check if we need to show a modal
+    if (newStatus === 'Rejected') {
+      set({
+        pendingStatusChange: { jobId, newStatus },
+        isRejectionModalOpen: true,
+      });
+    } else if (newStatus === 'Offer') {
+      set({
+        pendingStatusChange: { jobId, newStatus },
+        isOfferModalOpen: true,
+      });
+    } else {
+      // No modal needed, just move the job
+      get().moveJob(jobId, newStatus);
+    }
+  },
+
+  confirmStatusChange: async (rejectionDetails, offerDetails) => {
+    const { pendingStatusChange } = get();
+    if (!pendingStatusChange) return;
+
+    const { jobId, newStatus } = pendingStatusChange;
+    const updates: Partial<Job> = { status: newStatus };
+
+    if (newStatus === 'Rejected' && rejectionDetails) {
+      updates.rejectionDetails = {
+        ...rejectionDetails,
+        rejectedAt: new Date(),
+      };
+    } else if (newStatus === 'Offer' && offerDetails) {
+      updates.offerDetails = {
+        ...offerDetails,
+        offeredAt: new Date(),
+      };
+    }
+
+    await db.updateJob(jobId, updates);
+    set((state) => ({
+      jobs: state.jobs.map((job) =>
+        job.id === jobId ? { ...job, ...updates, lastUpdated: new Date() } : job
+      ),
+      pendingStatusChange: null,
+      isRejectionModalOpen: false,
+      isOfferModalOpen: false,
+    }));
+  },
+
+  cancelStatusChange: () => {
+    set({
+      pendingStatusChange: null,
+      isRejectionModalOpen: false,
+      isOfferModalOpen: false,
+    });
+  },
+
+  // Source tracking
+  updateJobSource: async (jobId, sourceInfo) => {
+    await get().updateJob(jobId, { sourceInfo });
+  },
+
   // UI actions
   openAddJobModal: () => set({ isAddJobModalOpen: true }),
   closeAddJobModal: () => set({ isAddJobModalOpen: false }),
@@ -510,6 +733,416 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeJobFinderModal: () => set({ isJobFinderModalOpen: false }),
   openBatchScannerModal: () => set({ isBatchScannerModalOpen: true }),
   closeBatchScannerModal: () => set({ isBatchScannerModalOpen: false }),
+  openRejectionModal: () => set({ isRejectionModalOpen: true }),
+  closeRejectionModal: () => set({ isRejectionModalOpen: false, pendingStatusChange: null }),
+  openOfferModal: () => set({ isOfferModalOpen: true }),
+  closeOfferModal: () => set({ isOfferModalOpen: false, pendingStatusChange: null }),
+  openProfileHub: () => set({ isProfileHubOpen: true }),
+  closeProfileHub: () => set({ isProfileHubOpen: false }),
+
+  // Teleprompter actions
+  openTeleprompterModal: (jobId?: string) => set({
+    isTeleprompterModalOpen: true,
+    teleprompterPreSelectedJobId: jobId || null,
+  }),
+
+  closeTeleprompterModal: () => set({
+    isTeleprompterModalOpen: false,
+    teleprompterPreSelectedJobId: null,
+  }),
+
+  startTeleprompterSession: async (jobId, interviewType, customType) => {
+    const { jobs, settings } = get();
+    const job = jobId ? jobs.find(j => j.id === jobId) ?? null : null;
+
+    // Create session with empty categories and loading state
+    const session: TeleprompterSession = {
+      id: crypto.randomUUID(),
+      jobId,
+      interviewType,
+      customInterviewType: customType,
+      categories: [],
+      stagingKeywords: [],
+      dismissedKeywordIds: [],
+      startedAt: new Date(),
+      isActive: true,
+      viewMode: 'categorized',
+      isStagingCollapsed: false,
+      isGeneratingInitialKeywords: true,
+    };
+
+    // Save initial session immediately so UI can render (with loading state)
+    await saveSession(session);
+    set({ teleprompterSession: session });
+
+    // Generate flat keywords in background (no categories initially)
+    try {
+      const userSkills = settings.additionalContext?.split(',').map(s => s.trim()).filter(Boolean) || [];
+      const userStories = (settings.savedStories || []).map(s => ({ question: s.question, answer: s.answer }));
+
+      const flatKeywords = await generateFlatInitialTeleprompterKeywords(
+        TELEPROMPTER_INTERVIEW_TYPE_LABELS[interviewType] + (customType ? `: ${customType}` : ''),
+        job,
+        userSkills,
+        userStories
+      );
+
+      // Create staging keywords without category assignment (flat list)
+      const stagingKeywords: TeleprompterKeyword[] = flatKeywords.map(text => ({
+        id: crypto.randomUUID(),
+        text,
+        source: 'ai-initial',
+        inStaging: true,
+      }));
+
+      // Get current session (might have been updated)
+      const currentSession = get().teleprompterSession;
+      if (currentSession && currentSession.id === session.id) {
+        const updatedSession = {
+          ...currentSession,
+          stagingKeywords,
+          isGeneratingInitialKeywords: false,
+        };
+        await saveSession(updatedSession);
+        set({ teleprompterSession: updatedSession });
+      }
+    } catch (error) {
+      console.error('[Teleprompter] Error generating initial keywords:', error);
+      // Set loading to false even on error
+      const currentSession = get().teleprompterSession;
+      if (currentSession && currentSession.id === session.id) {
+        const updatedSession = { ...currentSession, isGeneratingInitialKeywords: false };
+        await saveSession(updatedSession);
+        set({ teleprompterSession: updatedSession });
+      }
+    }
+  },
+
+  endTeleprompterSession: async () => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return [];
+
+    // Collect all displayed keywords for roundup
+    const roundupItems: TeleprompterRoundupItem[] = [];
+    for (const category of teleprompterSession.categories) {
+      for (const keyword of category.keywords.filter(k => !k.inStaging)) {
+        roundupItems.push({
+          keyword,
+          categoryName: category.name,
+        });
+      }
+    }
+
+    // Mark session as inactive
+    const updatedSession = { ...teleprompterSession, isActive: false };
+    await saveSession(updatedSession);
+
+    return roundupItems;
+  },
+
+  promoteKeywordFromStaging: (keywordId, categoryId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const keyword = teleprompterSession.stagingKeywords.find(k => k.id === keywordId);
+    if (!keyword) return;
+
+    let updatedCategories = [...teleprompterSession.categories];
+
+    // Determine target category: use provided categoryId, or find by suggestedCategoryName, or fallback to first category
+    let targetCategoryId = categoryId;
+    if (!targetCategoryId && keyword.suggestedCategoryName) {
+      const suggestedCategory = updatedCategories.find(
+        cat => cat.name === keyword.suggestedCategoryName
+      );
+      targetCategoryId = suggestedCategory?.id;
+    }
+    // Fallback to first category if exists
+    if (!targetCategoryId && updatedCategories.length > 0) {
+      targetCategoryId = updatedCategories[0].id;
+    }
+    // If no categories exist, create a "Suggestions" category
+    if (!targetCategoryId) {
+      const newCategory: TeleprompterCategory = {
+        id: crypto.randomUUID(),
+        name: 'Suggestions',
+        keywords: [],
+        isExpanded: true,
+      };
+      updatedCategories = [newCategory];
+      targetCategoryId = newCategory.id;
+    }
+
+    const promotedKeyword = { ...keyword, inStaging: false };
+    updatedCategories = updatedCategories.map(cat => {
+      if (cat.id === targetCategoryId) {
+        return { ...cat, keywords: [...cat.keywords, promotedKeyword] };
+      }
+      return cat;
+    });
+
+    const updatedSession = {
+      ...teleprompterSession,
+      categories: updatedCategories,
+      stagingKeywords: teleprompterSession.stagingKeywords.filter(k => k.id !== keywordId),
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  dismissStagingKeyword: (keywordId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedSession = {
+      ...teleprompterSession,
+      stagingKeywords: teleprompterSession.stagingKeywords.filter(k => k.id !== keywordId),
+      dismissedKeywordIds: [...teleprompterSession.dismissedKeywordIds, keywordId],
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  dismissDisplayedKeyword: (categoryId, keywordId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, keywords: cat.keywords.filter(k => k.id !== keywordId) };
+      }
+      return cat;
+    });
+
+    const updatedSession = {
+      ...teleprompterSession,
+      categories: updatedCategories,
+      dismissedKeywordIds: [...teleprompterSession.dismissedKeywordIds, keywordId],
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  addKeywordsFromAI: (categoryName, keywords) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    // User's prompt becomes the category name - create category if it doesn't exist
+    let updatedCategories = [...teleprompterSession.categories];
+    let targetCategory = updatedCategories.find(c => c.name === categoryName);
+
+    if (!targetCategory) {
+      // Create new category with the prompt text as the name
+      targetCategory = {
+        id: crypto.randomUUID(),
+        name: categoryName,
+        keywords: [],
+        isExpanded: true,
+      };
+      updatedCategories = [...updatedCategories, targetCategory];
+    }
+
+    // Add keywords to the target category
+    const newKeywords: TeleprompterKeyword[] = keywords.map(text => ({
+      id: crypto.randomUUID(),
+      text,
+      source: 'ai-realtime',
+      inStaging: false,
+    }));
+
+    updatedCategories = updatedCategories.map(cat => {
+      if (cat.id === targetCategory!.id) {
+        return { ...cat, keywords: [...cat.keywords, ...newKeywords] };
+      }
+      return cat;
+    });
+
+    const updatedSession = { ...teleprompterSession, categories: updatedCategories };
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  addManualKeyword: (categoryId, text) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession || !text.trim()) return;
+
+    const newKeyword: TeleprompterKeyword = {
+      id: crypto.randomUUID(),
+      text: text.trim(),
+      source: 'manual',
+      inStaging: false,
+    };
+
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, keywords: [...cat.keywords, newKeyword] };
+      }
+      return cat;
+    });
+
+    const updatedSession = { ...teleprompterSession, categories: updatedCategories };
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  toggleCategory: (categoryId) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedCategories = teleprompterSession.categories.map(cat => {
+      if (cat.id === categoryId) {
+        return { ...cat, isExpanded: !cat.isExpanded };
+      }
+      return cat;
+    });
+
+    const updatedSession = { ...teleprompterSession, categories: updatedCategories };
+    set({ teleprompterSession: updatedSession });
+  },
+
+  saveTeleprompterFeedback: async (items) => {
+    const { teleprompterSession, settings } = get();
+    if (!teleprompterSession) return;
+
+    const feedbackRecords: TeleprompterFeedback[] = items
+      .filter(item => item.helpful !== undefined)
+      .map(item => ({
+        id: crypto.randomUUID(),
+        sessionId: teleprompterSession.id,
+        interviewType: teleprompterSession.interviewType,
+        keywordText: item.keyword.text,
+        helpful: item.helpful!,
+        savedToProfile: item.saveToProfile || false,
+        timestamp: new Date(),
+      }));
+
+    await saveFeedbackBatch(feedbackRecords);
+
+    // Save keywords marked for profile to savedStories
+    const storiesToAdd = items
+      .filter(item => item.saveToProfile)
+      .map(item => ({
+        id: crypto.randomUUID(),
+        question: item.categoryName,
+        answer: item.keyword.text,
+        category: teleprompterSession.interviewType,
+        createdAt: new Date(),
+      }));
+
+    if (storiesToAdd.length > 0) {
+      const updatedStories = [...(settings.savedStories || []), ...storiesToAdd];
+      await get().updateSettings({ savedStories: updatedStories });
+    }
+
+    // Clear session
+    set({ teleprompterSession: null });
+  },
+
+  loadCustomInterviewTypes: async () => {
+    const types = await getCustomInterviewTypes();
+    set({ customInterviewTypes: types });
+  },
+
+  saveCustomInterviewType: async (name) => {
+    const newType: CustomInterviewType = {
+      id: crypto.randomUUID(),
+      name,
+      createdAt: new Date(),
+    };
+    await saveCustomInterviewTypeDB(newType);
+    const { customInterviewTypes } = get();
+    set({ customInterviewTypes: [...customInterviewTypes, newType] });
+  },
+
+  setTeleprompterViewMode: (mode) => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedSession = { ...teleprompterSession, viewMode: mode };
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  toggleStagingCollapsed: () => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const updatedSession = {
+      ...teleprompterSession,
+      isStagingCollapsed: !teleprompterSession.isStagingCollapsed,
+    };
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  dismissAllStagingKeywords: () => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+
+    const dismissedIds = teleprompterSession.stagingKeywords.map(k => k.id);
+    const updatedSession = {
+      ...teleprompterSession,
+      stagingKeywords: [],
+      dismissedKeywordIds: [...teleprompterSession.dismissedKeywordIds, ...dismissedIds],
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
+
+  promoteAllStagingKeywords: () => {
+    const { teleprompterSession } = get();
+    if (!teleprompterSession) return;
+    if (teleprompterSession.stagingKeywords.length === 0) return; // Nothing to promote
+
+    // Build updated categories with promoted keywords
+    let updatedCategories = teleprompterSession.categories.map(cat => ({ ...cat, keywords: [...cat.keywords] }));
+
+    // If no categories exist, create a "Suggestions" category
+    if (updatedCategories.length === 0) {
+      updatedCategories = [{
+        id: crypto.randomUUID(),
+        name: 'Suggestions',
+        keywords: [],
+        isExpanded: true,
+      }];
+    }
+
+    // Create a map of category name to category id for quick lookup
+    const categoryNameToId = new Map<string, string>();
+    for (const cat of updatedCategories) {
+      categoryNameToId.set(cat.name, cat.id);
+    }
+    const firstCategoryId = updatedCategories[0].id;
+
+    for (const keyword of teleprompterSession.stagingKeywords) {
+      // Find target category by suggestedCategoryName, or fallback to first category
+      let targetCategoryId = keyword.suggestedCategoryName
+        ? categoryNameToId.get(keyword.suggestedCategoryName)
+        : undefined;
+      if (!targetCategoryId) {
+        targetCategoryId = firstCategoryId;
+      }
+
+      const promotedKeyword = { ...keyword, inStaging: false };
+      const catIndex = updatedCategories.findIndex(c => c.id === targetCategoryId);
+      if (catIndex >= 0) {
+        updatedCategories[catIndex].keywords.push(promotedKeyword);
+      }
+    }
+
+    const updatedSession = {
+      ...teleprompterSession,
+      categories: updatedCategories,
+      stagingKeywords: [],
+    };
+
+    set({ teleprompterSession: updatedSession });
+    saveSession(updatedSession);
+  },
 
   // Career Coach actions
   addCareerCoachEntry: (entry) => {
@@ -543,65 +1176,74 @@ export const useAppStore = create<AppState>((set, get) => ({
         skillProfile: profile,
       },
     }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: profile });
   },
 
   addSkill: (skill, category) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      // Check for duplicates (case-insensitive)
-      if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
-        return state; // Don't add duplicate
-      }
-      const newSkill: SkillEntry = {
-        skill,
-        category,
-        source: 'manual',
-        addedAt: new Date(),
-      };
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: [...existingSkills, newSkill],
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    // Check for duplicates (case-insensitive)
+    if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
+      return; // Don't add duplicate
+    }
+    const newSkill: SkillEntry = {
+      skill,
+      category,
+      source: 'manual',
+      addedAt: new Date(),
+    };
+    const newProfile = {
+      skills: [...existingSkills, newSkill],
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   removeSkill: (skillName) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    const newProfile = {
+      skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   updateSkillCategory: (skillName, category) => {
-    set((state) => {
-      const existingSkills = state.careerCoachState.skillProfile?.skills || [];
-      return {
-        careerCoachState: {
-          ...state.careerCoachState,
-          skillProfile: {
-            skills: existingSkills.map(s =>
-              s.skill.toLowerCase() === skillName.toLowerCase()
-                ? { ...s, category }
-                : s
-            ),
-            lastExtractedAt: state.careerCoachState.skillProfile?.lastExtractedAt,
-          },
-        },
-      };
-    });
+    const existingSkills = get().careerCoachState.skillProfile?.skills || [];
+    const newProfile = {
+      skills: existingSkills.map(s =>
+        s.skill.toLowerCase() === skillName.toLowerCase()
+          ? { ...s, category }
+          : s
+      ),
+      lastExtractedAt: get().careerCoachState.skillProfile?.lastExtractedAt,
+    };
+    set((state) => ({
+      careerCoachState: {
+        ...state.careerCoachState,
+        skillProfile: newProfile,
+      },
+    }));
+    // Persist to settings
+    const { settings } = get();
+    db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   // Career project actions

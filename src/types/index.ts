@@ -46,6 +46,12 @@ export interface Job {
   emailDraftType?: EmailType;
   emailDraftCustomType?: string; // User-specified custom email type
   emailDraftHistory?: EmailDraftEntry[];
+
+  // Workflow tracking
+  interviews?: InterviewRound[];
+  rejectionDetails?: RejectionDetails;
+  offerDetails?: OfferDetails;
+  sourceInfo?: SourceInfo;
 }
 
 export interface JobSummary {
@@ -206,6 +212,102 @@ export interface EmailDraftEntry {
 
 export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
 
+// Workflow tracking types
+export type RejectionReason = 'ghosted' | 'skills_mismatch' | 'culture_fit' | 'salary' | 'position_filled' | 'other';
+export type InterviewType = 'phone_screen' | 'recruiter_call' | 'technical' | 'behavioral' | 'system_design' | 'onsite' | 'panel' | 'final' | 'other';
+export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+export type InterviewOutcome = 'passed' | 'failed' | 'pending' | 'unknown';
+export type JobSource = 'referral' | 'linkedin' | 'company_site' | 'job_board' | 'recruiter_outreach' | 'networking' | 'other';
+
+export interface RejectionDetails {
+  reason?: RejectionReason;
+  stageRejectedAt?: string;
+  feedbackReceived?: string;
+  lessonsLearned?: string;
+  rejectedAt?: Date;
+}
+
+export interface OfferDetails {
+  baseSalary?: number;
+  bonus?: number;
+  bonusType?: 'percentage' | 'fixed';
+  equity?: string;
+  benefitsSummary?: string;
+  offerDeadline?: Date;
+  startDate?: Date;
+  negotiationNotes?: string;
+  offeredAt?: Date;
+}
+
+export interface InterviewRound {
+  id: string;
+  roundNumber: number;
+  type: InterviewType;
+  scheduledAt?: Date;
+  duration?: number; // in minutes
+  interviewerIds?: string[]; // IDs of contacts
+  location?: string;
+  status: InterviewStatus;
+  outcome: InterviewOutcome;
+  notes?: string;
+  feedback?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SourceInfo {
+  source: JobSource;
+  referredByContactId?: string;
+  sourcePlatform?: string; // e.g., "Indeed", "Glassdoor" for job_board
+  sourceNotes?: string;
+}
+
+// Human-readable labels for workflow types
+export const REJECTION_REASON_LABELS: Record<RejectionReason, string> = {
+  ghosted: 'Ghosted',
+  skills_mismatch: 'Skills Mismatch',
+  culture_fit: 'Culture Fit',
+  salary: 'Salary Expectations',
+  position_filled: 'Position Filled',
+  other: 'Other',
+};
+
+export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
+  phone_screen: 'Phone Screen',
+  recruiter_call: 'Recruiter Call',
+  technical: 'Technical Interview',
+  behavioral: 'Behavioral Interview',
+  system_design: 'System Design',
+  onsite: 'Onsite',
+  panel: 'Panel Interview',
+  final: 'Final Round',
+  other: 'Other',
+};
+
+export const INTERVIEW_STATUS_LABELS: Record<InterviewStatus, string> = {
+  scheduled: 'Scheduled',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rescheduled: 'Rescheduled',
+};
+
+export const INTERVIEW_OUTCOME_LABELS: Record<InterviewOutcome, string> = {
+  passed: 'Passed',
+  failed: 'Failed',
+  pending: 'Pending',
+  unknown: 'Unknown',
+};
+
+export const JOB_SOURCE_LABELS: Record<JobSource, string> = {
+  referral: 'Referral',
+  linkedin: 'LinkedIn',
+  company_site: 'Company Website',
+  job_board: 'Job Board',
+  recruiter_outreach: 'Recruiter Outreach',
+  networking: 'Networking',
+  other: 'Other',
+};
+
 // Career Coach types
 export interface CareerCoachEntry {
   id: string;
@@ -242,7 +344,131 @@ export interface SavedStory {
   answer: string;    // The user's experience/story
   category?: string; // Optional: "leadership", "technical", "conflict", etc.
   createdAt: Date;
+
+  // Time & Place
+  company?: string;
+  role?: string;
+  projectName?: string;
+  timeframe?: string;
+
+  // Impact
+  outcome?: string;
+  lessonsLearned?: string;
+
+  // Classification
+  skills?: string[];
+
+  // Metadata
+  source?: 'manual' | 'chat' | 'import';
+  sourceJobId?: string;
+  updatedAt?: Date;
 }
+
+// ============================================================================
+// Interview Teleprompter Types
+// ============================================================================
+
+// Interview types for teleprompter (extends existing InterviewType for consistency)
+export type TeleprompterInterviewType =
+  | 'phone_screen'
+  | 'behavioral'
+  | 'technical'
+  | 'case_study'
+  | 'panel'
+  | 'hiring_manager'
+  | 'culture_fit'
+  | 'final_round'
+  | 'custom';
+
+export const TELEPROMPTER_INTERVIEW_TYPE_LABELS: Record<TeleprompterInterviewType, string> = {
+  phone_screen: 'Phone Screen',
+  behavioral: 'Behavioral',
+  technical: 'Technical',
+  case_study: 'Case Study',
+  panel: 'Panel Interview',
+  hiring_manager: 'Hiring Manager',
+  culture_fit: 'Culture Fit',
+  final_round: 'Final Round',
+  custom: 'Custom',
+};
+
+// Categories vary by interview type
+export interface TeleprompterCategory {
+  id: string;
+  name: string;
+  keywords: TeleprompterKeyword[];
+  isExpanded: boolean;
+}
+
+// Individual keyword/phrase on the teleprompter
+export interface TeleprompterKeyword {
+  id: string;
+  text: string;
+  source: 'ai-initial' | 'ai-realtime' | 'user' | 'profile' | 'manual';
+  inStaging: boolean;  // true = in staging area, false = on main display
+  suggestedCategoryName?: string;  // AI's suggested category (for staging promotion)
+}
+
+// Active teleprompter session
+export interface TeleprompterSession {
+  id: string;
+  jobId: string | null;
+  interviewType: TeleprompterInterviewType;
+  customInterviewType?: string;  // for 'custom' type
+  categories: TeleprompterCategory[];
+  stagingKeywords: TeleprompterKeyword[];  // AI suggestions not yet promoted
+  dismissedKeywordIds: string[];  // track to avoid re-suggesting
+  startedAt: Date;
+  isActive: boolean;
+  viewMode: 'categorized' | 'flat';
+  isStagingCollapsed: boolean;
+  isGeneratingInitialKeywords: boolean;  // loading state for initial AI suggestions
+}
+
+// Response shape for AI semantic category generation
+export interface SemanticCategoryResponse {
+  name: string;
+  keywords: string[];
+}
+
+// Feedback from post-interview roundup
+export interface TeleprompterFeedback {
+  id: string;
+  sessionId: string;
+  interviewType: TeleprompterInterviewType;
+  keywordText: string;
+  helpful: boolean;
+  savedToProfile: boolean;
+  timestamp: Date;
+}
+
+// Saved custom interview type
+export interface CustomInterviewType {
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
+// Roundup item for post-interview review
+export interface TeleprompterRoundupItem {
+  keyword: TeleprompterKeyword;
+  categoryName: string;
+  helpful?: boolean;
+  saveToProfile?: boolean;
+}
+
+// ============================================================================
+// Story Skill Categories (for Profile Hub)
+// ============================================================================
+
+export type StorySkillCategory = 'technical' | 'soft' | 'domain';
+
+export const STORY_SKILL_CATEGORIES: Record<StorySkillCategory, { label: string; color: string }> = {
+  technical: { label: 'Technical', color: 'bg-primary-subtle text-primary' },
+  soft: { label: 'Soft Skills', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
+  domain: { label: 'Domain', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+};
+
 
 // Career development project types
 export type ProjectStatus = 'idea' | 'in_progress' | 'completed';
@@ -349,6 +575,9 @@ export interface AppSettings {
 
   // Onboarding
   onboardingCompleted: boolean;
+
+  // Skill profile persistence (persisted from careerCoachState)
+  skillProfile?: UserSkillProfile;
 
   // Privacy consent for external services
   externalServicesConsent?: {
