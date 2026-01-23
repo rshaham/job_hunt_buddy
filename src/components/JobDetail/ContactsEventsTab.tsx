@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -23,14 +23,19 @@ import {
   Edit3,
   X,
   Globe,
+  Search,
+  List,
+  LayoutGrid,
+  Calendar,
 } from 'lucide-react';
-import { Button, Input, ConfirmModal } from '../ui';
+import { Button, Input, ConfirmModal, InterviewTypeSelect } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId, formatDateOnly } from '../../utils/helpers';
 import { analyzeInterviewer, analyzeInterviewerWithWebSearch } from '../../services/ai';
 import { isFeatureAvailable } from '../../utils/featureFlags';
 import { format } from 'date-fns';
-import type { Job, Contact, TimelineEvent } from '../../types';
+import type { Job, Contact, TimelineEvent, InterviewRound, InterviewStatus } from '../../types';
+import { INTERVIEW_STATUS_LABELS, getInterviewTypeLabel } from '../../types';
 import type { LucideIcon } from 'lucide-react';
 
 interface ContactsEventsTabProps {
@@ -144,6 +149,87 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
   const [deleteContactId, setDeleteContactId] = useState<string | null>(null);
   const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
 
+  // View mode and search state
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
+  const [expandedContactIds, setExpandedContactIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchIncludeBioIntel, setSearchIncludeBioIntel] = useState(false);
+  const [showInlineInterviewForm, setShowInlineInterviewForm] = useState<string | null>(null);
+
+  // Inline interview form state
+  const [inlineInterviewType, setInlineInterviewType] = useState('technical');
+  const [inlineInterviewDate, setInlineInterviewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [inlineInterviewDuration, setInlineInterviewDuration] = useState(60);
+  const [inlineInterviewStatus, setInlineInterviewStatus] = useState<InterviewStatus>('scheduled');
+
+  // Edit contact interview role state
+  const [editInterviewRole, setEditInterviewRole] = useState('');
+  const [editLinkedInterviewIds, setEditLinkedInterviewIds] = useState<string[]>([]);
+
+  // Helper: Reverse lookup contacts -> interviews
+  const contactInterviewMap = useMemo(() => {
+    const map = new Map<string, InterviewRound[]>();
+    (job.interviews || []).forEach(interview => {
+      (interview.interviewerIds || []).forEach(contactId => {
+        const existing = map.get(contactId) || [];
+        map.set(contactId, [...existing, interview]);
+      });
+    });
+    return map;
+  }, [job.interviews]);
+
+  // Helper: Filter contacts by search
+  const filteredContacts = useMemo(() => {
+    if (!searchQuery.trim()) return job.contacts || [];
+    const q = searchQuery.toLowerCase();
+    return (job.contacts || []).filter(c => {
+      // Always search primary visible fields
+      if (c.name.toLowerCase().includes(q)) return true;
+      if (c.role?.toLowerCase().includes(q)) return true;
+      if (c.email?.toLowerCase().includes(q)) return true;
+      if (c.interviewRole?.toLowerCase().includes(q)) return true;
+      // Optionally search bio/intel
+      if (searchIncludeBioIntel) {
+        if (c.linkedInBio?.toLowerCase().includes(q)) return true;
+        if (c.interviewerIntel?.toLowerCase().includes(q)) return true;
+      }
+      return false;
+    });
+  }, [job.contacts, searchQuery, searchIncludeBioIntel]);
+
+  // Helper: Get match reason for search results (shows which hidden field matched)
+  const getMatchReason = (contact: Contact, query: string): string | null => {
+    if (!query.trim() || !searchIncludeBioIntel) return null;
+    const q = query.toLowerCase();
+    // Only show badge if matched on non-visible fields
+    if (contact.name.toLowerCase().includes(q)) return null;
+    if (contact.role?.toLowerCase().includes(q)) return null;
+    if (contact.email?.toLowerCase().includes(q)) return null;
+    if (contact.interviewRole?.toLowerCase().includes(q)) return null;
+    // Show which non-visible field matched
+    if (contact.linkedInBio?.toLowerCase().includes(q)) return 'in bio';
+    if (contact.interviewerIntel?.toLowerCase().includes(q)) return 'in intel';
+    return null;
+  };
+
+  // Toggle contact expansion
+  const toggleContactExpanded = (contactId: string) => {
+    setExpandedContactIds(prev => {
+      const next = new Set(prev);
+      if (next.has(contactId)) {
+        next.delete(contactId);
+      } else {
+        next.add(contactId);
+      }
+      return next;
+    });
+  };
+
+  // Check if contact is expanded
+  const isContactExpanded = (contactId: string) => {
+    return viewMode === 'detailed' || expandedContactIds.has(contactId);
+  };
+
   // Helper function to copy to clipboard
   const copyToClipboard = async (text: string, email: string) => {
     await navigator.clipboard.writeText(text);
@@ -183,6 +269,13 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
     setEditContactEmail(contact.email || '');
     setEditContactPhone(contact.phone || '');
     setEditContactLinkedIn(contact.linkedin || '');
+    setEditInterviewRole(contact.interviewRole || '');
+    // Find interviews where this contact is linked
+    const linkedIds = (job.interviews || [])
+      .filter(i => i.interviewerIds?.includes(contact.id))
+      .map(i => i.id);
+    setEditLinkedInterviewIds(linkedIds);
+    setShowInlineInterviewForm(null);
   };
 
   // Save edited contact (preserves linkedInBio and interviewerIntel)
@@ -198,12 +291,36 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
             email: editContactEmail.trim() || undefined,
             phone: editContactPhone.trim() || undefined,
             linkedin: editContactLinkedIn.trim() || undefined,
+            interviewRole: editInterviewRole.trim() || undefined,
             // Preserve linkedInBio and interviewerIntel
           }
         : c
     );
-    await updateJob(job.id, { contacts: updatedContacts });
+
+    // Update interview links
+    const updatedInterviews = (job.interviews || []).map(interview => {
+      const wasLinked = interview.interviewerIds?.includes(editingContactId);
+      const shouldBeLinked = editLinkedInterviewIds.includes(interview.id);
+
+      if (wasLinked && !shouldBeLinked) {
+        // Remove contact from interview
+        return {
+          ...interview,
+          interviewerIds: (interview.interviewerIds || []).filter(id => id !== editingContactId),
+        };
+      } else if (!wasLinked && shouldBeLinked) {
+        // Add contact to interview
+        return {
+          ...interview,
+          interviewerIds: [...(interview.interviewerIds || []), editingContactId],
+        };
+      }
+      return interview;
+    });
+
+    await updateJob(job.id, { contacts: updatedContacts, interviews: updatedInterviews });
     setEditingContactId(null);
+    setShowInlineInterviewForm(null);
   };
 
   const handleCancelEditContact = () => {
@@ -213,6 +330,9 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
     setEditContactEmail('');
     setEditContactPhone('');
     setEditContactLinkedIn('');
+    setEditInterviewRole('');
+    setEditLinkedInterviewIds([]);
+    setShowInlineInterviewForm(null);
   };
 
   // Update contact's LinkedIn bio
@@ -281,6 +401,45 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
     await updateJob(job.id, { contacts: job.contacts.filter((c) => c.id !== contactId) });
   };
 
+  // Handle inline interview creation from contact edit form
+  const handleCreateInlineInterview = async (contactId: string) => {
+    const newInterview: InterviewRound = {
+      id: generateId(),
+      roundNumber: (job.interviews || []).length + 1,
+      type: inlineInterviewType,
+      scheduledAt: new Date(inlineInterviewDate),
+      duration: inlineInterviewDuration,
+      interviewerIds: [contactId],
+      status: inlineInterviewStatus,
+      outcome: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await updateJob(job.id, {
+      interviews: [...(job.interviews || []), newInterview],
+    });
+
+    // Add the new interview to linked list
+    setEditLinkedInterviewIds(prev => [...prev, newInterview.id]);
+
+    // Reset inline form
+    setShowInlineInterviewForm(null);
+    setInlineInterviewType('technical');
+    setInlineInterviewDate(format(new Date(), 'yyyy-MM-dd'));
+    setInlineInterviewDuration(60);
+    setInlineInterviewStatus('scheduled');
+  };
+
+  // Toggle interview link checkbox
+  const toggleInterviewLink = (interviewId: string) => {
+    setEditLinkedInterviewIds(prev =>
+      prev.includes(interviewId)
+        ? prev.filter(id => id !== interviewId)
+        : [...prev, interviewId]
+    );
+  };
+
   // Event handlers
   const handleAddEvent = async () => {
     if (!eventDescription.trim()) return;
@@ -313,17 +472,86 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
       {/* Contacts Section */}
       <section>
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="font-semibold text-foreground">Contacts</h3>
+            <h3 className="font-semibold text-foreground">
+              Contacts
+              <span className="ml-1.5 text-sm font-normal text-muted">
+                ({job.contacts.length})
+              </span>
+            </h3>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setShowContactForm(!showContactForm)}>
-            <Plus className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('compact')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'compact'
+                    ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+                title="Compact view"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('detailed')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  viewMode === 'detailed'
+                    ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+                title="Detailed view"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setShowContactForm(!showContactForm)}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Search Input */}
+        {job.contacts.length > 0 && (
+          <div className="mb-3 space-y-1.5">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search contacts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-lg bg-surface text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
+            </div>
+            {/* Toggle for extended search */}
+            <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer ml-1">
+              <input
+                type="checkbox"
+                checked={searchIncludeBioIntel}
+                onChange={(e) => setSearchIncludeBioIntel(e.target.checked)}
+                className="rounded border-slate-300 text-blue-500 focus:ring-blue-500 w-3.5 h-3.5"
+              />
+              Include bio & intel
+            </label>
+          </div>
+        )}
 
         {/* Add Contact Form */}
         {showContactForm && (
@@ -381,7 +609,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
         )}
 
         {/* Contacts List */}
-        <div className="space-y-4">
+        <div className={viewMode === 'compact' ? 'space-y-2' : 'space-y-4'}>
           {job.contacts.length === 0 ? (
             <div className="text-center py-6 px-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
               <div className="w-10 h-10 mx-auto mb-2 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
@@ -390,11 +618,31 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
               <p className="text-sm text-muted">No contacts yet</p>
               <p className="text-xs text-tertiary mt-1">Track recruiters and hiring managers</p>
             </div>
+          ) : filteredContacts.length === 0 ? (
+            <div className="text-center py-6 px-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl">
+              <div className="w-10 h-10 mx-auto mb-2 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                <Search className="w-5 h-5 text-slate-400" />
+              </div>
+              <p className="text-sm text-muted">No contacts match "{searchQuery}"</p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-blue-500 hover:text-blue-600 mt-1"
+              >
+                Clear search
+              </button>
+            </div>
           ) : (
-            job.contacts.map((contact) => (
+            filteredContacts.map((contact) => {
+              const linkedInterviews = contactInterviewMap.get(contact.id) || [];
+              const expanded = isContactExpanded(contact.id);
+
+              return (
               <div
                 key={contact.id}
-                className="p-3 bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-800/50 rounded-xl border border-blue-100 dark:border-blue-800/30 group"
+                className={`relative bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-800/50 rounded-xl border border-blue-100 dark:border-blue-800/30 group ${
+                  viewMode === 'compact' && !expanded ? 'p-2' : 'p-3'
+                }`}
               >
                 {/* Edit Contact Form */}
                 {editingContactId === contact.id ? (
@@ -441,7 +689,136 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                       value={editContactLinkedIn}
                       onChange={(e) => setEditContactLinkedIn(e.target.value)}
                     />
-                    <div className="flex gap-2">
+
+                    {/* Interview Details Section */}
+                    <div className="pt-3 border-t border-blue-100 dark:border-blue-800/30 space-y-3">
+                      <span className="text-sm font-medium text-foreground">Interview Details</span>
+
+                      {/* Interview Role (soft label) */}
+                      <div>
+                        <label className="text-xs text-muted mb-1 block">Role (quick label)</label>
+                        <Input
+                          placeholder="e.g., Technical Round, Hiring Manager"
+                          value={editInterviewRole}
+                          onChange={(e) => setEditInterviewRole(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Linked Interviews */}
+                      {(job.interviews || []).length > 0 && (
+                        <div>
+                          <label className="text-xs text-muted mb-1.5 block">Linked Interviews</label>
+                          <div className="space-y-1.5">
+                            {(job.interviews || []).map(interview => (
+                              <label
+                                key={interview.id}
+                                className="flex items-center gap-2 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 p-1.5 rounded"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={editLinkedInterviewIds.includes(interview.id)}
+                                  onChange={() => toggleInterviewLink(interview.id)}
+                                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                                />
+                                <span className="text-foreground">
+                                  {getInterviewTypeLabel(interview.type, settings.customInterviewTypes)}
+                                </span>
+                                {interview.scheduledAt && (
+                                  <span className="text-xs text-muted">
+                                    ({format(new Date(interview.scheduledAt), 'MMM d')})
+                                  </span>
+                                )}
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                  interview.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                  interview.status === 'scheduled' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                  'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                }`}>
+                                  {INTERVIEW_STATUS_LABELS[interview.status]}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Inline Interview Creation */}
+                      {showInlineInterviewForm === contact.id ? (
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-purple-700 dark:text-purple-300">New Interview Round</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowInlineInterviewForm(null)}
+                              className="p-0.5 hover:bg-purple-100 dark:hover:bg-purple-800 rounded"
+                            >
+                              <X className="w-3 h-3 text-purple-500" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs text-muted mb-1 block">Type</label>
+                              <InterviewTypeSelect
+                                value={inlineInterviewType}
+                                onChange={setInlineInterviewType}
+                                size="sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted mb-1 block">Date</label>
+                              <Input
+                                type="date"
+                                value={inlineInterviewDate}
+                                onChange={(e) => setInlineInterviewDate(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-xs text-muted mb-1 block">Duration (min)</label>
+                              <Input
+                                type="number"
+                                value={inlineInterviewDuration}
+                                onChange={(e) => setInlineInterviewDuration(Number(e.target.value))}
+                                min={15}
+                                step={15}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted mb-1 block">Status</label>
+                              <select
+                                value={inlineInterviewStatus}
+                                onChange={(e) => setInlineInterviewStatus(e.target.value as InterviewStatus)}
+                                className="w-full px-2 py-1.5 text-sm border border-border rounded bg-surface text-foreground"
+                              >
+                                {Object.entries(INTERVIEW_STATUS_LABELS).map(([value, label]) => (
+                                  <option key={value} value={value}>{label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 pt-1">
+                            <Button size="sm" variant="ghost" onClick={() => setShowInlineInterviewForm(null)}>
+                              Cancel
+                            </Button>
+                            <Button size="sm" onClick={() => handleCreateInlineInterview(contact.id)}>
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Create
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowInlineInterviewForm(contact.id)}
+                          className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Create New Interview Round
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
                       <Button size="sm" onClick={handleSaveEditContact} disabled={!editContactName.trim()}>
                         <Save className="w-3 h-3 mr-1" />
                         Save
@@ -451,8 +828,97 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                       </Button>
                     </div>
                   </div>
+                ) : viewMode === 'compact' && !expanded ? (
+                  /* Compact View */
+                  <div
+                    className="flex items-center gap-3 cursor-pointer"
+                    onClick={() => toggleContactExpanded(contact.id)}
+                  >
+                    {/* Expand Indicator */}
+                    <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+
+                    {/* Avatar */}
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs shrink-0">
+                      {contact.name.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Name and Role */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm text-foreground truncate">{contact.name}</p>
+                        {contact.role && (
+                          <p className="text-xs text-muted truncate hidden sm:block">{contact.role}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Interview Badges */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {contact.interviewRole && (
+                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+                          {contact.interviewRole}
+                        </span>
+                      )}
+                      {linkedInterviews.slice(0, 1).map(interview => (
+                        <span
+                          key={interview.id}
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            interview.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                            interview.status === 'scheduled' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                            'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                          }`}
+                        >
+                          {getInterviewTypeLabel(interview.type, settings.customInterviewTypes).split(' ')[0]}
+                        </span>
+                      ))}
+                      {linkedInterviews.length > 1 && (
+                        <span className="text-xs text-muted">+{linkedInterviews.length - 1}</span>
+                      )}
+                      {/* Match reason badge for bio/intel search */}
+                      {searchQuery && searchIncludeBioIntel && (() => {
+                        const reason = getMatchReason(contact, searchQuery);
+                        return reason ? (
+                          <span className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                            {reason}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleStartEditContact(contact); }}
+                        className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded"
+                        title="Edit contact"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setDeleteContactId(contact.id); }}
+                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                        title="Delete contact"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
                 ) : (
+                /* Expanded/Detailed View */
                 <div className="flex items-start gap-3">
+                  {/* Collapse button in compact mode - same position as expand indicator */}
+                  {viewMode === 'compact' && (
+                    <button
+                      type="button"
+                      onClick={() => toggleContactExpanded(contact.id)}
+                      className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded shrink-0 mt-2"
+                    >
+                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                    </button>
+                  )}
+
                   {/* Avatar */}
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm shrink-0">
                     {contact.name.charAt(0).toUpperCase()}
@@ -486,6 +952,30 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                         </button>
                       </div>
                     </div>
+
+                    {/* Interview Badges */}
+                    {(contact.interviewRole || linkedInterviews.length > 0) && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {contact.interviewRole && (
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+                            {contact.interviewRole}
+                          </span>
+                        )}
+                        {linkedInterviews.map(interview => (
+                          <span
+                            key={interview.id}
+                            className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                              interview.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              interview.status === 'scheduled' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                              'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                            }`}
+                          >
+                            {getInterviewTypeLabel(interview.type, settings.customInterviewTypes)}
+                            <span className="opacity-70">- {INTERVIEW_STATUS_LABELS[interview.status]}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Contact Actions */}
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -725,7 +1215,8 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                 </div>
                 )}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </section>

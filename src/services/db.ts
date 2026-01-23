@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { z } from 'zod';
-import type { Job, AppSettings, EmbeddingRecord, EmbeddableEntityType, ProviderType, ProviderSettings, TeleprompterSession, TeleprompterFeedback, CustomInterviewType } from '../types';
+import type { Job, AppSettings, EmbeddingRecord, EmbeddableEntityType, ProviderType, ProviderSettings, TeleprompterSession, TeleprompterFeedback, TeleprompterCustomType } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 
 // Minimal import validation schema
@@ -26,7 +26,7 @@ export class JobHuntDB extends Dexie {
   embeddings!: Table<EmbeddingRecord, string>;
   teleprompterSessions!: Table<TeleprompterSession, string>;
   teleprompterFeedback!: Table<TeleprompterFeedback, string>;
-  customInterviewTypes!: Table<CustomInterviewType, string>;
+  customInterviewTypes!: Table<TeleprompterCustomType, string>;
 
   constructor() {
     super('JobHuntBuddy');
@@ -331,15 +331,15 @@ export async function getFeedbackByInterviewType(interviewType: string): Promise
   return await db.teleprompterFeedback.where('interviewType').equals(interviewType).toArray();
 }
 
-// Custom Interview Types
-export async function getCustomInterviewTypes(): Promise<CustomInterviewType[]> {
+// Custom Interview Types (for Teleprompter)
+export async function getTeleprompterCustomTypes(): Promise<TeleprompterCustomType[]> {
   return await db.customInterviewTypes.toArray();
 }
 
-export async function saveCustomInterviewType(type: CustomInterviewType): Promise<void> {
+export async function saveTeleprompterCustomType(type: TeleprompterCustomType): Promise<void> {
   await db.customInterviewTypes.put(type);
 }
 
-export async function deleteCustomInterviewType(id: string): Promise<void> {
+export async function deleteTeleprompterCustomType(id: string): Promise<void> {
   await db.customInterviewTypes.delete(id);
 }

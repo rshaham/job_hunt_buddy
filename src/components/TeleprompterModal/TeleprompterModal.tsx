@@ -3,7 +3,7 @@ import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark, Plus, Loader2 } f
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
 import { generateRealtimeTeleprompterKeywords } from '../../services/ai';
-import type { Job, TeleprompterInterviewType, CustomInterviewType, TeleprompterRoundupItem } from '../../types';
+import type { Job, TeleprompterInterviewType, TeleprompterCustomType, TeleprompterRoundupItem } from '../../types';
 import { TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../../types';
 import { ContextPanel } from './ContextPanel';
 
@@ -16,9 +16,9 @@ export function TeleprompterModal() {
     teleprompterPreSelectedJobId,
     teleprompterSession,
     jobs,
-    customInterviewTypes,
+    teleprompterCustomTypes,
     startTeleprompterSession,
-    loadCustomInterviewTypes,
+    loadTeleprompterCustomTypes,
   } = useAppStore();
 
   const [modalState, setModalState] = useState<ModalState>('setup');
@@ -31,7 +31,7 @@ export function TeleprompterModal() {
   useEffect(() => {
     if (isTeleprompterModalOpen) {
       setSelectedJobId(teleprompterPreSelectedJobId);
-      loadCustomInterviewTypes();
+      loadTeleprompterCustomTypes();
 
       // Resume active session if exists
       if (teleprompterSession?.isActive) {
@@ -40,7 +40,7 @@ export function TeleprompterModal() {
         setModalState('setup');
       }
     }
-  }, [isTeleprompterModalOpen, teleprompterPreSelectedJobId, teleprompterSession, loadCustomInterviewTypes]);
+  }, [isTeleprompterModalOpen, teleprompterPreSelectedJobId, teleprompterSession, loadTeleprompterCustomTypes]);
 
   const handleStart = useCallback(async () => {
     setIsLoading(true);
@@ -100,7 +100,7 @@ export function TeleprompterModal() {
               onInterviewTypeSelect={setSelectedInterviewType}
               customTypeName={customTypeName}
               onCustomTypeNameChange={setCustomTypeName}
-              customInterviewTypes={customInterviewTypes}
+              teleprompterCustomTypes={teleprompterCustomTypes}
               onStart={handleStart}
               isLoading={isLoading}
             />
@@ -128,7 +128,7 @@ interface SetupScreenProps {
   onInterviewTypeSelect: (type: TeleprompterInterviewType) => void;
   customTypeName: string;
   onCustomTypeNameChange: (name: string) => void;
-  customInterviewTypes: CustomInterviewType[];
+  teleprompterCustomTypes: TeleprompterCustomType[];
   onStart: () => void;
   isLoading: boolean;
 }
@@ -141,7 +141,7 @@ function SetupScreen({
   onInterviewTypeSelect,
   customTypeName,
   onCustomTypeNameChange,
-  customInterviewTypes,
+  teleprompterCustomTypes,
   onStart,
   isLoading,
 }: SetupScreenProps) {
@@ -217,11 +217,11 @@ function SetupScreen({
         )}
 
         {/* Saved custom types */}
-        {customInterviewTypes.length > 0 && (
+        {teleprompterCustomTypes.length > 0 && (
           <div className="mt-3">
             <p className="text-sm text-foreground-muted mb-2">Saved types:</p>
             <div className="flex flex-wrap gap-2">
-              {customInterviewTypes.map((type) => (
+              {teleprompterCustomTypes.map((type) => (
                 <button
                   key={type.id}
                   onClick={() => {
@@ -720,7 +720,7 @@ function RoundupScreen({ onComplete }: RoundupScreenProps) {
   const {
     endTeleprompterSession,
     saveTeleprompterFeedback,
-    saveCustomInterviewType,
+    saveTeleprompterCustomType,
     teleprompterSession,
   } = useAppStore();
 
@@ -766,10 +766,10 @@ function RoundupScreen({ onComplete }: RoundupScreenProps) {
 
   const handleSaveCustomType = useCallback(async () => {
     if (teleprompterSession?.customInterviewType) {
-      await saveCustomInterviewType(teleprompterSession.customInterviewType);
+      await saveTeleprompterCustomType(teleprompterSession.customInterviewType);
     }
     setAskSaveCustomType(false);
-  }, [teleprompterSession, saveCustomInterviewType]);
+  }, [teleprompterSession, saveTeleprompterCustomType]);
 
   return (
     <div className="max-w-2xl mx-auto">
