@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Radio } from 'lucide-react';
+import { Trash2, Radio, ArrowLeft } from 'lucide-react';
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, ConfirmModal, SlideOverPanel } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { OverviewTab } from './OverviewTab';
@@ -42,6 +42,16 @@ export function JobDetailView({ job }: JobDetailViewProps) {
       >
         {/* Custom Header */}
         <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface sticky top-0 z-10">
+          {/* Back button - left side, matches slide-in direction */}
+          <button
+            onClick={handleClose}
+            className="p-2 -ml-2 rounded-lg text-foreground-muted hover:bg-surface-raised hover:text-foreground transition-colors duration-fast group"
+            title="Back to board"
+          >
+            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+            <span className="sr-only">Back to board</span>
+          </button>
+
           <div className="flex-1 min-w-0">
             <h1 className="font-display text-heading-lg text-primary truncate">
               {job.company}
@@ -75,16 +85,6 @@ export function JobDetailView({ job }: JobDetailViewProps) {
           <Button variant="ghost" size="sm" onClick={() => setIsDeleteModalOpen(true)} className="text-danger">
             <Trash2 className="w-4 h-4" />
           </Button>
-
-          <button
-            onClick={handleClose}
-            className="p-2 rounded-lg text-foreground-muted hover:bg-surface-raised hover:text-foreground transition-colors duration-fast"
-          >
-            <span className="sr-only">Close</span>
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Tabs */}
