@@ -84,6 +84,7 @@ export interface Contact {
   notes?: string;
   linkedInBio?: string;       // Raw pasted bio text
   interviewerIntel?: string;  // AI-generated analysis (markdown)
+  interviewRole?: string;     // Soft label like "Technical Round", "Hiring Manager"
 }
 
 export interface Note {
