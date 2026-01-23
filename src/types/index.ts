@@ -395,6 +395,103 @@ export interface SavedStory {
   updatedAt?: Date;
 }
 
+// ============================================================================
+// Interview Teleprompter Types
+// ============================================================================
+
+// Interview types for teleprompter (extends existing InterviewType for consistency)
+export type TeleprompterInterviewType =
+  | 'phone_screen'
+  | 'behavioral'
+  | 'technical'
+  | 'case_study'
+  | 'panel'
+  | 'hiring_manager'
+  | 'culture_fit'
+  | 'final_round'
+  | 'custom';
+
+export const TELEPROMPTER_INTERVIEW_TYPE_LABELS: Record<TeleprompterInterviewType, string> = {
+  phone_screen: 'Phone Screen',
+  behavioral: 'Behavioral',
+  technical: 'Technical',
+  case_study: 'Case Study',
+  panel: 'Panel Interview',
+  hiring_manager: 'Hiring Manager',
+  culture_fit: 'Culture Fit',
+  final_round: 'Final Round',
+  custom: 'Custom',
+};
+
+// Categories vary by interview type
+export interface TeleprompterCategory {
+  id: string;
+  name: string;
+  keywords: TeleprompterKeyword[];
+  isExpanded: boolean;
+}
+
+// Individual keyword/phrase on the teleprompter
+export interface TeleprompterKeyword {
+  id: string;
+  text: string;
+  source: 'ai-initial' | 'ai-realtime' | 'user' | 'profile' | 'manual';
+  inStaging: boolean;  // true = in staging area, false = on main display
+  suggestedCategoryName?: string;  // AI's suggested category (for staging promotion)
+}
+
+// Active teleprompter session
+export interface TeleprompterSession {
+  id: string;
+  jobId: string | null;
+  interviewType: TeleprompterInterviewType;
+  customInterviewType?: string;  // for 'custom' type
+  categories: TeleprompterCategory[];
+  stagingKeywords: TeleprompterKeyword[];  // AI suggestions not yet promoted
+  dismissedKeywordIds: string[];  // track to avoid re-suggesting
+  startedAt: Date;
+  isActive: boolean;
+  viewMode: 'categorized' | 'flat';
+  isStagingCollapsed: boolean;
+  isGeneratingInitialKeywords: boolean;  // loading state for initial AI suggestions
+}
+
+// Response shape for AI semantic category generation
+export interface SemanticCategoryResponse {
+  name: string;
+  keywords: string[];
+}
+
+// Feedback from post-interview roundup
+export interface TeleprompterFeedback {
+  id: string;
+  sessionId: string;
+  interviewType: TeleprompterInterviewType;
+  keywordText: string;
+  helpful: boolean;
+  savedToProfile: boolean;
+  timestamp: Date;
+}
+
+// Saved custom interview type (for teleprompter)
+export interface TeleprompterCustomType {
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
+// Roundup item for post-interview review
+export interface TeleprompterRoundupItem {
+  keyword: TeleprompterKeyword;
+  categoryName: string;
+  helpful?: boolean;
+  saveToProfile?: boolean;
+}
+
+// ============================================================================
+// Story Skill Categories (for Profile Hub)
+// ============================================================================
+
 export type StorySkillCategory = 'technical' | 'soft' | 'domain';
 
 export const STORY_SKILL_CATEGORIES: Record<StorySkillCategory, { label: string; color: string }> = {
@@ -402,6 +499,7 @@ export const STORY_SKILL_CATEGORIES: Record<StorySkillCategory, { label: string;
   soft: { label: 'Soft Skills', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
   domain: { label: 'Domain', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
 };
+
 
 // Career development project types
 export type ProjectStatus = 'idea' | 'in_progress' | 'completed';

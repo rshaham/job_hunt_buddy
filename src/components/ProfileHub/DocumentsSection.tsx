@@ -31,7 +31,7 @@ export function DocumentsSection(): JSX.Element {
       setEditedSummary(viewingDoc.summary || '');
       setViewTab(viewingDoc.summary ? 'summary' : 'full');
     }
-  }, [viewingDoc?.id]);
+  }, [viewingDoc]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];

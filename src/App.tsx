@@ -16,6 +16,7 @@ import { ToastContainer } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 import { RejectionModal } from './components/JobDetail/RejectionModal';
 import { OfferModal } from './components/JobDetail/OfferModal';
+import { TeleprompterModal } from './components/TeleprompterModal';
 import { ProfileHub } from './components/ProfileHub';
 
 function App() {
@@ -128,6 +129,7 @@ function App() {
       <JobFinderModal />
       <RejectionModal />
       <OfferModal />
+      <TeleprompterModal />
       <ProfileHub />
       <CommandBar />
       <ToastContainer />
