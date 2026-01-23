@@ -74,6 +74,17 @@ export interface ResumeAnalysis {
   missingKeywords?: string[];  // Keywords from JD NOT found in resume
 }
 
+// Structured interviewer intel (JSON format)
+// Parser detects JSON vs markdown for backwards compat with existing data
+export interface InterviewerIntel {
+  communicationStyle: string;   // Single paragraph describing preferred style
+  whatTheyValue: string[];      // 3-5 items they care about
+  talkingPoints: string[];      // 3-4 things candidate should mention
+  questionsToAsk: string[];     // 2-3 personalized questions
+  commonGround: string[];       // 1-3 shared interests/connections
+  redFlags: string[];           // 2-3 things to AVOID saying/doing
+}
+
 export interface Contact {
   id: string;
   name: string;
@@ -83,7 +94,7 @@ export interface Contact {
   linkedin?: string;
   notes?: string;
   linkedInBio?: string;       // Raw pasted bio text
-  interviewerIntel?: string;  // AI-generated analysis (markdown)
+  interviewerIntel?: string;  // AI-generated analysis (JSON string or legacy markdown)
   interviewRole?: string;     // Soft label like "Technical Round", "Hiring Manager"
 }
 
@@ -399,29 +410,8 @@ export interface SavedStory {
 // Interview Teleprompter Types
 // ============================================================================
 
-// Interview types for teleprompter (extends existing InterviewType for consistency)
-export type TeleprompterInterviewType =
-  | 'phone_screen'
-  | 'behavioral'
-  | 'technical'
-  | 'case_study'
-  | 'panel'
-  | 'hiring_manager'
-  | 'culture_fit'
-  | 'final_round'
-  | 'custom';
-
-export const TELEPROMPTER_INTERVIEW_TYPE_LABELS: Record<TeleprompterInterviewType, string> = {
-  phone_screen: 'Phone Screen',
-  behavioral: 'Behavioral',
-  technical: 'Technical',
-  case_study: 'Case Study',
-  panel: 'Panel Interview',
-  hiring_manager: 'Hiring Manager',
-  culture_fit: 'Culture Fit',
-  final_round: 'Final Round',
-  custom: 'Custom',
-};
+// Teleprompter now uses the unified interview type system (DEFAULT_INTERVIEW_TYPES + custom)
+// See getInterviewTypeLabel() for label resolution
 
 // Categories vary by interview type
 export interface TeleprompterCategory {
@@ -444,8 +434,10 @@ export interface TeleprompterKeyword {
 export interface TeleprompterSession {
   id: string;
   jobId: string | null;
-  interviewType: TeleprompterInterviewType;
-  customInterviewType?: string;  // for 'custom' type
+  interviewType: string;  // Uses unified type system (DEFAULT_INTERVIEW_TYPES keys + custom)
+  customInterviewType?: string;  // User-provided label for custom types
+  interviewRoundId?: string;  // Optional link to scheduled InterviewRound
+  interviewerIds?: string[];  // Contact IDs of interviewers (from InterviewRound or manual)
   categories: TeleprompterCategory[];
   stagingKeywords: TeleprompterKeyword[];  // AI suggestions not yet promoted
   dismissedKeywordIds: string[];  // track to avoid re-suggesting
@@ -466,7 +458,7 @@ export interface SemanticCategoryResponse {
 export interface TeleprompterFeedback {
   id: string;
   sessionId: string;
-  interviewType: TeleprompterInterviewType;
+  interviewType: string;  // Uses unified type system
   keywordText: string;
   helpful: boolean;
   savedToProfile: boolean;
