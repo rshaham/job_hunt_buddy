@@ -1,29 +1,62 @@
 /**
- * Parser for interviewer intel markdown content.
- * Extracts structured sections from the AI-generated analysis.
+ * Parser for interviewer intel content.
+ * Supports both JSON (new format) and markdown (legacy format) for backwards compatibility.
  */
 
+import type { InterviewerIntel } from '../../../types';
+
 export interface ParsedIntel {
-  whatTheyValue: string[];
-  talkingPoints: string[];
-  questionsToAsk: string[];
+  communicationStyle: string;   // Single paragraph describing preferred style
+  whatTheyValue: string[];      // 3-5 items they care about
+  talkingPoints: string[];      // 3-4 things candidate should mention
+  questionsToAsk: string[];     // 2-3 personalized questions
+  commonGround: string[];       // 1-3 shared interests/connections
+  redFlags: string[];           // 2-3 things to AVOID saying/doing
+}
+
+/**
+ * Tries to parse intel as JSON.
+ * Returns the parsed InterviewerIntel if valid, null otherwise.
+ */
+function tryParseJsonIntel(content: string): InterviewerIntel | null {
+  try {
+    const parsed = JSON.parse(content);
+
+    // Validate structure
+    if (
+      typeof parsed.communicationStyle === 'string' &&
+      Array.isArray(parsed.whatTheyValue) &&
+      Array.isArray(parsed.talkingPoints) &&
+      Array.isArray(parsed.questionsToAsk) &&
+      Array.isArray(parsed.commonGround)
+    ) {
+      return parsed as InterviewerIntel;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Determines which section a header belongs to based on its text.
  */
-function getSectionFromHeader(headerText: string): 'value' | 'talking' | 'questions' | null {
+function getSectionFromHeader(headerText: string): 'style' | 'value' | 'talking' | 'questions' | 'ground' | 'redFlags' | null {
   const lower = headerText.toLowerCase();
 
-  if (lower.includes('value') || lower.includes('priorities') || lower.includes('care about')) {
+  if (lower.includes('communication') || lower.includes('style')) {
+    return 'style';
+  } else if (lower.includes('value') || lower.includes('priorities') || lower.includes('care about')) {
     return 'value';
   } else if (lower.includes('talking point') || lower.includes('discussion') || lower.includes('key point')) {
     return 'talking';
   } else if (lower.includes('question')) {
     return 'questions';
-  } else if (lower.includes('communication') || lower.includes('common ground')) {
-    // Skip these sections
-    return null;
+  } else if (lower.includes('common ground') || lower.includes('shared') || lower.includes('connection')) {
+    return 'ground';
+  } else if (lower.includes('red flag') || lower.includes('avoid') || lower.includes('don\'t') || lower.includes('not to')) {
+    return 'redFlags';
   }
   return null;
 }
@@ -56,23 +89,24 @@ function parseInlineContent(content: string): string[] {
 }
 
 /**
- * Parses the interviewer intel markdown to extract key sections.
+ * Parses markdown intel (legacy format) to extract key sections.
  *
  * Supports two formats:
  * 1. Markdown headers: ## What They Value (followed by bullet points)
  * 2. Bold headers: **What They Value**: content or **What They Value** (followed by bullets)
  */
-export function parseInterviewerIntel(intelMarkdown: string | undefined): ParsedIntel {
+function parseMarkdownIntel(intelMarkdown: string): ParsedIntel {
   const result: ParsedIntel = {
+    communicationStyle: '',
     whatTheyValue: [],
     talkingPoints: [],
     questionsToAsk: [],
+    commonGround: [],
+    redFlags: [],
   };
 
-  if (!intelMarkdown) return result;
-
   const lines = intelMarkdown.split('\n');
-  let currentSection: 'value' | 'talking' | 'questions' | null = null;
+  let currentSection: 'style' | 'value' | 'talking' | 'questions' | 'ground' | 'redFlags' | null = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -95,9 +129,13 @@ export function parseInterviewerIntel(intelMarkdown: string | undefined): Parsed
 
       // If there's inline content after the bold header, parse it
       if (inlineContent && currentSection) {
-        const items = parseInlineContent(inlineContent);
-        for (const item of items) {
-          addToSection(result, currentSection, item);
+        if (currentSection === 'style') {
+          result.communicationStyle = cleanMarkdown(inlineContent);
+        } else {
+          const items = parseInlineContent(inlineContent);
+          for (const item of items) {
+            addToSection(result, currentSection, item);
+          }
         }
       }
       continue;
@@ -110,11 +148,28 @@ export function parseInterviewerIntel(intelMarkdown: string | undefined): Parsed
       if (content.length < 2) continue;
 
       const cleanContent = cleanMarkdown(content);
-      addToSection(result, currentSection, cleanContent);
+      if (currentSection === 'style') {
+        // Communication style should be a paragraph, append bullet content
+        if (result.communicationStyle) {
+          result.communicationStyle += ' ' + cleanContent;
+        } else {
+          result.communicationStyle = cleanContent;
+        }
+      } else {
+        addToSection(result, currentSection, cleanContent);
+      }
     } else if (currentSection && trimmed.length >= 2) {
       // Handle plain text lines (not bullets) within a section - treat as content
       const cleanContent = cleanMarkdown(trimmed);
-      addToSection(result, currentSection, cleanContent);
+      if (currentSection === 'style') {
+        if (result.communicationStyle) {
+          result.communicationStyle += ' ' + cleanContent;
+        } else {
+          result.communicationStyle = cleanContent;
+        }
+      } else {
+        addToSection(result, currentSection, cleanContent);
+      }
     }
   }
 
@@ -124,7 +179,7 @@ export function parseInterviewerIntel(intelMarkdown: string | undefined): Parsed
 /**
  * Adds content to the appropriate section in the result.
  */
-function addToSection(result: ParsedIntel, section: 'value' | 'talking' | 'questions', content: string): void {
+function addToSection(result: ParsedIntel, section: 'style' | 'value' | 'talking' | 'questions' | 'ground' | 'redFlags', content: string): void {
   if (!content || content.length < 2) return;
 
   switch (section) {
@@ -137,14 +192,64 @@ function addToSection(result: ParsedIntel, section: 'value' | 'talking' | 'quest
     case 'questions':
       result.questionsToAsk.push(content);
       break;
+    case 'ground':
+      result.commonGround.push(content);
+      break;
+    case 'redFlags':
+      result.redFlags.push(content);
+      break;
   }
+}
+
+/**
+ * Parses the interviewer intel to extract key sections.
+ * Tries JSON format first (new format), falls back to markdown (legacy format).
+ */
+export function parseInterviewerIntel(intelContent: string | undefined): ParsedIntel {
+  const emptyResult: ParsedIntel = {
+    communicationStyle: '',
+    whatTheyValue: [],
+    talkingPoints: [],
+    questionsToAsk: [],
+    commonGround: [],
+    redFlags: [],
+  };
+
+  if (!intelContent) return emptyResult;
+
+  // Try JSON format first (new format)
+  const jsonIntel = tryParseJsonIntel(intelContent);
+  if (jsonIntel) {
+    return {
+      communicationStyle: jsonIntel.communicationStyle || '',
+      whatTheyValue: jsonIntel.whatTheyValue || [],
+      talkingPoints: jsonIntel.talkingPoints || [],
+      questionsToAsk: jsonIntel.questionsToAsk || [],
+      commonGround: jsonIntel.commonGround || [],
+      redFlags: jsonIntel.redFlags || [],
+    };
+  }
+
+  // Fall back to markdown parsing (legacy format)
+  return parseMarkdownIntel(intelContent);
 }
 
 /**
  * Checks if parsed intel has any meaningful content.
  */
 export function hasIntelContent(intel: ParsedIntel): boolean {
-  return intel.whatTheyValue.length > 0 ||
+  return intel.communicationStyle.length > 0 ||
+         intel.whatTheyValue.length > 0 ||
          intel.talkingPoints.length > 0 ||
-         intel.questionsToAsk.length > 0;
+         intel.questionsToAsk.length > 0 ||
+         intel.commonGround.length > 0 ||
+         intel.redFlags.length > 0;
+}
+
+/**
+ * Checks if the intel content is in JSON format.
+ */
+export function isJsonIntel(intelContent: string | undefined): boolean {
+  if (!intelContent) return false;
+  return tryParseJsonIntel(intelContent) !== null;
 }
