@@ -41,7 +41,7 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
       setSkillsInput(editingStory.skills?.join(', ') || '');
       setShowForm(true);
     }
-  }, [editingStory?.id]);
+  }, [editingStory]);
 
   function resetForm(): void {
     setRawText('');
