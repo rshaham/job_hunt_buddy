@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword } from '../types';
-import { DEFAULT_SETTINGS, TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword, TeleprompterCustomType } from '../types';
+import { DEFAULT_INTERVIEW_TYPES, DEFAULT_SETTINGS, TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../types';
 import { generateFlatInitialTeleprompterKeywords } from '../services/ai';
 import * as db from '../services/db';
-import { saveSession, getCustomInterviewTypes, saveCustomInterviewType as saveCustomInterviewTypeDB, saveFeedbackBatch } from '../services/db';
+import { saveSession, getTeleprompterCustomTypes, saveTeleprompterCustomType, saveFeedbackBatch } from '../services/db';
 import { generateId } from '../utils/helpers';
 import { useEmbeddingStore } from '../services/embeddings';
 import { useCommandBarStore } from './commandBarStore';
@@ -116,7 +116,7 @@ interface AppState {
   isTeleprompterModalOpen: boolean;
   teleprompterSession: TeleprompterSession | null;
   teleprompterPreSelectedJobId: string | null;
-  customInterviewTypes: CustomInterviewType[];
+  teleprompterCustomTypes: TeleprompterCustomType[];
 
   // Actions
   loadData: () => Promise<void>;
@@ -156,6 +156,10 @@ interface AppState {
   addInterviewRound: (jobId: string, round: Omit<InterviewRound, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateInterviewRound: (jobId: string, roundId: string, updates: Partial<InterviewRound>) => Promise<void>;
   deleteInterviewRound: (jobId: string, roundId: string) => Promise<void>;
+
+  // Custom interview type actions
+  addCustomInterviewType: (label: string) => Promise<CustomInterviewType>;
+  removeCustomInterviewType: (key: string) => Promise<void>;
 
   // Status change flow (intercepts Rejected/Offer moves)
   initiateStatusChange: (jobId: string, newStatus: string) => void;
@@ -201,8 +205,8 @@ interface AppState {
   addManualKeyword: (categoryId: string, text: string) => void;
   toggleCategory: (categoryId: string) => void;
   saveTeleprompterFeedback: (items: TeleprompterRoundupItem[]) => Promise<void>;
-  loadCustomInterviewTypes: () => Promise<void>;
-  saveCustomInterviewType: (name: string) => Promise<void>;
+  loadTeleprompterCustomTypes: () => Promise<void>;
+  saveTeleprompterCustomType: (name: string) => Promise<void>;
   setTeleprompterViewMode: (mode: 'categorized' | 'flat') => void;
   toggleStagingCollapsed: () => void;
   dismissAllStagingKeywords: () => void;
@@ -252,7 +256,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isTeleprompterModalOpen: false,
   teleprompterSession: null,
   teleprompterPreSelectedJobId: null,
-  customInterviewTypes: [],
+  teleprompterCustomTypes: [],
 
   // Load initial data
   loadData: async () => {
@@ -651,6 +655,38 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().updateJob(jobId, { interviews: updatedInterviews });
   },
 
+  // Custom interview type actions
+  addCustomInterviewType: async (label: string) => {
+    const { settings } = get();
+    const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+    // Check for duplicates
+    const allTypes = [...DEFAULT_INTERVIEW_TYPES, ...(settings.customInterviewTypes || [])];
+    if (allTypes.some(t => t.key === key)) {
+      throw new Error('Interview type already exists');
+    }
+
+    const newType: CustomInterviewType = { key, label };
+    const newCustomTypes = [...(settings.customInterviewTypes || []), newType];
+    await get().updateSettings({ customInterviewTypes: newCustomTypes });
+    return newType;
+  },
+
+  removeCustomInterviewType: async (key: string) => {
+    const { settings, jobs } = get();
+
+    // Check if type is in use
+    const typeInUse = jobs.some(job =>
+      job.interviews?.some(i => i.type === key)
+    );
+    if (typeInUse) {
+      throw new Error('Cannot remove interview type that is in use');
+    }
+
+    const newCustomTypes = (settings.customInterviewTypes || []).filter(t => t.key !== key);
+    await get().updateSettings({ customInterviewTypes: newCustomTypes });
+  },
+
   // Status change flow
   initiateStatusChange: (jobId, newStatus) => {
     const job = get().jobs.find((j) => j.id === jobId);
@@ -1041,20 +1077,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ teleprompterSession: null });
   },
 
-  loadCustomInterviewTypes: async () => {
-    const types = await getCustomInterviewTypes();
-    set({ customInterviewTypes: types });
+  loadTeleprompterCustomTypes: async () => {
+    const types = await getTeleprompterCustomTypes();
+    set({ teleprompterCustomTypes: types });
   },
 
-  saveCustomInterviewType: async (name) => {
-    const newType: CustomInterviewType = {
+  saveTeleprompterCustomType: async (name) => {
+    const newType: TeleprompterCustomType = {
       id: crypto.randomUUID(),
       name,
       createdAt: new Date(),
     };
-    await saveCustomInterviewTypeDB(newType);
-    const { customInterviewTypes } = get();
-    set({ customInterviewTypes: [...customInterviewTypes, newType] });
+    await saveTeleprompterCustomType(newType);
+    const { teleprompterCustomTypes } = get();
+    set({ teleprompterCustomTypes: [...teleprompterCustomTypes, newType] });
   },
 
   setTeleprompterViewMode: (mode) => {

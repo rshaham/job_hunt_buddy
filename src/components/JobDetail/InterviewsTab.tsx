@@ -1,10 +1,19 @@
 import { useState } from 'react';
 import { Plus, Calendar } from 'lucide-react';
-import { Button, Modal, Input, Textarea } from '../ui';
+import { Button, Modal, Input, Textarea, InterviewTypeSelect } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { InterviewRoundCard } from './InterviewRoundCard';
-import type { Job, InterviewType, InterviewStatus, InterviewOutcome, InterviewRound } from '../../types';
-import { INTERVIEW_TYPE_LABELS, INTERVIEW_STATUS_LABELS, INTERVIEW_OUTCOME_LABELS } from '../../types';
+import { cn } from '../../utils/helpers';
+import type { Job, InterviewStatus, InterviewRound } from '../../types';
+import { INTERVIEW_STATUS_LABELS } from '../../types';
+
+// Section header component
+const SectionHeader = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-2 text-sm font-medium text-foreground-muted pt-2">
+    <span>{children}</span>
+    <div className="flex-1 h-px bg-border" />
+  </div>
+);
 
 interface InterviewsTabProps {
   job: Job;
@@ -17,14 +26,16 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
 
   // New round form state
   const [newRound, setNewRound] = useState({
-    type: 'phone_screen' as InterviewType,
+    type: 'phone_screen',
     scheduledAt: '',
     duration: '',
     location: '',
     status: 'scheduled' as InterviewStatus,
-    outcome: 'pending' as InterviewOutcome,
     notes: '',
+    interviewerIds: [] as string[],
   });
+
+  const contacts = job.contacts || [];
 
   const interviews = job.interviews || [];
   const sortedInterviews = [...interviews].sort((a, b) => a.roundNumber - b.roundNumber);
@@ -43,8 +54,9 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
         duration: newRound.duration ? parseInt(newRound.duration) : undefined,
         location: newRound.location || undefined,
         status: newRound.status,
-        outcome: newRound.outcome,
+        outcome: 'pending',
         notes: newRound.notes || undefined,
+        interviewerIds: newRound.interviewerIds.length > 0 ? newRound.interviewerIds : undefined,
       });
 
       setIsAddModalOpen(false);
@@ -69,8 +81,8 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
       duration: '',
       location: '',
       status: 'scheduled',
-      outcome: 'pending',
       notes: '',
+      interviewerIds: [],
     });
   };
 
@@ -125,95 +137,113 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
           resetForm();
         }}
         title="Add Interview Round"
-        size="md"
+        size="lg"
       >
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Interview Type
-              </label>
-              <select
-                value={newRound.type}
-                onChange={(e) => setNewRound({ ...newRound, type: e.target.value as InterviewType })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                {Object.entries(INTERVIEW_TYPE_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
+        <div className="p-5 space-y-5">
+          {/* Interview Type - full width at top */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Interview Type
+            </label>
+            <InterviewTypeSelect
+              value={newRound.type}
+              onChange={(type) => setNewRound({ ...newRound, type })}
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Status
-              </label>
-              <select
-                value={newRound.status}
-                onChange={(e) => setNewRound({ ...newRound, status: e.target.value as InterviewStatus })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                {Object.entries(INTERVIEW_STATUS_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
+          {/* Scheduling Section */}
+          <div className="space-y-4">
+            <SectionHeader>Scheduling</SectionHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Date & Time
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={newRound.scheduledAt}
+                  onChange={(e) => setNewRound({ ...newRound, scheduledAt: e.target.value })}
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Date & Time
-              </label>
-              <Input
-                type="datetime-local"
-                value={newRound.scheduledAt}
-                onChange={(e) => setNewRound({ ...newRound, scheduledAt: e.target.value })}
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Duration (minutes)
+                </label>
+                <Input
+                  type="number"
+                  value={newRound.duration}
+                  onChange={(e) => setNewRound({ ...newRound, duration: e.target.value })}
+                  placeholder="e.g., 45"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Duration (minutes)
-              </label>
-              <Input
-                type="number"
-                value={newRound.duration}
-                onChange={(e) => setNewRound({ ...newRound, duration: e.target.value })}
-                placeholder="e.g., 45"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Location
+                </label>
+                <Input
+                  type="text"
+                  value={newRound.location}
+                  onChange={(e) => setNewRound({ ...newRound, location: e.target.value })}
+                  placeholder="e.g., Zoom, HQ Office"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Location
-              </label>
-              <Input
-                type="text"
-                value={newRound.location}
-                onChange={(e) => setNewRound({ ...newRound, location: e.target.value })}
-                placeholder="e.g., Zoom, HQ Office"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Outcome
-              </label>
-              <select
-                value={newRound.outcome}
-                onChange={(e) => setNewRound({ ...newRound, outcome: e.target.value as InterviewOutcome })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                {Object.entries(INTERVIEW_OUTCOME_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Status
+                </label>
+                <select
+                  value={newRound.status}
+                  onChange={(e) => setNewRound({ ...newRound, status: e.target.value as InterviewStatus })}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  {Object.entries(INTERVIEW_STATUS_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Notes
-            </label>
+          {/* Interviewers Section - only shown if contacts exist */}
+          {contacts.length > 0 && (
+            <div className="space-y-3">
+              <SectionHeader>Interviewers</SectionHeader>
+              <div className="flex flex-wrap gap-2">
+                {contacts.map((contact) => {
+                  const isSelected = newRound.interviewerIds.includes(contact.id);
+                  return (
+                    <button
+                      key={contact.id}
+                      type="button"
+                      onClick={() => {
+                        setNewRound({
+                          ...newRound,
+                          interviewerIds: isSelected
+                            ? newRound.interviewerIds.filter((id) => id !== contact.id)
+                            : [...newRound.interviewerIds, contact.id],
+                        });
+                      }}
+                      className={cn(
+                        'px-3 py-1.5 text-sm rounded-full border transition-colors',
+                        isSelected
+                          ? 'bg-primary/10 border-primary text-primary'
+                          : 'border-border text-foreground-muted hover:border-primary/50'
+                      )}
+                    >
+                      {contact.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Notes Section */}
+          <div className="space-y-3">
+            <SectionHeader>Notes</SectionHeader>
             <Textarea
               value={newRound.notes}
               onChange={(e) => setNewRound({ ...newRound, notes: e.target.value })}
@@ -222,6 +252,7 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
             />
           </div>
 
+          {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="ghost"
