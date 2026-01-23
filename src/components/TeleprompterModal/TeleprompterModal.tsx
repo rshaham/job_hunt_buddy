@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark, Plus, Loader2 } from 'lucide-react';
+import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark, Plus, Loader2, Calendar, User } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
 import { generateRealtimeTeleprompterKeywords } from '../../services/ai';
-import type { Job, TeleprompterInterviewType, TeleprompterCustomType, TeleprompterRoundupItem } from '../../types';
-import { TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../../types';
+import type { Job, TeleprompterCustomType, TeleprompterRoundupItem, InterviewRound, Contact } from '../../types';
+import { DEFAULT_INTERVIEW_TYPES, getInterviewTypeLabel } from '../../types';
 import { ContextPanel } from './ContextPanel';
 
 type ModalState = 'setup' | 'active' | 'roundup';
@@ -23,9 +23,13 @@ export function TeleprompterModal() {
 
   const [modalState, setModalState] = useState<ModalState>('setup');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [selectedInterviewType, setSelectedInterviewType] = useState<TeleprompterInterviewType>('behavioral');
+  const [selectedInterviewType, setSelectedInterviewType] = useState<string>('behavioral');
   const [customTypeName, setCustomTypeName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Scheduled interview selection
+  const [selectedInterviewRoundId, setSelectedInterviewRoundId] = useState<string | null>(null);
+  const [selectedInterviewers, setSelectedInterviewers] = useState<Contact[]>([]);
+  const [interviewNotes, setInterviewNotes] = useState<string>('');
 
   // Initialize with pre-selected job
   useEffect(() => {
@@ -45,13 +49,26 @@ export function TeleprompterModal() {
   const handleStart = useCallback(async () => {
     setIsLoading(true);
     try {
-      const customType = selectedInterviewType === 'custom' ? customTypeName : undefined;
-      await startTeleprompterSession(selectedJobId, selectedInterviewType, customType);
+      // Use 'other' as the base type for custom, with customTypeName as the label
+      const customType = selectedInterviewType === 'other' && customTypeName.trim()
+        ? customTypeName.trim()
+        : undefined;
+
+      // Build interview context if we have a selected interview round
+      const interviewContext = selectedInterviewRoundId || selectedInterviewers.length > 0
+        ? {
+            interviewRoundId: selectedInterviewRoundId || undefined,
+            interviewers: selectedInterviewers.length > 0 ? selectedInterviewers : undefined,
+            notes: interviewNotes || undefined,
+          }
+        : undefined;
+
+      await startTeleprompterSession(selectedJobId, selectedInterviewType, customType, interviewContext);
       setModalState('active');
     } finally {
       setIsLoading(false);
     }
-  }, [selectedJobId, selectedInterviewType, customTypeName, startTeleprompterSession]);
+  }, [selectedJobId, selectedInterviewType, customTypeName, selectedInterviewRoundId, selectedInterviewers, interviewNotes, startTeleprompterSession]);
 
   // Protected close - only from explicit action
   const handleClose = useCallback(() => {
@@ -63,6 +80,9 @@ export function TeleprompterModal() {
     setModalState('setup');
     setSelectedJobId(null);
     setCustomTypeName('');
+    setSelectedInterviewRoundId(null);
+    setSelectedInterviewers([]);
+    setInterviewNotes('');
   }, [modalState, closeTeleprompterModal]);
 
   if (!isTeleprompterModalOpen) return null;
@@ -95,7 +115,13 @@ export function TeleprompterModal() {
             <SetupScreen
               jobs={jobs}
               selectedJobId={selectedJobId}
-              onJobSelect={setSelectedJobId}
+              onJobSelect={(id) => {
+                setSelectedJobId(id);
+                // Reset interview selection when job changes
+                setSelectedInterviewRoundId(null);
+                setSelectedInterviewers([]);
+                setInterviewNotes('');
+              }}
               selectedInterviewType={selectedInterviewType}
               onInterviewTypeSelect={setSelectedInterviewType}
               customTypeName={customTypeName}
@@ -103,6 +129,13 @@ export function TeleprompterModal() {
               teleprompterCustomTypes={teleprompterCustomTypes}
               onStart={handleStart}
               isLoading={isLoading}
+              selectedInterviewRoundId={selectedInterviewRoundId}
+              onInterviewRoundSelect={(round, interviewers, notes) => {
+                setSelectedInterviewRoundId(round?.id || null);
+                setSelectedInterviewType(round?.type || 'behavioral');
+                setSelectedInterviewers(interviewers);
+                setInterviewNotes(notes);
+              }}
             />
           )}
 
@@ -124,13 +157,19 @@ interface SetupScreenProps {
   jobs: Job[];
   selectedJobId: string | null;
   onJobSelect: (id: string | null) => void;
-  selectedInterviewType: TeleprompterInterviewType;
-  onInterviewTypeSelect: (type: TeleprompterInterviewType) => void;
+  selectedInterviewType: string;
+  onInterviewTypeSelect: (type: string) => void;
   customTypeName: string;
   onCustomTypeNameChange: (name: string) => void;
   teleprompterCustomTypes: TeleprompterCustomType[];
   onStart: () => void;
   isLoading: boolean;
+  selectedInterviewRoundId: string | null;
+  onInterviewRoundSelect: (
+    round: InterviewRound | null,
+    interviewers: Contact[],
+    notes: string
+  ) => void;
 }
 
 function SetupScreen({
@@ -144,14 +183,72 @@ function SetupScreen({
   teleprompterCustomTypes,
   onStart,
   isLoading,
+  selectedInterviewRoundId,
+  onInterviewRoundSelect,
 }: SetupScreenProps) {
-  const interviewTypes = Object.entries(TELEPROMPTER_INTERVIEW_TYPE_LABELS) as [TeleprompterInterviewType, string][];
+  const { settings } = useAppStore();
+  const customInterviewTypes = settings.customInterviewTypes || [];
+
+  // Build interview type options from unified system
+  const interviewTypes = DEFAULT_INTERVIEW_TYPES;
 
   // Only show jobs that are in interview-relevant stages
   const RELEVANT_STATUSES = ['applied', 'screening', 'interviewing'];
   const relevantJobs = jobs.filter(job =>
     RELEVANT_STATUSES.includes(job.status.toLowerCase())
   );
+
+  // Get selected job and its upcoming interviews
+  const selectedJob = selectedJobId ? jobs.find(j => j.id === selectedJobId) : null;
+
+  // Filter to scheduled/upcoming interviews only
+  const upcomingInterviews = useMemo(() => {
+    if (!selectedJob?.interviews) return [];
+    const now = new Date();
+    return selectedJob.interviews
+      .filter(i => i.status === 'scheduled' && i.scheduledAt && new Date(i.scheduledAt) >= now)
+      .sort((a, b) => {
+        // Defensive check - filter should ensure scheduledAt exists, but be safe
+        if (!a.scheduledAt || !b.scheduledAt) return 0;
+        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+      });
+  }, [selectedJob?.interviews]);
+
+  // Resolve interviewers for a round
+  const getInterviewersForRound = useCallback((round: InterviewRound): Contact[] => {
+    if (!round.interviewerIds || !selectedJob?.contacts) return [];
+    return round.interviewerIds
+      .map(id => selectedJob.contacts.find(c => c.id === id))
+      .filter((c): c is Contact => c !== undefined);
+  }, [selectedJob?.contacts]);
+
+  // Handle interview round selection
+  const handleInterviewSelect = useCallback((round: InterviewRound) => {
+    const interviewers = getInterviewersForRound(round);
+    onInterviewRoundSelect(round, interviewers, round.notes || '');
+  }, [getInterviewersForRound, onInterviewRoundSelect]);
+
+  // Clear interview round selection
+  const handleClearInterviewSelection = useCallback(() => {
+    onInterviewRoundSelect(null, [], '');
+  }, [onInterviewRoundSelect]);
+
+  // Format date for display
+  const formatInterviewDate = (date: Date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const isToday = d.toDateString() === now.toDateString();
+    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+
+    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    if (isToday) return `Today, ${timeStr}`;
+    if (isTomorrow) return `Tomorrow, ${timeStr}`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + `, ${timeStr}`;
+  };
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
@@ -183,19 +280,109 @@ function SetupScreen({
         </select>
       </div>
 
+      {/* Upcoming Interviews - shown only when job has scheduled interviews */}
+      {upcomingInterviews.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xl font-medium text-foreground">
+              Upcoming Interviews
+            </label>
+            {selectedInterviewRoundId && (
+              <button
+                onClick={handleClearInterviewSelection}
+                className="text-sm text-foreground-muted hover:text-foreground"
+              >
+                Clear selection
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-foreground-muted -mt-1">
+            Select a scheduled interview to auto-fill details
+          </p>
+          <div className="space-y-2">
+            {upcomingInterviews.map((interview) => {
+              const interviewers = getInterviewersForRound(interview);
+              const isSelected = selectedInterviewRoundId === interview.id;
+              return (
+                <button
+                  key={interview.id}
+                  onClick={() => handleInterviewSelect(interview)}
+                  className={cn(
+                    'w-full text-left p-4 rounded-lg border-2 transition-colors',
+                    isSelected
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'w-2 h-2 rounded-full',
+                            isSelected ? 'bg-primary' : 'bg-foreground-muted'
+                          )}
+                        />
+                        <span className="text-lg font-medium text-foreground">
+                          {getInterviewTypeLabel(interview.type, customInterviewTypes)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-foreground-muted">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {formatInterviewDate(interview.scheduledAt!)}
+                        </span>
+                        {interview.duration && (
+                          <span>{interview.duration} min</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {interviewers.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {interviewers.map((c) => (
+                        <span
+                          key={c.id}
+                          className="inline-flex items-center gap-1 text-sm text-foreground-muted bg-surface-raised px-2 py-1 rounded"
+                        >
+                          <User className="w-3 h-3" />
+                          {c.name}
+                          {c.role && <span className="text-foreground-muted/60">({c.role})</span>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {interview.notes && (
+                    <p className="mt-2 text-sm text-foreground-muted line-clamp-2">
+                      {interview.notes}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Interview Type Selection */}
       <div className="space-y-3">
         <label className="block text-xl font-medium text-foreground">
-          Interview Type
+          {upcomingInterviews.length > 0 ? 'Or choose interview type' : 'Interview Type'}
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {interviewTypes.map(([type, label]) => (
+          {interviewTypes.map(({ key, label }) => (
             <button
-              key={type}
-              onClick={() => onInterviewTypeSelect(type)}
+              key={key}
+              onClick={() => {
+                onInterviewTypeSelect(key);
+                // Clear interview round selection when manually selecting type
+                if (selectedInterviewRoundId) {
+                  handleClearInterviewSelection();
+                }
+              }}
               className={cn(
                 'px-4 py-4 text-lg font-medium rounded-lg border-2 transition-colors',
-                selectedInterviewType === type
+                selectedInterviewType === key && !selectedInterviewRoundId
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border hover:border-primary/50 text-foreground'
               )}
@@ -205,8 +392,8 @@ function SetupScreen({
           ))}
         </div>
 
-        {/* Custom type input */}
-        {selectedInterviewType === 'custom' && (
+        {/* Custom type input - shown when 'other' is selected */}
+        {selectedInterviewType === 'other' && (
           <input
             type="text"
             value={customTypeName}
@@ -225,7 +412,7 @@ function SetupScreen({
                 <button
                   key={type.id}
                   onClick={() => {
-                    onInterviewTypeSelect('custom');
+                    onInterviewTypeSelect('other');
                     onCustomTypeNameChange(type.name);
                   }}
                   className="px-3 py-1 text-sm bg-surface-raised rounded-full text-foreground-muted hover:text-foreground"
@@ -241,7 +428,7 @@ function SetupScreen({
       {/* Start Button */}
       <button
         onClick={onStart}
-        disabled={isLoading || (selectedInterviewType === 'custom' && !customTypeName.trim())}
+        disabled={isLoading || (selectedInterviewType === 'other' && !customTypeName.trim())}
         className={cn(
           'w-full py-5 text-2xl font-bold rounded-lg flex items-center justify-center gap-3',
           'bg-primary text-white hover:bg-primary/90 transition-colors',
@@ -296,6 +483,13 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
     ? jobs.find(j => j.id === teleprompterSession.jobId)
     : null;
 
+  // Get interview type label using unified system
+  const customInterviewTypes = settings.customInterviewTypes || [];
+  const interviewTypeLabel = teleprompterSession
+    ? getInterviewTypeLabel(teleprompterSession.interviewType, customInterviewTypes) +
+      (teleprompterSession.customInterviewType ? `: ${teleprompterSession.customInterviewType}` : '')
+    : '';
+
   // Collect all existing keywords for tracking what's been added
   const allKeywords = useMemo(() => {
     if (!teleprompterSession) return new Set<string>();
@@ -324,7 +518,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
 
       const result = await generateRealtimeTeleprompterKeywords(
         text,  // The context item becomes the prompt
-        TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType],
+        interviewTypeLabel,
         job?.company || 'Unknown',
         currentKeywords,
         settings.additionalContext || settings.defaultResumeText || '',
@@ -338,7 +532,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [teleprompterSession, job, settings, isGenerating, addKeywordsFromAI]);
+  }, [teleprompterSession, job, settings, isGenerating, addKeywordsFromAI, interviewTypeLabel]);
 
   const handleInputSubmit = useCallback(async () => {
     if (!inputValue.trim() || !teleprompterSession || isGenerating) return;
@@ -351,7 +545,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
 
       const result = await generateRealtimeTeleprompterKeywords(
         promptText,
-        TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType],
+        interviewTypeLabel,
         job?.company || 'Unknown',
         currentKeywords,
         settings.additionalContext || settings.defaultResumeText || '',
@@ -367,7 +561,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [inputValue, teleprompterSession, job, settings, isGenerating, addKeywordsFromAI]);
+  }, [inputValue, teleprompterSession, job, settings, isGenerating, addKeywordsFromAI, interviewTypeLabel]);
 
   const handleManualKeywordSubmit = useCallback((categoryId: string) => {
     if (!manualKeywordInput.trim()) return;
@@ -405,8 +599,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
         {/* Row 2: Interview type + View toggle */}
         <div className="flex items-center justify-between">
           <p className="text-lg text-foreground-muted">
-            {TELEPROMPTER_INTERVIEW_TYPE_LABELS[teleprompterSession.interviewType]}
-            {teleprompterSession.customInterviewType && `: ${teleprompterSession.customInterviewType}`}
+            {interviewTypeLabel}
           </p>
           {/* View mode toggle */}
           <div className="flex rounded-lg border border-border overflow-hidden">

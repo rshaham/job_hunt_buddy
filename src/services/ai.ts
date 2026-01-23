@@ -30,7 +30,7 @@ import {
   GAP_FINDER_PROMPT,
   BEHAVIORAL_CATEGORIES,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, InterviewerIntel } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -1484,20 +1484,51 @@ export async function generateSemanticTeleprompterKeywords(
 /**
  * Generate flat initial keywords for the teleprompter (no categories).
  * Used on session start to provide initial suggestions without structure.
+ *
+ * @param interviewType - The type of interview (e.g., "Technical Interview")
+ * @param job - The job being interviewed for (optional)
+ * @param userSkills - User's skills from profile
+ * @param userStories - User's saved stories/experiences
+ * @param interviewers - Contact objects for the interviewers (optional, from scheduled interview)
+ * @param interviewNotes - Notes about this specific interview (optional)
  */
 export async function generateFlatInitialTeleprompterKeywords(
   interviewType: string,
   job: Job | null,
   userSkills: string[],
-  userStories: Array<{ question: string; answer: string }>
+  userStories: Array<{ question: string; answer: string }>,
+  interviewers?: Contact[],
+  interviewNotes?: string
 ): Promise<string[]> {
+  // Build interviewer context string
+  const interviewerContext = interviewers?.length
+    ? interviewers.map(c => {
+        let info = `**${c.name}**`;
+        if (c.role) info += ` - ${c.role}`;
+        if (c.interviewerIntel) {
+          // interviewerIntel is AI-generated markdown analysis
+          info += `\n${c.interviewerIntel}`;
+        } else if (c.linkedInBio) {
+          // Truncate long bios
+          const bio = c.linkedInBio.length > 500 ? c.linkedInBio.slice(0, 500) + '...' : c.linkedInBio;
+          info += `\nLinkedIn: ${bio}`;
+        } else {
+          // No background available - note this for the AI
+          info += `\n(No background information available)`;
+        }
+        return info;
+      }).join('\n\n---\n\n')
+    : 'Not provided';
+
   const prompt = TELEPROMPTER_FLAT_INITIAL_KEYWORDS_PROMPT
     .replace('{interviewType}', interviewType)
     .replace('{company}', job?.company || 'Unknown Company')
     .replace('{title}', job?.title || 'Unknown Role')
     .replace('{requirements}', job?.summary?.requirements?.join(', ') || 'Not specified')
     .replace('{userSkills}', userSkills.join(', ') || 'Not provided')
-    .replace('{userStories}', userStories.map(s => `${s.question}: ${s.answer}`).join('\n') || 'Not provided');
+    .replace('{userStories}', userStories.map(s => `${s.question}: ${s.answer}`).join('\n') || 'Not provided')
+    .replace('{interviewers}', interviewerContext)
+    .replace('{interviewNotes}', interviewNotes || 'None');
 
   const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);

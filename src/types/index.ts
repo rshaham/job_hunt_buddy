@@ -410,29 +410,8 @@ export interface SavedStory {
 // Interview Teleprompter Types
 // ============================================================================
 
-// Interview types for teleprompter (extends existing InterviewType for consistency)
-export type TeleprompterInterviewType =
-  | 'phone_screen'
-  | 'behavioral'
-  | 'technical'
-  | 'case_study'
-  | 'panel'
-  | 'hiring_manager'
-  | 'culture_fit'
-  | 'final_round'
-  | 'custom';
-
-export const TELEPROMPTER_INTERVIEW_TYPE_LABELS: Record<TeleprompterInterviewType, string> = {
-  phone_screen: 'Phone Screen',
-  behavioral: 'Behavioral',
-  technical: 'Technical',
-  case_study: 'Case Study',
-  panel: 'Panel Interview',
-  hiring_manager: 'Hiring Manager',
-  culture_fit: 'Culture Fit',
-  final_round: 'Final Round',
-  custom: 'Custom',
-};
+// Teleprompter now uses the unified interview type system (DEFAULT_INTERVIEW_TYPES + custom)
+// See getInterviewTypeLabel() for label resolution
 
 // Categories vary by interview type
 export interface TeleprompterCategory {
@@ -455,8 +434,10 @@ export interface TeleprompterKeyword {
 export interface TeleprompterSession {
   id: string;
   jobId: string | null;
-  interviewType: TeleprompterInterviewType;
-  customInterviewType?: string;  // for 'custom' type
+  interviewType: string;  // Uses unified type system (DEFAULT_INTERVIEW_TYPES keys + custom)
+  customInterviewType?: string;  // User-provided label for custom types
+  interviewRoundId?: string;  // Optional link to scheduled InterviewRound
+  interviewerIds?: string[];  // Contact IDs of interviewers (from InterviewRound or manual)
   categories: TeleprompterCategory[];
   stagingKeywords: TeleprompterKeyword[];  // AI suggestions not yet promoted
   dismissedKeywordIds: string[];  // track to avoid re-suggesting
@@ -477,7 +458,7 @@ export interface SemanticCategoryResponse {
 export interface TeleprompterFeedback {
   id: string;
   sessionId: string;
-  interviewType: TeleprompterInterviewType;
+  interviewType: string;  // Uses unified type system
   keywordText: string;
   helpful: boolean;
   savedToProfile: boolean;
