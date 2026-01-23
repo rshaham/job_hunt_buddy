@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { parseInterviewerIntel, isJsonIntel, type ParsedIntel } from '../TeleprompterModal/ContextPanel/intelParser';
 import {
   Plus,
   Trash2,
@@ -37,7 +38,7 @@ interface ContactsEventsTabProps {
   job: Job;
 }
 
-// Markdown renderer for intel content
+// Markdown renderer for intel content (legacy format)
 function IntelMarkdown({ content }: { content: string }) {
   return (
     <div className="text-sm text-foreground">
@@ -80,6 +81,90 @@ function IntelMarkdown({ content }: { content: string }) {
       </ReactMarkdown>
     </div>
   );
+}
+
+// Structured intel renderer for JSON format (new format)
+function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
+  return (
+    <div className="space-y-3 text-sm">
+      {/* Communication Style */}
+      {intel.communicationStyle && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">Communication Style</h3>
+          <p className="text-foreground-muted leading-relaxed">{intel.communicationStyle}</p>
+        </div>
+      )}
+
+      {/* What They Value */}
+      {intel.whatTheyValue.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">What They Value</h3>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {intel.whatTheyValue.map((item, idx) => (
+              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Talking Points */}
+      {intel.talkingPoints.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">Talking Points</h3>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {intel.talkingPoints.map((item, idx) => (
+              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Questions to Ask */}
+      {intel.questionsToAsk.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">Questions to Ask</h3>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {intel.questionsToAsk.map((item, idx) => (
+              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Common Ground */}
+      {intel.commonGround.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">Common Ground</h3>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {intel.commonGround.map((item, idx) => (
+              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Red Flags to Avoid */}
+      {intel.redFlags.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 mb-1">Red Flags to Avoid</h3>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {intel.redFlags.map((item, idx) => (
+              <li key={idx} className="text-red-600 dark:text-red-400 leading-relaxed">{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Smart intel renderer that detects format and renders appropriately
+function IntelDisplay({ content }: { content: string }) {
+  if (isJsonIntel(content)) {
+    const parsed = parseInterviewerIntel(content);
+    return <StructuredIntelDisplay intel={parsed} />;
+  }
+  return <IntelMarkdown content={content} />;
 }
 
 // Event types with icons and colors
@@ -645,7 +730,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
 
                               {expandedIntelContactId === contact.id && (
                                 <div className="p-3 bg-surface rounded-lg border border-blue-100 dark:border-blue-800/30">
-                                  <IntelMarkdown content={contact.interviewerIntel} />
+                                  <IntelDisplay content={contact.interviewerIntel} />
                                   <div className="flex justify-end gap-3 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                                     <button
                                       type="button"
