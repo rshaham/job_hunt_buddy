@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Calendar, Clock, MapPin, Users, Pencil, Trash2, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
-import { Button, Textarea, Input } from '../ui';
+import { Button, Textarea, Input, InterviewTypeSelect } from '../ui';
 import { cn } from '../../utils/helpers';
-import type { InterviewRound, InterviewType, InterviewStatus, InterviewOutcome, Contact } from '../../types';
-import { INTERVIEW_TYPE_LABELS, INTERVIEW_STATUS_LABELS, INTERVIEW_OUTCOME_LABELS } from '../../types';
+import { useAppStore } from '../../stores/appStore';
+import type { InterviewRound, InterviewStatus, InterviewOutcome, Contact } from '../../types';
+import { INTERVIEW_STATUS_LABELS, INTERVIEW_OUTCOME_LABELS, getInterviewTypeLabel } from '../../types';
 
 interface InterviewRoundCardProps {
   round: InterviewRound;
@@ -14,6 +15,7 @@ interface InterviewRoundCardProps {
 }
 
 export function InterviewRoundCard({ round, contacts, onUpdate, onDelete }: InterviewRoundCardProps) {
+  const { settings } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editData, setEditData] = useState<Partial<InterviewRound>>({});
@@ -89,7 +91,7 @@ export function InterviewRoundCard({ round, contacts, onUpdate, onDelete }: Inte
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground">
-              {INTERVIEW_TYPE_LABELS[round.type]}
+              {getInterviewTypeLabel(round.type, settings.customInterviewTypes)}
             </span>
             <span className={cn('px-2 py-0.5 text-xs rounded-full', getStatusColor(round.status))}>
               {INTERVIEW_STATUS_LABELS[round.status]}
@@ -155,15 +157,11 @@ export function InterviewRoundCard({ round, contacts, onUpdate, onDelete }: Inte
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-foreground-muted mb-1">Type</label>
-                  <select
+                  <InterviewTypeSelect
                     value={editData.type || round.type}
-                    onChange={(e) => setEditData({ ...editData, type: e.target.value as InterviewType })}
-                    className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  >
-                    {Object.entries(INTERVIEW_TYPE_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
+                    onChange={(type) => setEditData({ ...editData, type })}
+                    size="sm"
+                  />
                 </div>
 
                 <div>

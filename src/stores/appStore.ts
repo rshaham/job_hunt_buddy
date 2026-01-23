@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, CustomInterviewType } from '../types';
+import { DEFAULT_INTERVIEW_TYPES } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import * as db from '../services/db';
 import { generateId } from '../utils/helpers';
@@ -121,6 +122,10 @@ interface AppState {
   addInterviewRound: (jobId: string, round: Omit<InterviewRound, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateInterviewRound: (jobId: string, roundId: string, updates: Partial<InterviewRound>) => Promise<void>;
   deleteInterviewRound: (jobId: string, roundId: string) => Promise<void>;
+
+  // Custom interview type actions
+  addCustomInterviewType: (label: string) => Promise<CustomInterviewType>;
+  removeCustomInterviewType: (key: string) => Promise<void>;
 
   // Status change flow (intercepts Rejected/Offer moves)
   initiateStatusChange: (jobId: string, newStatus: string) => void;
@@ -591,6 +596,38 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const updatedInterviews = (job.interviews || []).filter((round) => round.id !== roundId);
     await get().updateJob(jobId, { interviews: updatedInterviews });
+  },
+
+  // Custom interview type actions
+  addCustomInterviewType: async (label: string) => {
+    const { settings } = get();
+    const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+    // Check for duplicates
+    const allTypes = [...DEFAULT_INTERVIEW_TYPES, ...(settings.customInterviewTypes || [])];
+    if (allTypes.some(t => t.key === key)) {
+      throw new Error('Interview type already exists');
+    }
+
+    const newType: CustomInterviewType = { key, label };
+    const newCustomTypes = [...(settings.customInterviewTypes || []), newType];
+    await get().updateSettings({ customInterviewTypes: newCustomTypes });
+    return newType;
+  },
+
+  removeCustomInterviewType: async (key: string) => {
+    const { settings, jobs } = get();
+
+    // Check if type is in use
+    const typeInUse = jobs.some(job =>
+      job.interviews?.some(i => i.type === key)
+    );
+    if (typeInUse) {
+      throw new Error('Cannot remove interview type that is in use');
+    }
+
+    const newCustomTypes = (settings.customInterviewTypes || []).filter(t => t.key !== key);
+    await get().updateSettings({ customInterviewTypes: newCustomTypes });
   },
 
   // Status change flow

@@ -28,14 +28,14 @@ import {
   LayoutGrid,
   Calendar,
 } from 'lucide-react';
-import { Button, Input, ConfirmModal } from '../ui';
+import { Button, Input, ConfirmModal, InterviewTypeSelect } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateId, formatDateOnly } from '../../utils/helpers';
 import { analyzeInterviewer, analyzeInterviewerWithWebSearch } from '../../services/ai';
 import { isFeatureAvailable } from '../../utils/featureFlags';
 import { format } from 'date-fns';
-import type { Job, Contact, TimelineEvent, InterviewRound, InterviewType, InterviewStatus } from '../../types';
-import { INTERVIEW_TYPE_LABELS, INTERVIEW_STATUS_LABELS } from '../../types';
+import type { Job, Contact, TimelineEvent, InterviewRound, InterviewStatus } from '../../types';
+import { INTERVIEW_STATUS_LABELS, getInterviewTypeLabel } from '../../types';
 import type { LucideIcon } from 'lucide-react';
 
 interface ContactsEventsTabProps {
@@ -157,7 +157,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
   const [showInlineInterviewForm, setShowInlineInterviewForm] = useState<string | null>(null);
 
   // Inline interview form state
-  const [inlineInterviewType, setInlineInterviewType] = useState<InterviewType>('technical');
+  const [inlineInterviewType, setInlineInterviewType] = useState('technical');
   const [inlineInterviewDate, setInlineInterviewDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [inlineInterviewDuration, setInlineInterviewDuration] = useState(60);
   const [inlineInterviewStatus, setInlineInterviewStatus] = useState<InterviewStatus>('scheduled');
@@ -721,7 +721,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                                   className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
                                 />
                                 <span className="text-foreground">
-                                  {INTERVIEW_TYPE_LABELS[interview.type]}
+                                  {getInterviewTypeLabel(interview.type, settings.customInterviewTypes)}
                                 </span>
                                 {interview.scheduledAt && (
                                   <span className="text-xs text-muted">
@@ -757,15 +757,11 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="text-xs text-muted mb-1 block">Type</label>
-                              <select
+                              <InterviewTypeSelect
                                 value={inlineInterviewType}
-                                onChange={(e) => setInlineInterviewType(e.target.value as InterviewType)}
-                                className="w-full px-2 py-1.5 text-sm border border-border rounded bg-surface text-foreground"
-                              >
-                                {Object.entries(INTERVIEW_TYPE_LABELS).map(([value, label]) => (
-                                  <option key={value} value={value}>{label}</option>
-                                ))}
-                              </select>
+                                onChange={setInlineInterviewType}
+                                size="sm"
+                              />
                             </div>
                             <div>
                               <label className="text-xs text-muted mb-1 block">Date</label>
@@ -872,7 +868,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                             'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                           }`}
                         >
-                          {INTERVIEW_TYPE_LABELS[interview.type].split(' ')[0]}
+                          {getInterviewTypeLabel(interview.type, settings.customInterviewTypes).split(' ')[0]}
                         </span>
                       ))}
                       {linkedInterviews.length > 1 && (
@@ -974,7 +970,7 @@ export function ContactsEventsTab({ job }: ContactsEventsTabProps) {
                               'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                             }`}
                           >
-                            {INTERVIEW_TYPE_LABELS[interview.type]}
+                            {getInterviewTypeLabel(interview.type, settings.customInterviewTypes)}
                             <span className="opacity-70">- {INTERVIEW_STATUS_LABELS[interview.status]}</span>
                           </span>
                         ))}

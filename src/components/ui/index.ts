@@ -10,3 +10,4 @@ export { Textarea } from './Textarea';
 export { Card, CardHeader, CardContent, CardFooter } from './Card';
 export { ThinkingBubble } from './ThinkingBubble';
 export { SlideOverPanel } from './SlideOverPanel';
+export { InterviewTypeSelect } from './InterviewTypeSelect';

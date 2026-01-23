@@ -215,7 +215,44 @@ export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | '
 
 // Workflow tracking types
 export type RejectionReason = 'ghosted' | 'skills_mismatch' | 'culture_fit' | 'salary' | 'position_filled' | 'other';
-export type InterviewType = 'phone_screen' | 'recruiter_call' | 'technical' | 'behavioral' | 'system_design' | 'onsite' | 'panel' | 'final' | 'other';
+// InterviewType is now a string to support custom types
+export type InterviewType = string;
+
+// Custom interview type definition
+export interface CustomInterviewType {
+  key: string;    // e.g., 'take_home'
+  label: string;  // e.g., 'Take Home Assignment'
+}
+
+// Default interview types (built-in)
+export const DEFAULT_INTERVIEW_TYPES: CustomInterviewType[] = [
+  { key: 'phone_screen', label: 'Phone Screen' },
+  { key: 'recruiter_call', label: 'Recruiter Call' },
+  { key: 'technical', label: 'Technical Interview' },
+  { key: 'behavioral', label: 'Behavioral Interview' },
+  { key: 'system_design', label: 'System Design' },
+  { key: 'onsite', label: 'Onsite' },
+  { key: 'panel', label: 'Panel Interview' },
+  { key: 'final', label: 'Final Round' },
+  { key: 'other', label: 'Other' },
+];
+
+// Helper function to get interview type label
+export function getInterviewTypeLabel(
+  type: string,
+  customTypes: CustomInterviewType[] = []
+): string {
+  // Check defaults first
+  const defaultType = DEFAULT_INTERVIEW_TYPES.find(t => t.key === type);
+  if (defaultType) return defaultType.label;
+
+  // Check custom types
+  const customType = customTypes.find(t => t.key === type);
+  if (customType) return customType.label;
+
+  // Fallback: return the key itself (humanized)
+  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
 export type InterviewOutcome = 'passed' | 'failed' | 'pending' | 'unknown';
 export type JobSource = 'referral' | 'linkedin' | 'company_site' | 'job_board' | 'recruiter_outreach' | 'networking' | 'other';
@@ -273,17 +310,10 @@ export const REJECTION_REASON_LABELS: Record<RejectionReason, string> = {
   other: 'Other',
 };
 
-export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
-  phone_screen: 'Phone Screen',
-  recruiter_call: 'Recruiter Call',
-  technical: 'Technical Interview',
-  behavioral: 'Behavioral Interview',
-  system_design: 'System Design',
-  onsite: 'Onsite',
-  panel: 'Panel Interview',
-  final: 'Final Round',
-  other: 'Other',
-};
+// Backward-compatible labels object (uses DEFAULT_INTERVIEW_TYPES)
+export const INTERVIEW_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  DEFAULT_INTERVIEW_TYPES.map(t => [t.key, t.label])
+);
 
 export const INTERVIEW_STATUS_LABELS: Record<InterviewStatus, string> = {
   scheduled: 'Scheduled',
@@ -491,6 +521,9 @@ export interface AppSettings {
     tavilyApiKey?: string;  // For web research - base64 encoded
     serpApiKey?: string;    // For job search - base64 encoded
   };
+
+  // Custom interview types (user-defined)
+  customInterviewTypes?: CustomInterviewType[];
 }
 
 export const DEFAULT_STATUSES: Status[] = [
