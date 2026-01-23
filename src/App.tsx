@@ -16,6 +16,7 @@ import { ToastContainer } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 import { RejectionModal } from './components/JobDetail/RejectionModal';
 import { OfferModal } from './components/JobDetail/OfferModal';
+import { ProfileHub } from './components/ProfileHub';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
@@ -127,6 +128,7 @@ function App() {
       <JobFinderModal />
       <RejectionModal />
       <OfferModal />
+      <ProfileHub />
       <CommandBar />
       <ToastContainer />
       <Analytics />
