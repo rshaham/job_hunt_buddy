@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterInterviewType, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword, TeleprompterCustomType } from '../types';
-import { DEFAULT_INTERVIEW_TYPES, DEFAULT_SETTINGS, TELEPROMPTER_INTERVIEW_TYPE_LABELS } from '../types';
+import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword, TeleprompterCustomType, Contact } from '../types';
+import { DEFAULT_INTERVIEW_TYPES, DEFAULT_SETTINGS, getInterviewTypeLabel } from '../types';
 import { generateFlatInitialTeleprompterKeywords } from '../services/ai';
 import * as db from '../services/db';
 import { saveSession, getTeleprompterCustomTypes, saveTeleprompterCustomType, saveFeedbackBatch } from '../services/db';
@@ -63,20 +63,21 @@ function triggerJobEmbeddingRemoval(jobId: string): void {
 // ============================================================================
 
 // Exported for potential use in fallback scenarios or other components
-export function getCategoriesForInterviewType(interviewType: TeleprompterInterviewType): TeleprompterCategory[] {
-  const categoryMap: Record<TeleprompterInterviewType, string[]> = {
+// Now accepts string to support unified interview type system
+export function getCategoriesForInterviewType(interviewType: string): TeleprompterCategory[] {
+  const categoryMap: Record<string, string[]> = {
     phone_screen: ['Company Research', 'Role Fit', 'Questions to Ask', 'Salary Expectations'],
+    recruiter_call: ['Company Research', 'Role Fit', 'Questions to Ask', 'Salary Expectations'],
     behavioral: ['Leadership', 'Problem-Solving', 'Collaboration', 'Conflict Resolution', 'Growth Mindset'],
     technical: ['Architecture', 'Problem-Solving', 'Technical Decisions', 'Trade-offs', 'Metrics'],
-    case_study: ['Framework', 'Assumptions', 'Analysis', 'Recommendations'],
+    system_design: ['Architecture', 'Scalability', 'Trade-offs', 'Requirements Clarification'],
+    onsite: ['Key Stakeholders', 'Cross-functional', 'Technical Depth', 'Questions'],
     panel: ['Key Stakeholders', 'Department Focus', 'Cross-functional', 'Questions'],
-    hiring_manager: ['Team Dynamics', 'Expectations', 'Growth Path', 'Working Style'],
-    culture_fit: ['Values', 'Work Environment', 'Team Collaboration', 'Company Mission'],
-    final_round: ['Key Differentiators', 'Closing Points', 'Questions', 'Next Steps'],
-    custom: ['General', 'Key Points', 'Questions'],
+    final: ['Key Differentiators', 'Closing Points', 'Questions', 'Next Steps'],
+    other: ['General', 'Key Points', 'Questions'],
   };
 
-  const categoryNames = categoryMap[interviewType] || categoryMap.custom;
+  const categoryNames = categoryMap[interviewType] || categoryMap.other;
   return categoryNames.map(name => ({
     id: crypto.randomUUID(),
     name,
@@ -196,7 +197,16 @@ interface AppState {
   // Teleprompter actions
   openTeleprompterModal: (jobId?: string) => void;
   closeTeleprompterModal: () => void;
-  startTeleprompterSession: (jobId: string | null, interviewType: TeleprompterInterviewType, customType?: string) => Promise<void>;
+  startTeleprompterSession: (
+    jobId: string | null,
+    interviewType: string,
+    customType?: string,
+    interviewContext?: {
+      interviewRoundId?: string;
+      interviewers?: Contact[];
+      notes?: string;
+    }
+  ) => Promise<void>;
   endTeleprompterSession: () => Promise<TeleprompterRoundupItem[]>;
   promoteKeywordFromStaging: (keywordId: string, categoryId?: string) => void;
   dismissStagingKeyword: (keywordId: string) => void;
@@ -787,7 +797,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     teleprompterPreSelectedJobId: null,
   }),
 
-  startTeleprompterSession: async (jobId, interviewType, customType) => {
+  startTeleprompterSession: async (jobId, interviewType, customType, interviewContext) => {
     const { jobs, settings } = get();
     const job = jobId ? jobs.find(j => j.id === jobId) ?? null : null;
 
@@ -797,6 +807,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       jobId,
       interviewType,
       customInterviewType: customType,
+      interviewRoundId: interviewContext?.interviewRoundId,
+      // Only set interviewerIds if there are actual interviewers
+      interviewerIds: interviewContext?.interviewers?.length
+        ? interviewContext.interviewers.map(c => c.id)
+        : undefined,
       categories: [],
       stagingKeywords: [],
       dismissedKeywordIds: [],
@@ -816,11 +831,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       const userSkills = settings.additionalContext?.split(',').map(s => s.trim()).filter(Boolean) || [];
       const userStories = (settings.savedStories || []).map(s => ({ question: s.question, answer: s.answer }));
 
+      // Build interview type label using unified system
+      // If custom type is provided, use it directly instead of "Other: Custom Name"
+      const customTypes = settings.customInterviewTypes || [];
+      const interviewTypeLabel = customType || getInterviewTypeLabel(interviewType, customTypes);
+
       const flatKeywords = await generateFlatInitialTeleprompterKeywords(
-        TELEPROMPTER_INTERVIEW_TYPE_LABELS[interviewType] + (customType ? `: ${customType}` : ''),
+        interviewTypeLabel,
         job,
         userSkills,
-        userStories
+        userStories,
+        interviewContext?.interviewers,
+        interviewContext?.notes
       );
 
       // Create staging keywords without category assignment (flat list)

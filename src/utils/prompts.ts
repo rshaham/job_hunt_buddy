@@ -850,6 +850,12 @@ Job Requirements: {requirements}
 User's Key Skills: {userSkills}
 User's Stories/Experiences: {userStories}
 
+INTERVIEWERS (if known):
+{interviewers}
+
+INTERVIEW PREP NOTES:
+{interviewNotes}
+
 Generate 8-12 highly relevant keywords or short phrases (max 6 words each) that will help the candidate during their interview.
 
 The keywords should:
@@ -858,6 +864,9 @@ The keywords should:
 - Be directly relevant to the interview type and job requirements
 - Help the candidate recall their best talking points
 - Cover a variety of topics (skills, achievements, stories, metrics)
+- If interviewer background is provided, include keywords that connect the candidate's experience to the interviewer's likely focus areas and interests
+- If the interviewer has technical expertise, include relevant technical keywords the candidate should mention
+- If prep notes mention specific topics, include keywords to help remember those talking points
 
 Return ONLY valid JSON with this exact structure:
 {
