@@ -37,7 +37,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
     setIsUploading(true);
     setUploadError('');
-    analyzeOp.reset();
+    analyzeOp.reset(); // Clear stale analysis errors - new resume invalidates previous results
     try {
       const text = await extractTextFromPDF(file);
       // Convert to markdown for better comparison/diff results
