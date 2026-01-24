@@ -117,6 +117,7 @@ export interface PrepMaterial {
   title: string;
   content: string;
   type: 'question' | 'answer' | 'research' | 'other';
+  interviewRoundId?: string;  // Links material to specific interview round
 }
 
 // Learning task category types for AI-assisted preparation
@@ -196,6 +197,7 @@ export interface SavedPrepConversation {
   name: string;
   entries: QAEntry[];
   savedAt: Date;
+  interviewRoundId?: string;  // Links conversation to specific interview round
 }
 
 export interface TailoringEntry {

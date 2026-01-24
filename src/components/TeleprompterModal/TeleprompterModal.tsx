@@ -933,8 +933,14 @@ function RoundupScreen({ onComplete }: RoundupScreenProps) {
 
   // Load roundup items on mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadRoundup = async () => {
       const items = await endTeleprompterSession();
+
+      // Only update state if component is still mounted
+      if (!isMounted) return;
+
       setRoundupItems(items);
 
       // Check if custom type should be saved
@@ -943,6 +949,10 @@ function RoundupScreen({ onComplete }: RoundupScreenProps) {
       }
     };
     loadRoundup();
+
+    return () => {
+      isMounted = false;
+    };
   }, [endTeleprompterSession, teleprompterSession]);
 
   const toggleHelpful = useCallback((index: number, helpful: boolean) => {

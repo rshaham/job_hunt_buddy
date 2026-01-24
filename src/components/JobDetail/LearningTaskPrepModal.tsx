@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, X, Sparkles, AlertCircle, Bookmark, Globe, FileText, ChevronDown, RotateCcw } from 'lucide-react';
-import { AILoadingIndicator, Button, Modal, ThinkingBubble } from '../ui';
+import { AILoadingIndicator, Button, Modal, ThinkingBubble, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { useAIOperation } from '../../hooks/useAIOperation';
 import {
@@ -12,8 +12,6 @@ import { searchInterviewPrepBestPractices, formatSearchResultsForAI } from '../.
 import { isAIConfigured } from '../../utils/helpers';
 import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { Job, LearningTask, LearningTaskCategory, LearningTaskPrepMessage } from '../../types';
 import { LEARNING_TASK_CATEGORY_LABELS } from '../../types';
 
@@ -22,69 +20,6 @@ interface LearningTaskPrepModalProps {
   onClose: () => void;
   job: Job;
   task: LearningTask;
-}
-
-// Markdown renderer component
-function MarkdownContent({ content }: { content: string }) {
-  return (
-    <div className="text-sm text-slate-700 dark:text-slate-300">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        skipHtml
-        components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-bold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold mt-4 mb-2 text-slate-800 dark:text-slate-200 first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold mt-3 mb-1.5 text-slate-700 dark:text-slate-300">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => (
-            <strong className="font-semibold text-slate-800 dark:text-slate-200">{children}</strong>
-          ),
-          code: ({ children }) => (
-            <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono">
-              {children}
-            </code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto mb-3 text-xs">
-              {children}
-            </pre>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-slate-600 dark:text-slate-400">
-              {children}
-            </blockquote>
-          ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 underline"
-            >
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 // Category badge colors
