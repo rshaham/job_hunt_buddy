@@ -272,6 +272,48 @@ export const suggestProjectSchema = z.object({
 });
 
 // ============================================
+// Interview Round Schemas
+// ============================================
+
+export const addInterviewRoundSchema = z.object({
+  jobId: z.string().describe('The ID of the job to add an interview round to'),
+  type: z.string().describe('Interview type (e.g., "phone_screen", "technical", "behavioral", "system_design", "onsite", "final")'),
+  scheduledAt: z.string().optional().describe('Scheduled date/time (ISO format)'),
+  duration: z.number().optional().describe('Duration in minutes'),
+  interviewerIds: z.array(z.string()).optional().describe('Array of contact IDs for interviewers'),
+  location: z.string().optional().describe('Location or meeting link'),
+  status: z.enum(['scheduled', 'completed', 'cancelled', 'rescheduled']).default('scheduled').describe('Interview status'),
+});
+
+export const updateInterviewRoundSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the interview'),
+  interviewId: z.string().describe('The ID of the interview round to update'),
+  type: z.string().optional().describe('New interview type'),
+  scheduledAt: z.string().optional().describe('New scheduled date/time (ISO format)'),
+  duration: z.number().optional().describe('New duration in minutes'),
+  interviewerIds: z.array(z.string()).optional().describe('New array of interviewer contact IDs'),
+  location: z.string().optional().describe('New location or meeting link'),
+  status: z.enum(['scheduled', 'completed', 'cancelled', 'rescheduled']).optional().describe('New interview status'),
+  outcome: z.enum(['passed', 'failed', 'pending', 'unknown']).optional().describe('Interview outcome'),
+  notes: z.string().optional().describe('Notes about the interview'),
+  feedback: z.string().optional().describe('Feedback from the interview'),
+});
+
+export const listInterviewsSchema = z.object({
+  jobId: z.string().optional().describe('Filter to a specific job'),
+  status: z.enum(['scheduled', 'completed', 'cancelled', 'rescheduled']).optional().describe('Filter by interview status'),
+  outcome: z.enum(['passed', 'failed', 'pending', 'unknown']).optional().describe('Filter by interview outcome'),
+  upcoming: z.boolean().optional().describe('Only return future scheduled interviews'),
+  limit: z.number().default(20).describe('Maximum number of interviews to return'),
+});
+
+export const generateContactIntelSchema = z.object({
+  jobId: z.string().describe('The ID of the job containing the contact'),
+  contactId: z.string().describe('The ID of the contact to generate intel for'),
+  useWebSearch: z.boolean().default(false).describe('Use web search to enhance intel with additional information'),
+});
+
+// ============================================
 // Batch Job Scanner Schema
 // ============================================
 
@@ -329,3 +371,7 @@ export type DeleteTimelineEventInput = z.infer<typeof deleteTimelineEventSchema>
 export type FindExternalJobsInput = z.infer<typeof findExternalJobsSchema>;
 export type SuggestProjectInput = z.infer<typeof suggestProjectSchema>;
 export type ScanCareerPagesInput = z.infer<typeof scanCareerPagesSchema>;
+export type AddInterviewRoundInput = z.infer<typeof addInterviewRoundSchema>;
+export type UpdateInterviewRoundInput = z.infer<typeof updateInterviewRoundSchema>;
+export type ListInterviewsInput = z.infer<typeof listInterviewsSchema>;
+export type GenerateContactIntelInput = z.infer<typeof generateContactIntelSchema>;
