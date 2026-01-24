@@ -13,7 +13,7 @@ import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
 import type { Job, InterviewRound, QAEntry, SavedStory, PrepMaterial } from '../../types';
 import { getInterviewTypeLabel } from '../../types';
-import { parseInterviewerIntel, hasIntelContent, type ParsedIntel } from '../TeleprompterModal/ContextPanel/intelParser';
+import { parseInterviewerIntel, isJsonIntel, type ParsedIntel } from '../TeleprompterModal/ContextPanel/intelParser';
 
 interface InterviewPrepModalProps {
   isOpen: boolean;
@@ -33,7 +33,9 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
             <MessageCircle className="w-4 h-4 text-blue-500" />
             <h3 className="font-semibold text-foreground">Communication Style</h3>
           </div>
-          <p className="text-foreground-muted leading-relaxed pl-5">{intel.communicationStyle}</p>
+          <div className="text-foreground-muted leading-relaxed pl-5">
+            <MarkdownContent content={intel.communicationStyle} />
+          </div>
         </div>
       )}
 
@@ -46,7 +48,9 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
           </div>
           <ul className="list-disc pl-9 space-y-0.5">
             {intel.whatTheyValue.map((item, idx) => (
-              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+              <li key={idx} className="text-foreground-muted leading-relaxed">
+                <MarkdownContent content={item} />
+              </li>
             ))}
           </ul>
         </div>
@@ -61,7 +65,9 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
           </div>
           <ul className="list-disc pl-9 space-y-0.5">
             {intel.talkingPoints.map((item, idx) => (
-              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+              <li key={idx} className="text-foreground-muted leading-relaxed">
+                <MarkdownContent content={item} />
+              </li>
             ))}
           </ul>
         </div>
@@ -76,7 +82,9 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
           </div>
           <ul className="list-disc pl-9 space-y-0.5">
             {intel.questionsToAsk.map((item, idx) => (
-              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+              <li key={idx} className="text-foreground-muted leading-relaxed">
+                <MarkdownContent content={item} />
+              </li>
             ))}
           </ul>
         </div>
@@ -91,7 +99,9 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
           </div>
           <ul className="list-disc pl-9 space-y-0.5">
             {intel.commonGround.map((item, idx) => (
-              <li key={idx} className="text-foreground-muted leading-relaxed">{item}</li>
+              <li key={idx} className="text-foreground-muted leading-relaxed">
+                <MarkdownContent content={item} />
+              </li>
             ))}
           </ul>
         </div>
@@ -106,7 +116,9 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
           </div>
           <ul className="list-disc pl-9 space-y-0.5">
             {intel.redFlags.map((item, idx) => (
-              <li key={idx} className="text-red-600 dark:text-red-400 leading-relaxed">{item}</li>
+              <li key={idx} className="text-red-600 dark:text-red-400 leading-relaxed">
+                <MarkdownContent content={item} />
+              </li>
             ))}
           </ul>
         </div>
@@ -117,11 +129,12 @@ function StructuredIntelDisplay({ intel }: { intel: ParsedIntel }) {
 
 // Smart intel renderer that detects format and renders appropriately
 function IntelDisplay({ content }: { content: string }) {
-  const parsed = parseInterviewerIntel(content);
-  if (hasIntelContent(parsed)) {
+  // Only use structured display for JSON format
+  // For legacy markdown format, render with full markdown support (preserves tables)
+  if (isJsonIntel(content)) {
+    const parsed = parseInterviewerIntel(content);
     return <StructuredIntelDisplay intel={parsed} />;
   }
-  // Fallback to markdown for legacy format
   return <MarkdownContent content={content} />;
 }
 
