@@ -13,7 +13,6 @@ import {
   Sparkles,
   RefreshCw,
   GitCompare,
-  Save,
   Copy,
   Download,
   Search,
@@ -35,6 +34,12 @@ import {
   Moon,
   Command,
   Book,
+  Mic,
+  Video,
+  CalendarCheck,
+  Presentation,
+  Star,
+  ListChecks,
 } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -185,55 +190,63 @@ export function FeatureGuideModal() {
 function WhatsNewTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Teleprompter */}
       <FeatureCard
-        icon={<ArrowUpDown className="w-6 h-6 text-white" />}
-        title="Board Sorting & Filtering"
-        description="Quickly find and organize jobs in your pipeline."
+        icon={<Presentation className="w-6 h-6 text-white" />}
+        title="Interview Teleprompter"
+        description="Your live interview buddy with real-time AI assistance."
         items={[
-          { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
-          { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
+          { icon: <Sparkles className="w-4 h-4 text-violet-500" />, label: 'Keywords', text: 'AI suggests talking points as you practice' },
+          { icon: <BookmarkCheck className="w-4 h-4 text-violet-500" />, label: 'Stories', text: 'Access your STAR stories during practice' },
+          { icon: <Mic className="w-4 h-4 text-violet-500" />, label: 'Pitch', text: 'Your "Tell Me About Yourself" at a glance' },
         ]}
-        location="Toolbar below header"
-        gradient="from-indigo-500 to-purple-600"
-        isNew
-      />
-
-      <FeatureCard
-        icon={<Pencil className="w-6 h-6 text-white" />}
-        title="Edit Job Details"
-        description="Fix company names, titles, or links after adding a job."
-        items={[
-          { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click the Edit button in the Overview tab' },
-          { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Save', text: 'Press Enter or click Save when done' },
-        ]}
-        location="Job detail → Overview tab → Edit"
-        gradient="from-green-500 to-emerald-600"
-        isNew
-      />
-
-      <FeatureCard
-        icon={<Command className="w-6 h-6 text-white" />}
-        title="AI Agent (Ctrl+K)"
-        description="Natural language interface for job search and questions."
-        items={[
-          { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search jobs', text: '"Find remote React jobs in Seattle"' },
-          { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Ask questions', text: '"What skills does the Google job require?"' },
-        ]}
-        location="Header → AI Agent or press Ctrl+K"
+        location="Job → Interviews tab → Teleprompter"
         gradient="from-violet-500 to-purple-600"
         isNew
       />
 
+      {/* My Profile Hub */}
       <FeatureCard
-        icon={<Search className="w-6 h-6 text-white" />}
-        title="Find Jobs"
-        description="Search external job boards without leaving the app."
+        icon={<UserCircle className="w-6 h-6 text-white" />}
+        title="My Profile Hub"
+        description="Centralized professional profile management."
         items={[
-          { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query Google Jobs via SerApi' },
-          { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add jobs directly to your board' },
+          { icon: <FileText className="w-4 h-4 text-blue-500" />, label: 'Resume', text: 'Upload and manage your resume' },
+          { icon: <BookmarkCheck className="w-4 h-4 text-blue-500" />, label: 'Stories', text: 'STAR format interview stories with themes' },
+          { icon: <Mic className="w-4 h-4 text-blue-500" />, label: 'Pitches', text: 'Multiple "Tell Me About Yourself" scripts' },
         ]}
-        location="Header → Find Jobs button"
-        gradient="from-cyan-500 to-blue-600"
+        location="Sidebar → My Profile"
+        gradient="from-blue-500 to-cyan-600"
+        isNew
+      />
+
+      {/* Interviews Tab */}
+      <FeatureCard
+        icon={<Video className="w-6 h-6 text-white" />}
+        title="Interviews Tab"
+        description="Track and prepare for every interview round."
+        items={[
+          { icon: <CalendarCheck className="w-4 h-4 text-emerald-500" />, label: 'Schedule', text: 'Add rounds with date, time, and type' },
+          { icon: <Users className="w-4 h-4 text-emerald-500" />, label: 'Interviewers', text: 'Assign contacts to each round' },
+          { icon: <MessageSquare className="w-4 h-4 text-emerald-500" />, label: 'Prep', text: 'Round-specific AI coaching' },
+        ]}
+        location="Job detail → Interviews tab"
+        gradient="from-emerald-500 to-green-600"
+        isNew
+      />
+
+      {/* My Pitch */}
+      <FeatureCard
+        icon={<Mic className="w-6 h-6 text-white" />}
+        title="My Pitch Generator"
+        description="Create polished 'Tell Me About Yourself' responses."
+        items={[
+          { icon: <Sparkles className="w-4 h-4 text-amber-500" />, label: 'Generate', text: 'AI crafts pitch from your profile' },
+          { icon: <RefreshCw className="w-4 h-4 text-amber-500" />, label: 'Refine', text: 'Iterate with AI suggestions' },
+          { icon: <Target className="w-4 h-4 text-amber-500" />, label: 'Multiple', text: 'Different pitches for different roles' },
+        ]}
+        location="My Profile → My Pitch"
+        gradient="from-amber-500 to-orange-600"
         isNew
       />
     </div>
@@ -398,6 +411,20 @@ function JobDetailTab() {
         location="Job detail → Notes tab"
         gradient="from-amber-500 to-orange-600"
       />
+
+      <FeatureCard
+        icon={<Video className="w-6 h-6 text-white" />}
+        title="Interviews"
+        description="Track interview rounds and prepare for each one."
+        items={[
+          { icon: <CalendarCheck className="w-4 h-4 text-emerald-500" />, label: 'Schedule', text: 'Add rounds with type, date, duration' },
+          { icon: <Users className="w-4 h-4 text-emerald-500" />, label: 'Interviewers', text: 'Link contacts to track who you meet' },
+          { icon: <Presentation className="w-4 h-4 text-emerald-500" />, label: 'Teleprompter', text: 'Your live interview buddy and helper' },
+          { icon: <MessageSquare className="w-4 h-4 text-emerald-500" />, label: 'Prep', text: 'AI coaching specific to each round' },
+        ]}
+        location="Job detail → Interviews tab"
+        gradient="from-emerald-500 to-green-600"
+      />
     </div>
   );
 }
@@ -427,7 +454,7 @@ function AIFeaturesTab() {
           { icon: <Sparkles className="w-4 h-4 text-cyan-500" />, label: 'AI Mode', text: 'Generate queries from descriptions' },
           { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add to board with one click' },
         ]}
-        location="Header → Find Jobs"
+        location="Sidebar → Find Jobs"
         gradient="from-cyan-500 to-blue-600"
       />
 
@@ -440,7 +467,7 @@ function AIFeaturesTab() {
           { icon: <MessageSquare className="w-4 h-4 text-lime-500" />, label: 'Chat', text: 'Discuss goals and strategy' },
           { icon: <Sparkles className="w-4 h-4 text-lime-500" />, label: 'Skills', text: 'Track and develop your skills' },
         ]}
-        location="Header → 🎓 button"
+        location="Sidebar → Career Coach"
         gradient="from-lime-500 to-green-600"
       />
 
@@ -455,6 +482,20 @@ function AIFeaturesTab() {
         location="Notes tab → Contacts → Generate Intel"
         gradient="from-orange-500 to-amber-600"
       />
+
+      <FeatureCard
+        icon={<Presentation className="w-6 h-6 text-white" />}
+        title="Interview Teleprompter"
+        description="Your AI-powered interview companion."
+        items={[
+          { icon: <Sparkles className="w-4 h-4 text-violet-500" />, label: 'Keywords', text: 'AI suggests talking points in real-time' },
+          { icon: <BookmarkCheck className="w-4 h-4 text-violet-500" />, label: 'Stories', text: 'Browse your STAR stories during practice' },
+          { icon: <Mic className="w-4 h-4 text-violet-500" />, label: 'Pitch', text: 'Quick access to your elevator pitch' },
+          { icon: <Users className="w-4 h-4 text-violet-500" />, label: 'Intel', text: 'Interviewer insights in context panel' },
+        ]}
+        location="Job → Interviews → Teleprompter"
+        gradient="from-violet-500 to-purple-600"
+      />
     </div>
   );
 }
@@ -464,14 +505,28 @@ function ProfileDataTab() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <FeatureCard
         icon={<BookmarkCheck className="w-6 h-6 text-white" />}
-        title="Saved Stories / Memories"
-        description="Build a reusable profile of your best answers."
+        title="Interview Stories"
+        description="STAR format stories for behavioral interviews."
         items={[
-          { icon: <Save className="w-4 h-4 text-purple-500" />, label: 'Save', text: 'Keep great answers from Q&A chats' },
-          { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reuse', text: 'Available when prepping any job' },
+          { icon: <ListChecks className="w-4 h-4 text-purple-500" />, label: 'STAR', text: 'Situation, Task, Action, Result format' },
+          { icon: <Target className="w-4 h-4 text-purple-500" />, label: 'Themes', text: 'Tag by Leadership, Technical, Teamwork, etc.' },
+          { icon: <Star className="w-4 h-4 text-purple-500" />, label: 'Strength', text: 'Rate stories 1-5 for quick reference' },
         ]}
-        location="Settings → Profile → Saved Stories"
+        location="My Profile → Stories"
         gradient="from-purple-500 to-pink-600"
+      />
+
+      <FeatureCard
+        icon={<Mic className="w-6 h-6 text-white" />}
+        title="My Pitch"
+        description="Elevator pitches for 'Tell Me About Yourself'."
+        items={[
+          { icon: <Sparkles className="w-4 h-4 text-amber-500" />, label: 'Generate', text: 'AI creates from your profile' },
+          { icon: <RefreshCw className="w-4 h-4 text-amber-500" />, label: 'Refine', text: 'Iterate to perfect your pitch' },
+          { icon: <CheckCircle2 className="w-4 h-4 text-amber-500" />, label: 'Active', text: 'Set which pitch appears in Teleprompter' },
+        ]}
+        location="My Profile → My Pitch"
+        gradient="from-amber-500 to-orange-600"
       />
 
       <FeatureCard
@@ -482,7 +537,7 @@ function ProfileDataTab() {
           { icon: <Sparkles className="w-4 h-4 text-blue-500" />, label: 'Include', text: 'Skills, goals, projects, achievements' },
           { icon: <FileEdit className="w-4 h-4 text-blue-500" />, label: 'Used for', text: 'Grading, cover letters, prep' },
         ]}
-        location="Settings → Profile → Additional Context"
+        location="My Profile → About Me"
         gradient="from-blue-500 to-cyan-600"
       />
 
@@ -494,7 +549,7 @@ function ProfileDataTab() {
           { icon: <FileText className="w-4 h-4 text-violet-500" />, label: 'Upload', text: 'Portfolio, certs, recommendations' },
           { icon: <Sparkles className="w-4 h-4 text-violet-500" />, label: 'Summarize', text: 'AI condenses large docs' },
         ]}
-        location="Settings → Profile → Context Documents"
+        location="My Profile → Documents"
         gradient="from-violet-500 to-purple-600"
       />
 
@@ -507,7 +562,7 @@ function ProfileDataTab() {
           { icon: <Download className="w-4 h-4 text-slate-500" />, label: 'Backup', text: 'Export as JSON anytime' },
           { icon: <Sparkles className="w-4 h-4 text-slate-500" />, label: 'API', text: 'Key only sent to your provider' },
         ]}
-        location="Settings → Data Backup"
+        location="Sidebar → Settings → Data Backup"
         gradient="from-slate-500 to-slate-700"
       />
 
@@ -519,7 +574,7 @@ function ProfileDataTab() {
           { icon: <Download className="w-4 h-4 text-gray-500" />, label: 'Export', text: 'One-click download' },
           { icon: <FileText className="w-4 h-4 text-gray-500" />, label: 'Fields', text: 'Company, Title, Status, Match %, etc.' },
         ]}
-        location="Settings → Data Backup → Export CSV"
+        location="Sidebar → Settings → Export CSV"
         gradient="from-gray-500 to-gray-700"
       />
     </div>
