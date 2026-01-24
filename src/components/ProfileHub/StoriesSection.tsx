@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Search, Star, Filter } from 'lucide-react';
 import { Button, Input } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { StoryCard } from './StoryCard';
+import { STORY_THEMES, type StoryTheme } from '../../types';
 
 interface StoriesSectionProps {
   onAddStory: () => void;
@@ -11,35 +12,70 @@ interface StoriesSectionProps {
 
 export function StoriesSection({ onAddStory, onEditStory }: StoriesSectionProps): JSX.Element {
   const { settings } = useAppStore();
-  const stories = settings.savedStories || [];
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSkill, setFilterSkill] = useState<string | null>(null);
+  const [filterTheme, setFilterTheme] = useState<StoryTheme | null>(null);
+  const [filterStrength, setFilterStrength] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique skills for filter
-  const allSkills = Array.from(
-    new Set(stories.flatMap((s) => s.skills || []))
-  ).sort();
+  // Memoize stories to avoid recreating on each render
+  const stories = useMemo(() => settings.savedStories || [], [settings.savedStories]);
+
+  // Get unique themes from stories
+  const allThemes = useMemo(() => {
+    const themeSet = new Set<StoryTheme>();
+    stories.forEach((s) => {
+      s.themes?.forEach((t) => themeSet.add(t));
+    });
+    return Array.from(themeSet);
+  }, [stories]);
 
   // Filter stories
-  const filteredStories = stories.filter((story) => {
-    const matchesSearch =
-      !searchQuery ||
-      story.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      story.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      story.company?.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredStories = useMemo(() => {
+    return stories.filter((story) => {
+      // Text search
+      const matchesSearch =
+        !searchQuery ||
+        story.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        story.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        story.company?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesSkill =
-      !filterSkill || (story.skills && story.skills.includes(filterSkill));
+      // Theme filter
+      const matchesTheme =
+        !filterTheme || (story.themes && story.themes.includes(filterTheme));
 
-    return matchesSearch && matchesSkill;
-  });
+      // Strength filter
+      const matchesStrength =
+        filterStrength === null ||
+        (filterStrength === 0
+          ? !story.strengthRank // Unrated
+          : story.strengthRank === filterStrength);
+
+      return matchesSearch && matchesTheme && matchesStrength;
+    });
+  }, [stories, searchQuery, filterTheme, filterStrength]);
+
+  // Sort: by strength (5 first), then by date
+  const sortedStories = useMemo(() => {
+    return [...filteredStories].sort((a, b) => {
+      // Strength first (5 star = best, unrated = last)
+      const strengthA = a.strengthRank || 0;
+      const strengthB = b.strengthRank || 0;
+      if (strengthB !== strengthA) return strengthB - strengthA;
+
+      // Then by date (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [filteredStories]);
+
+  const hasFilters = filterTheme || filterStrength !== null;
 
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>): void {
     setSearchQuery(e.target.value);
   }
 
-  function handleSkillFilterChange(e: React.ChangeEvent<HTMLSelectElement>): void {
-    setFilterSkill(e.target.value || null);
+  function clearFilters(): void {
+    setFilterTheme(null);
+    setFilterStrength(null);
   }
 
   if (stories.length === 0) {
@@ -63,9 +99,10 @@ export function StoriesSection({ onAddStory, onEditStory }: StoriesSectionProps)
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Stories Header */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
         <div>
           <h3 className="font-display text-heading-lg text-foreground">Stories</h3>
           <p className="text-sm text-foreground-muted">
@@ -78,37 +115,138 @@ export function StoriesSection({ onAddStory, onEditStory }: StoriesSectionProps)
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-subtle" />
-          <Input
-            value={searchQuery}
-            onChange={handleSearchChange}
-            placeholder="Search stories..."
-            className="pl-9"
-          />
+      {/* Search and Filters */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-subtle" />
+            <Input
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search stories..."
+              className="pl-9"
+            />
+          </div>
+
+          {/* Filter toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-lg transition-colors ${
+              showFilters || hasFilters
+                ? 'bg-primary/10 border-primary/30 text-primary'
+                : 'border-border text-foreground-muted hover:border-primary/30 hover:text-foreground'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {hasFilters && (
+              <span className="w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">
+                {(filterTheme ? 1 : 0) + (filterStrength !== null ? 1 : 0)}
+              </span>
+            )}
+          </button>
         </div>
 
-        {allSkills.length > 0 && (
-          <select
-            value={filterSkill || ''}
-            onChange={handleSkillFilterChange}
-            className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground"
-          >
-            <option value="">All skills</option>
-            {allSkills.map((skill) => (
-              <option key={skill} value={skill}>
-                {skill}
-              </option>
-            ))}
-          </select>
+        {/* Filter panel */}
+        {showFilters && (
+          <div className="p-4 bg-surface-raised rounded-lg border border-border space-y-4">
+            {/* Theme filter */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Filter by theme
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFilterTheme(null)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    !filterTheme
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'border-border text-foreground-muted hover:border-primary/30'
+                  }`}
+                >
+                  All
+                </button>
+                {allThemes.map((theme) => {
+                  const themeInfo = STORY_THEMES.find((t) => t.id === theme);
+                  return (
+                    <button
+                      key={theme}
+                      onClick={() => setFilterTheme(theme === filterTheme ? null : theme)}
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                        filterTheme === theme
+                          ? 'bg-primary/10 border-primary/30 text-primary'
+                          : 'border-border text-foreground-muted hover:border-primary/30'
+                      }`}
+                    >
+                      {themeInfo?.label || theme}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Strength filter */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Filter by strength
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFilterStrength(null)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    filterStrength === null
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'border-border text-foreground-muted hover:border-primary/30'
+                  }`}
+                >
+                  All
+                </button>
+                {[5, 4, 3, 2, 1].map((strength) => (
+                  <button
+                    key={strength}
+                    onClick={() =>
+                      setFilterStrength(strength === filterStrength ? null : strength)
+                    }
+                    className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                      filterStrength === strength
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'border-border text-foreground-muted hover:border-primary/30'
+                    }`}
+                  >
+                    {strength}
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  </button>
+                ))}
+                <button
+                  onClick={() => setFilterStrength(filterStrength === 0 ? null : 0)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    filterStrength === 0
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'border-border text-foreground-muted hover:border-primary/30'
+                  }`}
+                >
+                  Unrated
+                </button>
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-foreground-muted hover:text-foreground"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
         )}
       </div>
 
       {/* Story Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredStories.map((story) => (
+        {sortedStories.map((story) => (
           <StoryCard
             key={story.id}
             story={story}
@@ -118,10 +256,11 @@ export function StoriesSection({ onAddStory, onEditStory }: StoriesSectionProps)
       </div>
 
       {filteredStories.length === 0 && stories.length > 0 && (
-        <div className="text-center py-8 text-foreground-muted">
-          No stories match your search
-        </div>
-      )}
+          <div className="text-center py-8 text-foreground-muted">
+            No stories match your {searchQuery ? 'search' : 'filters'}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, BookOpen, Paperclip, User, Target, FlaskConical, ArrowLeft } from 'lucide-react';
+import { FileText, BookOpen, Paperclip, User, Target, FlaskConical, ArrowLeft, Mic } from 'lucide-react';
 import { SlideOverPanel } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { cn } from '../../utils/helpers';
@@ -10,9 +10,10 @@ import { DocumentsSection } from './DocumentsSection';
 import { AboutMeSection } from './AboutMeSection';
 import { SkillsSection } from './SkillsSection';
 import { QuizSection } from './QuizSection';
+import { MyPitchPage } from './MyPitchPage';
 import type { SavedStory } from '../../types';
 
-type ProfileSection = 'resume' | 'stories' | 'documents' | 'about' | 'skills' | 'quiz';
+type ProfileSection = 'resume' | 'stories' | 'pitch' | 'documents' | 'about' | 'skills' | 'quiz';
 
 interface NavItem {
   id: ProfileSection;
@@ -23,6 +24,7 @@ interface NavItem {
 const contentSections: NavItem[] = [
   { id: 'resume', icon: FileText, label: 'Resume' },
   { id: 'stories', icon: BookOpen, label: 'Stories' },
+  { id: 'pitch', icon: Mic, label: 'My Pitch' },
   { id: 'documents', icon: Paperclip, label: 'Documents' },
   { id: 'about', icon: User, label: 'About Me' },
 ];
@@ -134,6 +136,7 @@ export function ProfileHub(): JSX.Element | null {
                 onEditStory={handleEditStory}
               />
             )}
+            {activeSection === 'pitch' && <MyPitchPage />}
             {activeSection === 'documents' && <DocumentsSection />}
             {activeSection === 'about' && <AboutMeSection />}
             {activeSection === 'skills' && <SkillsSection />}
