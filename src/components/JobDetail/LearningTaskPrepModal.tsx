@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, X, Sparkles, AlertCircle, Bookmark, Globe, FileText, ChevronDown, RotateCcw } from 'lucide-react';
 import { Button, Modal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import {
   detectLearningTaskCategory,
   chatAboutLearningTask,
@@ -101,12 +102,14 @@ const categoryColors: Record<LearningTaskCategory, string> = {
 export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTaskPrepModalProps) {
   const { settings, startPrepSession, addPrepMessage, savePrepToMaterials, updateLearningTask } = useAppStore();
 
+  // AI operation hooks
+  const detectOp = useAIOperation<{ category: LearningTaskCategory }>('category-detection');
+  const chatOp = useAIOperation<string>('chat');
+  const saveOp = useAIOperation<void>('save-to-prep');
+  const searchOp = useAIOperation<string>('web-search');
+
   // State
   const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDetectingCategory, setIsDetectingCategory] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
   const [category, setCategory] = useState<LearningTaskCategory>(task.inferredCategory || 'general');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<LearningTaskPrepMessage[]>([]);
@@ -114,7 +117,6 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
   const [customInstructions, setCustomInstructions] = useState(task.customInstructions || '');
   const [showOptions, setShowOptions] = useState(false);
   const [webBestPractices, setWebBestPractices] = useState<string | null>(null);
-  const [isSearchingWeb, setIsSearchingWeb] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -160,21 +162,16 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
   // Detect category
   const handleDetectCategory = async () => {
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
+      showToast('Please configure your AI provider in Settings', 'error');
       return;
     }
 
-    setIsDetectingCategory(true);
-    setError('');
-
-    try {
-      const result = await detectLearningTaskCategory(task, job);
+    const result = await detectOp.execute(async () => {
+      return await detectLearningTaskCategory(task, job);
+    });
+    if (result) {
       setCategory(result.category);
       showToast(`Category detected: ${LEARNING_TASK_CATEGORY_LABELS[result.category]}`, 'success');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to detect category');
-    } finally {
-      setIsDetectingCategory(false);
     }
   };
 
@@ -185,16 +182,15 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
       return;
     }
 
-    setIsSearchingWeb(true);
-    try {
+    const result = await searchOp.execute(async () => {
       const results = await searchInterviewPrepBestPractices(task.skill, category, job.company);
-      const formatted = formatSearchResultsForAI(results);
-      setWebBestPractices(formatted);
+      return formatSearchResultsForAI(results);
+    });
+    if (result) {
+      setWebBestPractices(result);
       showToast('Best practices loaded', 'success');
-    } catch (err) {
+    } else if (searchOp.error) {
       showToast('Failed to search best practices', 'error');
-    } finally {
-      setIsSearchingWeb(false);
     }
   };
 
@@ -203,13 +199,13 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
     if (!message.trim()) return;
 
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
+      showToast('Please configure your AI provider in Settings', 'error');
       return;
     }
 
     const userMessage = message.trim();
     setMessage('');
-    setError('');
+    chatOp.reset();
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -222,8 +218,8 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
       try {
         currentSessionId = await startPrepSession(job.id, task.id, category);
         setSessionId(currentSessionId);
-      } catch (err) {
-        setError('Failed to start prep session');
+      } catch {
+        showToast('Failed to start prep session', 'error');
         return;
       }
     }
@@ -246,9 +242,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
     };
     setMessages((prev) => [...prev, thinkingEntry]);
 
-    setIsLoading(true);
-
-    try {
+    const response = await chatOp.execute(async () => {
       // Get web best practices if enabled but not yet fetched
       let webContext = webBestPractices;
       if (webSearchEnabled && !webContext && hasWebSearchConsent) {
@@ -261,7 +255,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
         }
       }
 
-      const response = await chatAboutLearningTask(
+      return await chatAboutLearningTask(
         task,
         job,
         category,
@@ -272,7 +266,9 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
           customInstructions: customInstructions || undefined,
         }
       );
+    });
 
+    if (response) {
       // Replace thinking with actual response
       setMessages((prev) => {
         const filtered = prev.filter((m) => m.content !== '__THINKING__');
@@ -294,12 +290,9 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
         role: 'assistant',
         content: response,
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
-      // Remove thinking entry
+    } else {
+      // Remove thinking entry on error
       setMessages((prev) => prev.filter((m) => m.content !== '__THINKING__'));
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -307,8 +300,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
   const handleSaveToPrep = async () => {
     if (!sessionId || messages.length === 0) return;
 
-    setIsSaving(true);
-    try {
+    await saveOp.execute(async () => {
       const summary = await summarizePrepSession(task, category, messages);
       await savePrepToMaterials(
         job.id,
@@ -318,10 +310,9 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
         summary.answer
       );
       showToast('Saved to Prep Materials', 'success');
-    } catch (err) {
+    });
+    if (saveOp.error) {
       showToast('Failed to save to prep materials', 'error');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -330,7 +321,10 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
     setSessionId(null);
     setMessages([]);
     setWebBestPractices(null);
-    setError('');
+    detectOp.reset();
+    chatOp.reset();
+    saveOp.reset();
+    searchOp.reset();
   };
 
   // Save custom instructions
@@ -383,10 +377,10 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
             <button
               type="button"
               onClick={handleDetectCategory}
-              disabled={isDetectingCategory}
+              disabled={detectOp.isLoading}
               className="text-xs text-slate-500 hover:text-primary transition-colors"
             >
-              {isDetectingCategory ? (
+              {detectOp.isLoading ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
                 'Re-detect'
@@ -471,9 +465,9 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
                     variant="secondary"
                     size="sm"
                     onClick={handleSearchBestPractices}
-                    disabled={isSearchingWeb}
+                    disabled={searchOp.isLoading}
                   >
-                    {isSearchingWeb ? (
+                    {searchOp.isLoading ? (
                       <>
                         <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                         Searching...
@@ -546,10 +540,10 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
           )}
         </div>
 
-        {error && (
+        {(detectOp.error || chatOp.error || saveOp.error || searchOp.error) && (
           <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+            <span>{detectOp.error || chatOp.error || saveOp.error || searchOp.error}</span>
           </div>
         )}
 
@@ -570,11 +564,11 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
           <button
             type="button"
             onClick={handleSend}
-            disabled={isLoading || !message.trim()}
+            disabled={chatOp.isLoading || !message.trim()}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             title="Send message"
           >
-            {isLoading ? (
+            {chatOp.isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Send className="w-4 h-4" />
@@ -600,9 +594,9 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
               <Button
                 variant="secondary"
                 onClick={handleSaveToPrep}
-                disabled={isSaving}
+                disabled={saveOp.isLoading}
               >
-                {isSaving ? (
+                {saveOp.isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                     Saving...
