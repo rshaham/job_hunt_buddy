@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Zap, Bot, Server } from 'lucide-react';
 import { Button, Input } from '../../ui';
 import { useAppStore } from '../../../stores/appStore';
 import { testApiKey } from '../../../services/ai';
@@ -13,24 +13,30 @@ interface ApiKeyStepProps {
   apiKeySaved: boolean;
 }
 
-const PROVIDER_INFO: Record<ProviderType, { name: string; placeholder: string; helpUrl: string; helpText: string }> = {
+const PROVIDER_INFO: Record<ProviderType, { name: string; placeholder: string; helpUrl: string; helpText: string; icon: React.ElementType; gradient: string }> = {
   anthropic: {
     name: 'Anthropic (Claude)',
     placeholder: 'sk-ant-...',
     helpUrl: 'https://console.anthropic.com/settings/keys',
-    helpText: 'New accounts get $5 free credit - no card required',
+    helpText: 'New accounts get $5 free credit',
+    icon: Zap,
+    gradient: 'from-orange-500 to-amber-600',
   },
   gemini: {
     name: 'Google Gemini',
     placeholder: 'AIza...',
     helpUrl: 'https://aistudio.google.com/apikey',
-    helpText: 'Free tier available - perfect for trying it out',
+    helpText: 'Free tier available',
+    icon: Bot,
+    gradient: 'from-blue-500 to-cyan-600',
   },
   'openai-compatible': {
     name: 'Local / Ollama',
     placeholder: 'Leave empty for local Ollama',
     helpUrl: 'https://ollama.ai/',
-    helpText: 'Run AI locally with Ollama (no API key needed)',
+    helpText: 'Run AI locally (no API key)',
+    icon: Server,
+    gradient: 'from-slate-500 to-slate-600',
   },
 };
 
@@ -47,6 +53,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
   const [showGeminiGuide, setShowGeminiGuide] = useState(false);
 
   const providerInfo = PROVIDER_INFO[activeProvider];
+  const ProviderIcon = providerInfo.icon;
 
   const handleProviderChange = (provider: ProviderType) => {
     setActiveProvider(provider);
@@ -88,38 +95,59 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
   const needsApiKey = activeProvider !== 'openai-compatible';
 
   return (
-    <div>
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-foreground mb-2">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Hero */}
+      <div className="text-center mb-10">
+        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${providerInfo.gradient} flex items-center justify-center mx-auto mb-6 shadow-lg transition-all duration-300`}>
+          <ProviderIcon className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-3 tracking-tight">
           Set Up AI Features
         </h2>
-        <p className="text-foreground-muted">
-          This app is open source and free. You just need an API key from your preferred provider.
+        <p className="text-foreground-muted max-w-md mx-auto">
+          This app is free and open source. Just connect your preferred AI provider.
         </p>
       </div>
 
-      <div className="max-w-md mx-auto space-y-4">
-        {/* Provider Selection */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            AI Provider
-          </label>
-          <select
-            aria-label="Select AI provider"
-            value={activeProvider}
-            onChange={(e) => handleProviderChange(e.target.value as ProviderType)}
-            className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="anthropic">Anthropic (Claude) - Recommended · $5 free credit</option>
-            <option value="gemini">Google Gemini - Free tier · Great for trying it out</option>
-            <option value="openai-compatible">Local / Ollama - No API key needed</option>
-          </select>
+      <div className="max-w-lg mx-auto space-y-6">
+        {/* Provider Selection - Cards */}
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(PROVIDER_INFO) as ProviderType[]).map((provider) => {
+            const info = PROVIDER_INFO[provider];
+            const Icon = info.icon;
+            const isActive = activeProvider === provider;
+
+            return (
+              <button
+                key={provider}
+                type="button"
+                onClick={() => handleProviderChange(provider)}
+                className={`
+                  p-4 rounded-xl border-2 transition-all duration-200 text-center
+                  ${isActive
+                    ? 'border-primary bg-primary/5 shadow-md'
+                    : 'border-border hover:border-primary/30 bg-surface'
+                  }
+                `}
+              >
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${info.gradient} flex items-center justify-center mx-auto mb-2`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <p className={`text-xs font-medium ${isActive ? 'text-primary' : 'text-foreground'}`}>
+                  {provider === 'anthropic' ? 'Anthropic' : provider === 'gemini' ? 'Gemini' : 'Local'}
+                </p>
+                <p className="text-[10px] text-foreground-muted mt-0.5">
+                  {info.helpText}
+                </p>
+              </button>
+            );
+          })}
         </div>
 
         {/* OpenAI-compatible specific fields */}
         {activeProvider === 'openai-compatible' && (
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-foreground">
               Server URL
             </label>
             <Input
@@ -129,8 +157,9 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
                 setBaseUrlInput(e.target.value);
                 setTestStatus('idle');
               }}
+              className="bg-surface"
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-foreground-muted">
               Default Ollama URL. Make sure Ollama is running.
             </p>
           </div>
@@ -138,8 +167,8 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
 
         {/* API Key Input */}
         {needsApiKey && (
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-foreground">
               API Key
             </label>
             <Input
@@ -150,15 +179,16 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
                 setApiKeyInput(e.target.value);
                 setTestStatus('idle');
               }}
+              className="bg-surface font-mono"
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-foreground-muted">
               <a
                 href={providerInfo.helpUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline inline-flex items-center gap-1"
               >
-                {providerInfo.helpText}
+                Get your API key
                 <ExternalLink className="w-3 h-3" />
               </a>
             </p>
@@ -167,13 +197,13 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
 
         {/* Gemini Setup Guide */}
         {activeProvider === 'gemini' && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg overflow-hidden">
+          <div className="rounded-xl overflow-hidden border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
             <button
               type="button"
               onClick={() => setShowGeminiGuide(!showGeminiGuide)}
-              className="w-full px-4 py-3 flex items-center justify-between text-left text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              className="w-full px-5 py-4 flex items-center justify-between text-left text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
             >
-              <span>How to get your free API key (2 min)</span>
+              <span>How to get your free API key</span>
               {showGeminiGuide ? (
                 <ChevronUp className="w-4 h-4" />
               ) : (
@@ -181,7 +211,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
               )}
             </button>
             {showGeminiGuide && (
-              <div className="px-4 pb-4 space-y-3">
+              <div className="px-5 pb-5 space-y-4">
                 <ol className="text-sm text-foreground-muted space-y-2 list-decimal list-inside">
                   <li>Click the button below to open Google AI Studio</li>
                   <li>Sign in with your Google account</li>
@@ -192,7 +222,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
                   href="https://aistudio.google.com/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md"
                 >
                   Open Google AI Studio
                   <ExternalLink className="w-4 h-4" />
@@ -203,8 +233,8 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
         )}
 
         {/* Model Selection */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground">
             Model
           </label>
           <select
@@ -214,7 +244,7 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
               setModelInput(e.target.value);
               setTestStatus('idle');
             }}
-            className="w-full px-3 py-2 text-sm border rounded-md border-border-muted bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-4 py-3 text-sm border rounded-xl border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
           >
             {PROVIDER_MODELS[activeProvider].map((model) => (
               <option key={model.id} value={model.id}>
@@ -232,14 +262,21 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
             !modelInput ||
             testStatus === 'testing'
           }
-          className="w-full"
+          className={`w-full py-3 text-base font-semibold transition-all duration-300 ${
+            testStatus === 'success'
+              ? 'bg-emerald-500 hover:bg-emerald-600'
+              : testStatus === 'error'
+              ? 'bg-red-500 hover:bg-red-600'
+              : ''
+          }`}
+          size="lg"
         >
-          {testStatus === 'testing' && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {testStatus === 'success' && <CheckCircle className="w-4 h-4 mr-2 text-green-500" />}
-          {testStatus === 'error' && <XCircle className="w-4 h-4 mr-2 text-red-500" />}
+          {testStatus === 'testing' && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+          {testStatus === 'success' && <CheckCircle className="w-5 h-5 mr-2" />}
+          {testStatus === 'error' && <XCircle className="w-5 h-5 mr-2" />}
           {testStatus === 'idle' && 'Test & Save'}
-          {testStatus === 'testing' && 'Testing...'}
-          {testStatus === 'success' && 'Saved!'}
+          {testStatus === 'testing' && 'Testing Connection...'}
+          {testStatus === 'success' && 'Connected!'}
           {testStatus === 'error' && 'Connection Failed - Try Again'}
         </Button>
 
@@ -250,19 +287,29 @@ export function ApiKeyStep({ onNext, onBack, onApiKeySaved, apiKeySaved }: ApiKe
         )}
 
         {!canProceed && (
-          <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+          <p className="text-sm text-amber-600 dark:text-amber-400 text-center bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
             Please save a valid API key to continue.
           </p>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between mt-8">
-        <Button variant="ghost" onClick={onBack}>
+      <div className="flex justify-between mt-10 max-w-lg mx-auto">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="group text-foreground-muted hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
           Back
         </Button>
-        <Button onClick={onNext} disabled={!canProceed}>
+        <Button
+          onClick={onNext}
+          disabled={!canProceed}
+          className="group px-6"
+        >
           Next
+          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
         </Button>
       </div>
     </div>

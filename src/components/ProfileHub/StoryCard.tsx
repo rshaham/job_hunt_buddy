@@ -16,13 +16,13 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
     <div
       onClick={onClick}
       className={cn(
-        'bg-surface rounded-card border border-border p-4',
-        'hover:shadow-card-hover hover:border-primary/30',
+        'bg-surface rounded-card border border-border p-5',
+        'hover:shadow-card-hover hover:border-primary/30 hover:-translate-y-0.5',
         'transition-all duration-fast ease-out cursor-pointer'
       )}
     >
       {/* Question */}
-      <p className="font-display text-heading text-foreground line-clamp-2 mb-2">
+      <p className="font-display text-heading text-foreground line-clamp-2 leading-snug mb-2">
         "{story.question}"
       </p>
 
@@ -37,13 +37,13 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
           {story.skills.slice(0, 4).map((skill) => (
             <Badge
               key={skill}
-              className="text-xs bg-primary-subtle text-primary"
+              className="text-xs bg-primary/10 text-primary border border-primary/20"
             >
               {skill}
             </Badge>
           ))}
           {story.skills.length > 4 && (
-            <Badge className="text-xs bg-surface-raised text-foreground-muted">
+            <Badge className="text-xs bg-surface-raised text-foreground-muted border border-border">
               +{story.skills.length - 4}
             </Badge>
           )}
@@ -52,9 +52,11 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
 
       {/* Outcome */}
       {story.outcome && (
-        <p className="text-sm text-foreground-muted line-clamp-1">
-          <span className="font-medium">Outcome:</span> {story.outcome}
-        </p>
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <p className="text-sm text-foreground-muted line-clamp-1">
+            <span className="font-medium">Outcome:</span> {story.outcome}
+          </p>
+        </div>
       )}
 
       {/* Source indicator */}

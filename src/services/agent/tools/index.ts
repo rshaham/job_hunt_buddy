@@ -46,6 +46,11 @@ export { findExternalJobsTool } from './findExternalJobsTool';
 export { scanCareerPagesTool } from './scanCareerPagesTool';
 // Career projects
 export { suggestProjectTool } from './suggestProjectTool';
+// Interview round tools
+export { addInterviewRoundTool } from './addInterviewRoundTool';
+export { updateInterviewRoundTool } from './updateInterviewRoundTool';
+export { listInterviewsTool } from './listInterviewsTool';
+export { generateContactIntelTool } from './generateContactIntelTool';
 
 // Schemas
 export * from './schemas';
@@ -92,6 +97,10 @@ import { deleteTimelineEventTool } from './deleteTimelineEventTool';
 import { findExternalJobsTool } from './findExternalJobsTool';
 import { scanCareerPagesTool } from './scanCareerPagesTool';
 import { suggestProjectTool } from './suggestProjectTool';
+import { addInterviewRoundTool } from './addInterviewRoundTool';
+import { updateInterviewRoundTool } from './updateInterviewRoundTool';
+import { listInterviewsTool } from './listInterviewsTool';
+import { generateContactIntelTool } from './generateContactIntelTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -149,6 +158,11 @@ export const allTools: ToolDefinitionBase[] = [
   scanCareerPagesTool,
   // Career projects
   suggestProjectTool,
+  // Interview round tools
+  addInterviewRoundTool,
+  updateInterviewRoundTool,
+  listInterviewsTool,
+  generateContactIntelTool,
 ];
 
 /**
@@ -174,6 +188,8 @@ export const readTools: ToolDefinitionBase[] = [
   findExternalJobsTool,
   // Batch scanner
   scanCareerPagesTool,
+  // Interview listing
+  listInterviewsTool,
 ];
 
 /**
@@ -207,4 +223,8 @@ export const writeTools: ToolDefinitionBase[] = [
   deleteTimelineEventTool,
   // Career projects
   suggestProjectTool,
+  // Interview round tools
+  addInterviewRoundTool,
+  updateInterviewRoundTool,
+  generateContactIntelTool,
 ];
