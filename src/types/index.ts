@@ -585,6 +585,15 @@ export interface PitchOutlineBlock {
   transition?: string;
 }
 
+// Pitch refinement history entry
+export interface PitchRefinementEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  scriptSnapshot?: string;  // Pitch state after this refinement
+  timestamp: Date;
+}
+
 // "Tell Me About Yourself" pitch stored in settings
 export interface TellMeAboutYourselfPitch {
   id: string;
@@ -596,6 +605,7 @@ export interface TellMeAboutYourselfPitch {
   targetIndustry?: string;
   estimatedDuration?: string;
   isActive: boolean;  // Which pitch shows in Teleprompter by default
+  refinementHistory?: PitchRefinementEntry[];  // History of refinements for iteration
   createdAt: Date;
   updatedAt?: Date;
 }

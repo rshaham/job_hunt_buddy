@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Plus, Loader2, Sparkles, Copy, Check, Trash2, Star, FileText, List, MoreVertical } from 'lucide-react';
+import { Plus, Loader2, Sparkles, Copy, Check, Trash2, Star, FileText, List, MoreVertical, History, ChevronDown } from 'lucide-react';
 import { Button, Modal } from '../ui';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
-import { generateTellMeAboutYourself } from '../../services/ai';
+import { generateTellMeAboutYourself, refinePitch } from '../../services/ai';
 import { showToast } from '../../stores/toastStore';
-import type { TellMeAboutYourselfPitch } from '../../types';
+import type { TellMeAboutYourselfPitch, PitchRefinementEntry } from '../../types';
 
 type ViewMode = 'script' | 'outline';
 type Emphasis = 'balanced' | 'technical' | 'leadership';
@@ -125,20 +125,30 @@ function PitchCard({
   );
 }
 
-// Pitch detail/viewer component
+// Pitch detail/viewer component with refinement
 function PitchViewer({
   pitch,
   onClose,
   onSetActive,
   onDelete,
+  onUpdate,
 }: {
   pitch: TellMeAboutYourselfPitch;
   onClose: () => void;
   onSetActive: () => void;
   onDelete: () => void;
+  onUpdate: (updatedPitch: TellMeAboutYourselfPitch) => Promise<void>;
 }): JSX.Element {
   const [viewMode, setViewMode] = useState<ViewMode>('script');
   const [copied, setCopied] = useState(false);
+
+  // Refinement state
+  const [isRefining, setIsRefining] = useState(false);
+  const [refinementInput, setRefinementInput] = useState('');
+  const [lastChange, setLastChange] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const refinementHistory = pitch.refinementHistory || [];
 
   const handleCopy = async () => {
     try {
@@ -150,6 +160,62 @@ function PitchViewer({
       showToast('Failed to copy to clipboard', 'error');
     }
   };
+
+  const handleRefine = async (request?: string) => {
+    const refinementRequest = request || refinementInput.trim();
+    if (!refinementRequest) return;
+
+    setIsRefining(true);
+    setLastChange(null);
+
+    try {
+      const result = await refinePitch({
+        currentScript: pitch.script,
+        currentOutline: pitch.outline,
+        emphasis: pitch.emphasis,
+        length: pitch.length,
+        targetIndustry: pitch.targetIndustry,
+        refinementHistory: refinementHistory,
+        userRequest: refinementRequest,
+      });
+
+      // Update pitch with new content and history
+      const newHistory: PitchRefinementEntry[] = [
+        ...refinementHistory,
+        { id: crypto.randomUUID(), role: 'user', content: refinementRequest, timestamp: new Date() },
+        { id: crypto.randomUUID(), role: 'assistant', content: result.changesApplied, scriptSnapshot: result.script, timestamp: new Date() },
+      ];
+
+      await onUpdate({
+        ...pitch,
+        script: result.script,
+        outline: result.outline,
+        estimatedDuration: result.estimatedDuration,
+        refinementHistory: newHistory,
+        updatedAt: new Date(),
+      });
+
+      setLastChange(result.changesApplied);
+      setRefinementInput('');
+
+      // Clear the change message after a few seconds
+      setTimeout(() => setLastChange(null), 5000);
+    } catch (error) {
+      console.error('Failed to refine pitch:', error);
+      showToast('Failed to refine pitch', 'error');
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  const suggestionChips = [
+    'Make it shorter',
+    'More conversational',
+    'Emphasize leadership',
+    'Add specific metrics',
+    'More technical focus',
+    'Stronger opening',
+  ];
 
   return (
     <div className="space-y-4">
@@ -255,6 +321,104 @@ function PitchViewer({
           ))}
         </div>
       )}
+
+      {/* Refinement Section */}
+      <div className="pt-4 border-t border-border space-y-3">
+        {/* Quick suggestion chips */}
+        <div className="flex flex-wrap gap-2">
+          {suggestionChips.map(suggestion => (
+            <button
+              key={suggestion}
+              onClick={() => handleRefine(suggestion)}
+              disabled={isRefining}
+              className={cn(
+                'px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200',
+                'bg-surface border border-border text-foreground-muted',
+                'hover:border-primary/40 hover:text-primary hover:bg-primary/5',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+
+        {/* Refinement input */}
+        <div className="flex items-center gap-2 px-4 py-3
+                        bg-surface-raised border border-border rounded-xl
+                        focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10
+                        transition-all duration-200">
+          <Sparkles className="w-4 h-4 text-primary/60 flex-shrink-0" />
+          <input
+            type="text"
+            value={refinementInput}
+            onChange={(e) => setRefinementInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleRefine()}
+            placeholder="Refine your pitch..."
+            className="flex-1 bg-transparent text-sm text-foreground
+                       placeholder:text-foreground-subtle focus:outline-none"
+            disabled={isRefining}
+          />
+          <button
+            onClick={() => handleRefine()}
+            disabled={!refinementInput.trim() || isRefining}
+            className={cn(
+              'px-3 py-1.5 text-xs font-medium rounded-lg transition-colors duration-150',
+              'bg-primary text-white hover:bg-primary/90',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            {isRefining ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              'Refine'
+            )}
+          </button>
+        </div>
+
+        {/* Change feedback */}
+        {lastChange && (
+          <div className="flex items-start gap-2 px-4 py-3
+                          bg-emerald-50 dark:bg-emerald-900/20
+                          border border-emerald-200 dark:border-emerald-800/30
+                          rounded-lg">
+            <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-emerald-700 dark:text-emerald-300">
+              {lastChange}
+            </p>
+          </div>
+        )}
+
+        {/* Refinement history (collapsed) */}
+        {refinementHistory.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 text-xs text-foreground-muted hover:text-foreground transition-colors"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>{Math.floor(refinementHistory.length / 2)} refinement{Math.floor(refinementHistory.length / 2) !== 1 ? 's' : ''}</span>
+              <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', showHistory && 'rotate-180')} />
+            </button>
+
+            {showHistory && (
+              <div className="mt-3 space-y-2 pl-5 border-l-2 border-border">
+                {refinementHistory.map((entry) => (
+                  <div key={entry.id} className="text-sm">
+                    {entry.role === 'user' ? (
+                      <p className="text-foreground-muted italic">"{entry.content}"</p>
+                    ) : (
+                      <p className="text-foreground-subtle text-xs mt-0.5">
+                        → {entry.content}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -502,6 +666,13 @@ export function MyPitchPage(): JSX.Element {
     setSelectedPitchId(pitch.id);
   };
 
+  const handleUpdatePitch = async (updatedPitch: TellMeAboutYourselfPitch) => {
+    const updatedPitches = pitches.map((p) =>
+      p.id === updatedPitch.id ? updatedPitch : p
+    );
+    await updateSettings({ savedPitches: updatedPitches });
+  };
+
   // Empty state
   if (pitches.length === 0 && !isCreating) {
     return (
@@ -544,6 +715,7 @@ export function MyPitchPage(): JSX.Element {
           onClose={() => setSelectedPitchId(null)}
           onSetActive={() => handleSetActive(selectedPitch.id)}
           onDelete={() => setDeleteConfirmId(selectedPitch.id)}
+          onUpdate={handleUpdatePitch}
         />
 
         {/* Delete confirmation modal */}

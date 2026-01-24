@@ -31,6 +31,7 @@ import {
   BEHAVIORAL_CATEGORIES,
   EXTRACT_STAR_PROMPT,
   GENERATE_TMAY_PROMPT,
+  REFINE_PITCH_PROMPT,
 } from '../utils/prompts';
 import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel, StoryTheme, PitchOutlineBlock } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
@@ -1842,5 +1843,81 @@ export async function generateTellMeAboutYourself(options: {
     script: (parsed.script as string) || '',
     outline: (parsed.outline as PitchOutlineBlock[]) || [],
     estimatedDuration: (parsed.estimatedDuration as string) || '60 seconds',
+  };
+}
+
+/**
+ * Refine an existing pitch based on user feedback.
+ */
+export interface PitchRefinementEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  scriptSnapshot?: string;
+  timestamp: Date;
+}
+
+export interface PitchRefinementResult {
+  script: string;
+  outline: PitchOutlineBlock[];
+  estimatedDuration: string;
+  changesApplied: string;
+}
+
+export async function refinePitch(options: {
+  currentScript: string;
+  currentOutline: PitchOutlineBlock[];
+  emphasis: 'balanced' | 'technical' | 'leadership';
+  length: 'brief' | 'standard' | 'detailed';
+  targetIndustry?: string;
+  refinementHistory: PitchRefinementEntry[];
+  userRequest: string;
+}): Promise<PitchRefinementResult> {
+  const { settings } = useAppStore.getState();
+  const resumeText = settings.defaultResumeText || '';
+
+  // Format outline for the prompt
+  const outlineText = options.currentOutline
+    .map(block => {
+      let text = `**${block.header}**\n`;
+      text += block.items.map(item => `- ${item}`).join('\n');
+      if (block.transition) text += `\n→ ${block.transition}`;
+      return text;
+    })
+    .join('\n\n');
+
+  // Format refinement history
+  const historyText = options.refinementHistory.length > 0
+    ? options.refinementHistory
+        .map(entry => `${entry.role === 'user' ? 'User' : 'Assistant'}: ${entry.content}`)
+        .join('\n\n')
+    : 'No previous refinements';
+
+  const prompt = REFINE_PITCH_PROMPT
+    .replace('{currentScript}', options.currentScript)
+    .replace('{currentOutline}', outlineText)
+    .replace('{emphasis}', options.emphasis)
+    .replace('{length}', options.length)
+    .replace('{targetIndustry}', options.targetIndustry || 'Not specified')
+    .replace('{resumeText}', resumeText || 'No resume provided')
+    .replace('{refinementHistory}', historyText)
+    .replace('{userRequest}', options.userRequest);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse pitch refinement response:', { response, jsonStr, error: e });
+    throw new Error('Failed to refine pitch. Please try again.');
+  }
+
+  return {
+    script: (parsed.script as string) || options.currentScript,
+    outline: (parsed.outline as PitchOutlineBlock[]) || options.currentOutline,
+    estimatedDuration: (parsed.estimatedDuration as string) || '60 seconds',
+    changesApplied: (parsed.changesApplied as string) || 'Changes applied',
   };
 }

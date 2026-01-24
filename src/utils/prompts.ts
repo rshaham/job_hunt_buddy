@@ -1119,14 +1119,21 @@ Key stories/experiences:
 
 Settings:
 - Emphasis: {emphasis} (balanced = equal technical/leadership, technical = lead with tech skills, leadership = lead with management/influence)
-- Length: {length} (brief = ~30 seconds/100 words, standard = ~60 seconds/200 words, detailed = ~90 seconds/300 words)
+- Length: {length}
 - Target Industry: {targetIndustry}
+
+CRITICAL LENGTH REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+- If length is "brief": Generate EXACTLY 80-120 words (~30 seconds). Be concise. Focus on: identity statement, one key achievement, why this role.
+- If length is "standard": Generate EXACTLY 180-220 words (~60 seconds). Include: identity, 1-2 career highlights, why this role.
+- If length is "detailed": Generate EXACTLY 280-320 words (~90 seconds). Include: identity, 2-3 career phases with achievements, why this role.
+
+The script word count MUST fall within the specified range. Count your words before finalizing.
 
 Guidelines for a great "Tell Me About Yourself":
 1. Start with a professional identity statement (who you are professionally)
-2. Group experience into 2-3 thematic phases/chapters
+2. Group experience into thematic phases/chapters (fewer for brief, more for detailed)
 3. Show progression and growth between roles
-4. Include 1-2 specific achievements with metrics when possible
+4. Include specific achievements with metrics when possible
 5. End with "why this role/company" hook (use [Company] as placeholder)
 6. Keep it conversational, not robotic - this is a story, not a resume reading
 7. Transition phrases should feel natural: "That led me to...", "Building on that experience...", "What excites me now is..."
@@ -1150,7 +1157,59 @@ Return ONLY valid JSON:
       "items": ["Combine technical depth with product thinking", "Excited about [Company]'s mission"]
     }
   ],
-  "estimatedDuration": "45 seconds"
+  "estimatedDuration": "45 seconds",
+  "wordCount": 185
+}`;
+
+// Pitch refinement prompt for iterating on generated pitches
+export const REFINE_PITCH_PROMPT = `You are helping refine a "Tell Me About Yourself" pitch for job interviews.
+
+Current pitch script:
+{currentScript}
+
+Current pitch outline:
+{currentOutline}
+
+Original settings:
+- Emphasis: {emphasis}
+- Length: {length}
+- Target Industry: {targetIndustry}
+
+Candidate's resume (for reference):
+{resumeText}
+
+Refinement history:
+{refinementHistory}
+
+User's refinement request:
+{userRequest}
+
+Apply the user's refinement request to improve the pitch. Common requests include:
+- Making it shorter or longer
+- Emphasizing different aspects (technical skills, leadership, specific achievements)
+- Changing the tone (more conversational, more professional, etc.)
+- Adding or removing specific details
+- Adjusting for a specific company or role
+
+IMPORTANT: Maintain the overall structure and quality of the pitch while applying the requested changes.
+If the user asks for a different length, follow the word count guidelines:
+- brief: 80-120 words (~30 seconds)
+- standard: 180-220 words (~60 seconds)
+- detailed: 280-320 words (~90 seconds)
+
+Return ONLY valid JSON:
+{
+  "script": "The refined pitch script...",
+  "outline": [
+    {
+      "header": "Section Header",
+      "items": ["Key point 1", "Key point 2"],
+      "transition": "Transition to next section (optional)"
+    }
+  ],
+  "estimatedDuration": "X seconds",
+  "wordCount": 185,
+  "changesApplied": "Brief description of what was changed"
 }`;
 
 export const GAP_FINDER_PROMPT = `You are an expert at analyzing behavioral interview stories and categorizing them.
