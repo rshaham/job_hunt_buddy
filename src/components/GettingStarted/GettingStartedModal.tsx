@@ -6,13 +6,14 @@ import { WelcomeStep } from './steps/WelcomeStep';
 import { ApiKeyStep } from './steps/ApiKeyStep';
 import { ResumeStep } from './steps/ResumeStep';
 import { FirstJobStep } from './steps/FirstJobStep';
+import { Shield, Sparkles, Key, FileText, Rocket, Check } from 'lucide-react';
 
 const STEPS = [
-  { id: 'privacy', title: 'Privacy' },
-  { id: 'welcome', title: 'Welcome' },
-  { id: 'api-key', title: 'API Key' },
-  { id: 'resume', title: 'Resume' },
-  { id: 'first-job', title: 'Get Started' },
+  { id: 'privacy', title: 'Privacy', icon: Shield },
+  { id: 'welcome', title: 'Welcome', icon: Sparkles },
+  { id: 'api-key', title: 'AI Setup', icon: Key },
+  { id: 'resume', title: 'Resume', icon: FileText },
+  { id: 'first-job', title: 'Ready', icon: Rocket },
 ];
 
 export function GettingStartedModal() {
@@ -58,42 +59,50 @@ export function GettingStartedModal() {
     <Modal
       isOpen={isGettingStartedModalOpen}
       onClose={closeGettingStartedModal}
-      title="Getting Started"
-      size="lg"
+      title=""
+      size="xl"
     >
-      <div className="p-6">
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center mb-8">
-          {STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                  ${index <= currentStep
-                    ? 'bg-primary text-white'
-                    : 'bg-surface-raised text-foreground-muted'
-                  }
-                `}
-              >
-                {index + 1}
-              </div>
-              {index < STEPS.length - 1 && (
-                <div
-                  className={`
-                    w-12 h-0.5 mx-1
-                    ${index < currentStep
-                      ? 'bg-primary'
-                      : 'bg-surface-raised'
-                    }
-                  `}
-                />
-              )}
-            </div>
-          ))}
+      <div className="px-6 sm:px-10 py-8 min-h-[700px] flex flex-col">
+        {/* Step Indicator - Dots with connectors */}
+        <div className="flex flex-col items-center gap-3 mb-6">
+          <div className="flex items-center gap-2">
+            {STEPS.map((step, index) => {
+              const Icon = step.icon;
+              const isComplete = index < currentStep;
+              const isCurrent = index === currentStep;
+
+              return (
+                <div key={step.id} className="flex items-center gap-2">
+                  <div
+                    className={`
+                      w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
+                      ${isCurrent ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-110' : ''}
+                      ${isComplete ? 'bg-emerald-500 text-white' : ''}
+                      ${!isCurrent && !isComplete ? 'bg-surface-raised text-foreground-subtle border border-border' : ''}
+                    `}
+                  >
+                    {isComplete ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <Icon className="w-5 h-5" />
+                    )}
+                  </div>
+                  {index < STEPS.length - 1 && (
+                    <div className={`w-6 sm:w-10 h-0.5 rounded-full transition-colors duration-300 ${
+                      isComplete ? 'bg-emerald-500' : 'bg-border'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-sm font-medium text-foreground-muted">
+            Step {currentStep + 1} of {STEPS.length}: <span className="text-foreground">{STEPS[currentStep].title}</span>
+          </p>
         </div>
 
         {/* Step Content */}
-        <div className="min-h-[300px]">
+        <div className="flex-1 flex flex-col justify-center overflow-y-auto">
           {currentStep === 0 && (
             <PrivacyTermsStep onNext={() => setCurrentStep(1)} />
           )}
