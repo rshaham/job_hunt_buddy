@@ -250,6 +250,9 @@ export function PrepTab({ job }: PrepTabProps) {
   const [sidebarWidth, setSidebarWidth] = useState(320); // Default 320px (was w-72 = 288px, slightly wider)
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const widthRef = useRef(320);
+  const rafRef = useRef<number>();
 
   // Get contacts with interviewer intel
   const contactsWithIntel = job.contacts.filter((c) => c.interviewerIntel);
@@ -269,16 +272,32 @@ export function PrepTab({ job }: PrepTabProps) {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !containerRef.current) return;
 
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const newWidth = containerRect.right - e.clientX;
-    const maxWidth = containerRect.width * 0.9; // Allow up to 90% of container
+    // Cancel previous frame to coalesce rapid updates
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-    // Constrain width between 150px minimum and 90% of container
-    const constrainedWidth = Math.min(Math.max(newWidth, 150), maxWidth);
-    setSidebarWidth(constrainedWidth);
+    rafRef.current = requestAnimationFrame(() => {
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      const newWidth = containerRect.right - e.clientX;
+      const maxWidth = containerRect.width * 0.9; // Allow up to 90% of container
+
+      // Constrain width between 150px minimum and 90% of container
+      const constrainedWidth = Math.min(Math.max(newWidth, 150), maxWidth);
+
+      // Store in ref (no re-render)
+      widthRef.current = constrainedWidth;
+
+      // Update DOM directly (bypasses React)
+      if (sidebarRef.current) {
+        sidebarRef.current.style.width = `${constrainedWidth}px`;
+      }
+    });
   }, [isResizing]);
 
   const handleMouseUp = useCallback(() => {
+    // Cancel any pending animation frame
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    // Sync final width to React state once (single re-render)
+    setSidebarWidth(widthRef.current);
     setIsResizing(false);
   }, []);
 
@@ -298,6 +317,11 @@ export function PrepTab({ job }: PrepTabProps) {
       document.body.style.userSelect = '';
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  // Keep widthRef in sync when sidebarWidth changes externally
+  useEffect(() => {
+    widthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
 
   // Interview data - sorted and filtered
   const interviews = useMemo(() => {
@@ -821,6 +845,7 @@ export function PrepTab({ job }: PrepTabProps) {
         {/* Right Sidebar - Interviews + Materials */}
         {(hasPrepContent || hasInterviews) && (
           <div
+            ref={sidebarRef}
             className="flex flex-col min-h-0 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-border flex-shrink-0"
             style={{ width: sidebarWidth }}
           >
