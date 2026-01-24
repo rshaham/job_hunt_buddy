@@ -79,9 +79,9 @@ export const listInterviewsTool: ToolDefinition<ListInterviewsInput, ListIntervi
         const interviewerNames = (interview.interviewerIds || [])
           .map((id) => {
             const contact = job.contacts.find((c) => c.id === id);
-            return contact ? contact.name : 'Unknown';
+            return contact?.name;
           })
-          .filter((name) => name !== 'Unknown');
+          .filter((name): name is string => name !== undefined);
 
         allInterviews.push({
           interviewId: interview.id,

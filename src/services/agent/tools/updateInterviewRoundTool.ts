@@ -46,9 +46,8 @@ export const updateInterviewRoundTool: ToolDefinition<UpdateInterviewRoundInput,
 
     // Validate interviewer IDs if provided
     if (input.interviewerIds && input.interviewerIds.length > 0) {
-      const invalidIds = input.interviewerIds.filter(
-        (id) => !job.contacts.some((c) => c.id === id)
-      );
+      const contactIds = new Set((job.contacts || []).map((c) => c.id));
+      const invalidIds = input.interviewerIds.filter((id) => !contactIds.has(id));
       if (invalidIds.length > 0) {
         return {
           success: false,
