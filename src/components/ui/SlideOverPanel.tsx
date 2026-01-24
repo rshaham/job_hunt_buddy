@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 
 interface SlideOverPanelProps {
@@ -60,14 +60,17 @@ export function SlideOverPanel({
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface sticky top-0 z-10">
-            <h2 className="font-display text-heading-lg text-foreground">{title}</h2>
+          <div className="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface sticky top-0 z-10">
+            {/* Back button - left side, matches slide-in direction */}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-foreground-muted hover:bg-surface-raised hover:text-foreground transition-colors duration-fast"
+              className="p-2 -ml-2 rounded-lg text-foreground-muted hover:bg-surface-raised hover:text-foreground transition-colors duration-fast group"
+              title="Back"
             >
-              <X className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+              <span className="sr-only">Back</span>
             </button>
+            <h2 className="font-display text-heading-lg text-foreground">{title}</h2>
           </div>
         )}
 

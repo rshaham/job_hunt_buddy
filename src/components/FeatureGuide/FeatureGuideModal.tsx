@@ -34,6 +34,7 @@ import {
   Zap,
   Moon,
   Command,
+  Book,
 } from 'lucide-react';
 import { Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -46,55 +47,53 @@ interface FeatureCardProps {
   description: string;
   items: { icon: React.ReactNode; label: string; text: string }[];
   location: string;
-  color: string;
+  gradient: string;
   isNew?: boolean;
 }
 
-function FeatureCard({ icon, title, description, items, location, color, isNew }: FeatureCardProps) {
-  const colorClasses: Record<string, string> = {
-    purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
-    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-    green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
-    indigo: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
-    amber: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
-    rose: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800',
-    teal: 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800',
-    slate: 'bg-slate-100 dark:bg-slate-800 border-border',
-    cyan: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
-    gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700',
-    orange: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
-    pink: 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800',
-    violet: 'bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800',
-    lime: 'bg-lime-50 dark:bg-lime-900/20 border-lime-200 dark:border-lime-800',
-  };
-
+function FeatureCard({ icon, title, description, items, location, gradient, isNew }: FeatureCardProps) {
   return (
-    <section className={`p-4 rounded-lg border ${colorClasses[color] || colorClasses.slate}`}>
-      <div className="flex items-center gap-2 mb-3">
-        {icon}
-        <h3 className="font-semibold text-foreground">{title}</h3>
-        {isNew && (
-          <span className="px-1.5 py-0.5 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded">
-            NEW
-          </span>
-        )}
+    <div className="group relative p-6 rounded-2xl bg-surface border border-border hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-0.5">
+      {/* Gradient overlay on hover */}
+      <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`} />
+
+      <div className="relative">
+        <div className="flex items-start gap-4 mb-4">
+          <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0 pt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-foreground">{title}</h3>
+              {isNew && (
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white rounded-full">
+                  New
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-foreground-muted">{description}</p>
+          </div>
+        </div>
+
+        <ul className="space-y-3 mb-5">
+          {items.map((item, i) => (
+            <li key={i} className="flex gap-3 text-sm">
+              <span className="flex-shrink-0 w-6 h-6 rounded-md bg-surface-raised flex items-center justify-center">
+                {item.icon}
+              </span>
+              <span className="text-foreground-muted">
+                <strong className="text-foreground">{item.label}:</strong> {item.text}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-2 pt-4 border-t border-border text-xs text-foreground-subtle">
+          <MapPin className="w-3.5 h-3.5" />
+          <span>{location}</span>
+        </div>
       </div>
-      <p className="text-sm text-foreground-muted mb-3">{description}</p>
-      <ul className="space-y-2 text-sm text-foreground">
-        {items.map((item, i) => (
-          <li key={i} className="flex gap-2">
-            <span className="flex-shrink-0 mt-0.5">{item.icon}</span>
-            <span>
-              <strong>{item.label}:</strong> {item.text}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3 pt-2 border-t border-border flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-        <MapPin className="w-3.5 h-3.5" />
-        <span>{location}</span>
-      </div>
-    </section>
+    </div>
   );
 }
 
@@ -102,49 +101,81 @@ export function FeatureGuideModal() {
   const { isFeatureGuideModalOpen, closeFeatureGuideModal } = useAppStore();
   const [activeTab, setActiveTab] = useState<TabId>('new');
 
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'new', label: "What's New", icon: <Zap className="w-4 h-4" /> },
-    { id: 'board', label: 'Board', icon: <Kanban className="w-4 h-4" /> },
-    { id: 'job-detail', label: 'Job Detail', icon: <FileText className="w-4 h-4" /> },
-    { id: 'ai', label: 'AI Features', icon: <Sparkles className="w-4 h-4" /> },
-    { id: 'profile', label: 'Profile & Data', icon: <Database className="w-4 h-4" /> },
+  const tabs: { id: TabId; label: string; icon: React.ReactNode; gradient: string }[] = [
+    { id: 'new', label: "What's New", icon: <Zap className="w-4 h-4" />, gradient: 'from-amber-500 to-orange-600' },
+    { id: 'board', label: 'Board', icon: <Kanban className="w-4 h-4" />, gradient: 'from-blue-500 to-cyan-600' },
+    { id: 'job-detail', label: 'Job Detail', icon: <FileText className="w-4 h-4" />, gradient: 'from-purple-500 to-pink-600' },
+    { id: 'ai', label: 'AI Features', icon: <Sparkles className="w-4 h-4" />, gradient: 'from-violet-500 to-purple-600' },
+    { id: 'profile', label: 'Profile & Data', icon: <Database className="w-4 h-4" />, gradient: 'from-slate-500 to-slate-600' },
   ];
+
+  const activeTabData = tabs.find(t => t.id === activeTab);
 
   return (
     <Modal
       isOpen={isFeatureGuideModalOpen}
       onClose={closeFeatureGuideModal}
-      title="Feature Guide"
+      title=""
       size="full"
     >
       <div className="flex flex-col h-full">
-        {/* Tabs */}
-        <div className="flex gap-1 px-6 pt-4 pb-2 border-b border-border overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
-                ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-white'
-                    : 'text-foreground-muted hover:bg-surface-raised'
-                }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+        {/* Header */}
+        <div className="px-8 pt-8 pb-6 border-b border-border bg-gradient-to-b from-surface-raised to-surface">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg">
+              <Book className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">
+                Feature Guide
+              </h1>
+              <p className="text-sm text-foreground-muted">
+                Everything Job Hunt Buddy can do for you
+              </p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap
+                  ${activeTab === tab.id
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                    : 'text-foreground-muted hover:bg-surface-raised hover:text-foreground'
+                  }
+                `}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'new' && <WhatsNewTab />}
-          {activeTab === 'board' && <BoardTab />}
-          {activeTab === 'job-detail' && <JobDetailTab />}
-          {activeTab === 'ai' && <AIFeaturesTab />}
-          {activeTab === 'profile' && <ProfileDataTab />}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Tab Title */}
+            {activeTabData && (
+              <div className="flex items-center gap-3 mb-8">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${activeTabData.gradient} flex items-center justify-center`}>
+                  {activeTabData.icon}
+                </div>
+                <h2 className="text-xl font-semibold text-foreground">{activeTabData.label}</h2>
+              </div>
+            )}
+
+            {activeTab === 'new' && <WhatsNewTab />}
+            {activeTab === 'board' && <BoardTab />}
+            {activeTab === 'job-detail' && <JobDetailTab />}
+            {activeTab === 'ai' && <AIFeaturesTab />}
+            {activeTab === 'profile' && <ProfileDataTab />}
+          </div>
         </div>
       </div>
     </Modal>
@@ -153,377 +184,344 @@ export function FeatureGuideModal() {
 
 function WhatsNewTab() {
   return (
-    <div className="space-y-6">
-      <div className="text-center pb-4">
-        <h2 className="text-2xl font-bold text-foreground mb-2">What's New</h2>
-        <p className="text-foreground-muted">
-          Recent additions and improvements to Job Hunt Buddy
-        </p>
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <FeatureCard
+        icon={<ArrowUpDown className="w-6 h-6 text-white" />}
+        title="Board Sorting & Filtering"
+        description="Quickly find and organize jobs in your pipeline."
+        items={[
+          { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
+          { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
+        ]}
+        location="Toolbar below header"
+        gradient="from-indigo-500 to-purple-600"
+        isNew
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeatureCard
-          icon={<ArrowUpDown className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-          title="Board Sorting & Filtering"
-          description="Quickly find and organize jobs in your pipeline."
-          items={[
-            { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
-            { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
-          ]}
-          location="Toolbar below header"
-          color="indigo"
-          isNew
-        />
+      <FeatureCard
+        icon={<Pencil className="w-6 h-6 text-white" />}
+        title="Edit Job Details"
+        description="Fix company names, titles, or links after adding a job."
+        items={[
+          { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click the Edit button in the Overview tab' },
+          { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Save', text: 'Press Enter or click Save when done' },
+        ]}
+        location="Job detail → Overview tab → Edit"
+        gradient="from-green-500 to-emerald-600"
+        isNew
+      />
 
-        <FeatureCard
-          icon={<Pencil className="w-5 h-5 text-green-600 dark:text-green-400" />}
-          title="Edit Job Details"
-          description="Fix company names, titles, or links after adding a job."
-          items={[
-            { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click the Edit button in the Overview tab' },
-            { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Save', text: 'Press Enter or click Save when done' },
-          ]}
-          location="Job detail → Overview tab → Edit"
-          color="green"
-          isNew
-        />
+      <FeatureCard
+        icon={<Command className="w-6 h-6 text-white" />}
+        title="AI Agent (Ctrl+K)"
+        description="Natural language interface for job search and questions."
+        items={[
+          { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search jobs', text: '"Find remote React jobs in Seattle"' },
+          { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Ask questions', text: '"What skills does the Google job require?"' },
+        ]}
+        location="Header → AI Agent or press Ctrl+K"
+        gradient="from-violet-500 to-purple-600"
+        isNew
+      />
 
-        <FeatureCard
-          icon={<Command className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
-          title="AI Agent (Ctrl+K)"
-          description="Natural language interface for job search and questions."
-          items={[
-            { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search jobs', text: '"Find remote React jobs in Seattle"' },
-            { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Ask questions', text: '"What skills does the Google job require?"' },
-          ]}
-          location="Header → AI Agent or press Ctrl+K"
-          color="violet"
-          isNew
-        />
-
-        <FeatureCard
-          icon={<Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
-          title="Find Jobs"
-          description="Search external job boards without leaving the app."
-          items={[
-            { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query Google Jobs via SerApi' },
-            { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add jobs directly to your board' },
-          ]}
-          location="Header → Find Jobs button"
-          color="cyan"
-          isNew
-        />
-      </div>
+      <FeatureCard
+        icon={<Search className="w-6 h-6 text-white" />}
+        title="Find Jobs"
+        description="Search external job boards without leaving the app."
+        items={[
+          { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query Google Jobs via SerApi' },
+          { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add jobs directly to your board' },
+        ]}
+        location="Header → Find Jobs button"
+        gradient="from-cyan-500 to-blue-600"
+        isNew
+      />
     </div>
   );
 }
 
 function BoardTab() {
   return (
-    <div className="space-y-6">
-      <p className="text-foreground-muted">
-        Features for managing your job pipeline on the main board view.
-      </p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <FeatureCard
+        icon={<ArrowUpDown className="w-6 h-6 text-white" />}
+        title="Sorting & Filtering"
+        description="Quickly find and organize jobs in your pipeline."
+        items={[
+          { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
+          { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
+          { icon: <XCircle className="w-4 h-4 text-indigo-500" />, label: 'Clear', text: 'Reset filters with one click' },
+        ]}
+        location="Toolbar below header"
+        gradient="from-indigo-500 to-purple-600"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeatureCard
-          icon={<ArrowUpDown className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-          title="Sorting & Filtering"
-          description="Quickly find and organize jobs in your pipeline."
-          items={[
-            { icon: <Search className="w-4 h-4 text-indigo-500" />, label: 'Search', text: 'Filter by company, title, or description' },
-            { icon: <ArrowUpDown className="w-4 h-4 text-indigo-500" />, label: 'Sort', text: 'By date added, resume fit, company, or title' },
-            { icon: <XCircle className="w-4 h-4 text-indigo-500" />, label: 'Clear', text: 'Reset filters with one click' },
-          ]}
-          location="Toolbar below header"
-          color="indigo"
-        />
+      <FeatureCard
+        icon={<GripVertical className="w-6 h-6 text-white" />}
+        title="Drag & Drop"
+        description="Move jobs through your pipeline with ease."
+        items={[
+          { icon: <GripVertical className="w-4 h-4 text-blue-500" />, label: 'Drag', text: 'Click and drag any job card' },
+          { icon: <ArrowRight className="w-4 h-4 text-blue-500" />, label: 'Drop', text: 'Release onto a different status column' },
+        ]}
+        location="Main board view"
+        gradient="from-blue-500 to-cyan-600"
+      />
 
-        <FeatureCard
-          icon={<GripVertical className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-          title="Drag & Drop"
-          description="Move jobs through your pipeline with ease."
-          items={[
-            { icon: <GripVertical className="w-4 h-4 text-blue-500" />, label: 'Drag', text: 'Click and drag any job card' },
-            { icon: <ArrowRight className="w-4 h-4 text-blue-500" />, label: 'Drop', text: 'Release onto a different status column' },
-          ]}
-          location="Main board view"
-          color="blue"
-        />
+      <FeatureCard
+        icon={<Columns className="w-6 h-6 text-white" />}
+        title="Custom Status Columns"
+        description="Customize your pipeline stages."
+        items={[
+          { icon: <Columns className="w-4 h-4 text-purple-500" />, label: 'Add/Remove', text: 'Create stages that match your workflow' },
+          { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reorder', text: 'Drag to rearrange column order' },
+        ]}
+        location="Settings → Status Columns"
+        gradient="from-purple-500 to-pink-600"
+      />
 
-        <FeatureCard
-          icon={<Columns className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
-          title="Custom Status Columns"
-          description="Customize your pipeline stages."
-          items={[
-            { icon: <Columns className="w-4 h-4 text-purple-500" />, label: 'Add/Remove', text: 'Create stages that match your workflow' },
-            { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reorder', text: 'Drag to rearrange column order' },
-          ]}
-          location="Settings → Status Columns"
-          color="purple"
-        />
-
-        <FeatureCard
-          icon={<Moon className="w-5 h-5 text-foreground-muted" />}
-          title="Dark Mode"
-          description="Easy on the eyes for late-night job hunting."
-          items={[
-            { icon: <Moon className="w-4 h-4 text-slate-500" />, label: 'Toggle', text: 'Switch between light and dark themes' },
-            { icon: <RefreshCw className="w-4 h-4 text-slate-500" />, label: 'System', text: 'Automatically match your OS preference' },
-          ]}
-          location="Settings → Appearance"
-          color="slate"
-        />
-      </div>
+      <FeatureCard
+        icon={<Moon className="w-6 h-6 text-white" />}
+        title="Dark Mode"
+        description="Easy on the eyes for late-night job hunting."
+        items={[
+          { icon: <Moon className="w-4 h-4 text-slate-500" />, label: 'Toggle', text: 'Switch between light and dark themes' },
+          { icon: <RefreshCw className="w-4 h-4 text-slate-500" />, label: 'System', text: 'Automatically match your OS preference' },
+        ]}
+        location="Settings → Appearance"
+        gradient="from-slate-500 to-slate-700"
+      />
     </div>
   );
 }
 
 function JobDetailTab() {
   return (
-    <div className="space-y-6">
-      <p className="text-foreground-muted">
-        Features available when viewing a specific job's details.
-      </p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <FeatureCard
+        icon={<Pencil className="w-6 h-6 text-white" />}
+        title="Edit Job Details"
+        description="Update company, title, or link after adding."
+        items={[
+          { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click Edit button to modify fields' },
+          { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Keyboard', text: 'Enter to save, Escape to cancel' },
+        ]}
+        location="Job detail → Overview tab"
+        gradient="from-green-500 to-emerald-600"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeatureCard
-          icon={<Pencil className="w-5 h-5 text-green-600 dark:text-green-400" />}
-          title="Edit Job Details"
-          description="Update company, title, or link after adding."
-          items={[
-            { icon: <Pencil className="w-4 h-4 text-green-500" />, label: 'Edit', text: 'Click Edit button to modify fields' },
-            { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Keyboard', text: 'Enter to save, Escape to cancel' },
-          ]}
-          location="Job detail → Overview tab"
-          color="green"
-        />
+      <FeatureCard
+        icon={<GraduationCap className="w-6 h-6 text-white" />}
+        title="Resume Fit / Grading"
+        description="See how well your resume matches requirements."
+        items={[
+          { icon: <GraduationCap className="w-4 h-4 text-amber-500" />, label: 'Grade', text: 'Get an A-F grade based on fit' },
+          { icon: <FileText className="w-4 h-4 text-amber-500" />, label: 'Analysis', text: 'Strengths, gaps, and suggestions' },
+          { icon: <RefreshCw className="w-4 h-4 text-amber-500" />, label: 'Per-job', text: 'Use different resumes per job' },
+        ]}
+        location="Job detail → Resume tab"
+        gradient="from-amber-500 to-orange-600"
+      />
 
-        <FeatureCard
-          icon={<GraduationCap className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-          title="Resume Fit / Grading"
-          description="See how well your resume matches requirements."
-          items={[
-            { icon: <GraduationCap className="w-4 h-4 text-amber-500" />, label: 'Grade', text: 'Get an A-F grade based on fit' },
-            { icon: <FileText className="w-4 h-4 text-amber-500" />, label: 'Analysis', text: 'Strengths, gaps, and suggestions' },
-            { icon: <RefreshCw className="w-4 h-4 text-amber-500" />, label: 'Per-job', text: 'Use different resumes per job' },
-          ]}
-          location="Job detail → Resume tab"
-          color="amber"
-        />
+      <FeatureCard
+        icon={<FileEdit className="w-6 h-6 text-white" />}
+        title="Resume Tailoring"
+        description="Customize your resume for each application."
+        items={[
+          { icon: <Sparkles className="w-4 h-4 text-teal-500" />, label: 'Auto-Tailor', text: 'One-click AI optimization' },
+          { icon: <MessageSquare className="w-4 h-4 text-teal-500" />, label: 'Chat', text: 'Tell AI exactly what to change' },
+          { icon: <GitCompare className="w-4 h-4 text-teal-500" />, label: 'Diff view', text: 'See what changed side-by-side' },
+        ]}
+        location="Job detail → Resume tab → Tailor"
+        gradient="from-teal-500 to-cyan-600"
+      />
 
-        <FeatureCard
-          icon={<FileEdit className="w-5 h-5 text-teal-600 dark:text-teal-400" />}
-          title="Resume Tailoring"
-          description="Customize your resume for each application."
-          items={[
-            { icon: <Sparkles className="w-4 h-4 text-teal-500" />, label: 'Auto-Tailor', text: 'One-click AI optimization' },
-            { icon: <MessageSquare className="w-4 h-4 text-teal-500" />, label: 'Chat', text: 'Tell AI exactly what to change' },
-            { icon: <GitCompare className="w-4 h-4 text-teal-500" />, label: 'Diff view', text: 'See what changed side-by-side' },
-          ]}
-          location="Job detail → Resume tab → Tailor"
-          color="teal"
-        />
+      <FeatureCard
+        icon={<Search className="w-6 h-6 text-white" />}
+        title="Keyword Matcher"
+        description="See how your resume keywords match the JD."
+        items={[
+          { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Matched', text: 'Green badges for found keywords' },
+          { icon: <XCircle className="w-4 h-4 text-red-500" />, label: 'Missing', text: 'Red badges to add' },
+        ]}
+        location="Job detail → Resume tab"
+        gradient="from-cyan-500 to-blue-600"
+      />
 
-        <FeatureCard
-          icon={<Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
-          title="Keyword Matcher"
-          description="See how your resume keywords match the JD."
-          items={[
-            { icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, label: 'Matched', text: 'Green badges for found keywords' },
-            { icon: <XCircle className="w-4 h-4 text-red-500" />, label: 'Missing', text: 'Red badges to add' },
-          ]}
-          location="Job detail → Resume tab"
-          color="cyan"
-        />
+      <FeatureCard
+        icon={<FileText className="w-6 h-6 text-white" />}
+        title="Cover Letter"
+        description="Generate and refine tailored cover letters."
+        items={[
+          { icon: <Sparkles className="w-4 h-4 text-rose-500" />, label: 'Generate', text: 'Based on JD and resume' },
+          { icon: <MessageSquare className="w-4 h-4 text-rose-500" />, label: 'Refine', text: 'Chat to make changes' },
+          { icon: <Copy className="w-4 h-4 text-rose-500" />, label: 'Export', text: 'Copy or download' },
+        ]}
+        location="Job detail → Cover Letter tab"
+        gradient="from-rose-500 to-pink-600"
+      />
 
-        <FeatureCard
-          icon={<FileText className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
-          title="Cover Letter"
-          description="Generate and refine tailored cover letters."
-          items={[
-            { icon: <Sparkles className="w-4 h-4 text-rose-500" />, label: 'Generate', text: 'Based on JD and resume' },
-            { icon: <MessageSquare className="w-4 h-4 text-rose-500" />, label: 'Refine', text: 'Chat to make changes' },
-            { icon: <Copy className="w-4 h-4 text-rose-500" />, label: 'Export', text: 'Copy or download' },
-          ]}
-          location="Job detail → Cover Letter tab"
-          color="rose"
-        />
+      <FeatureCard
+        icon={<Mail className="w-6 h-6 text-white" />}
+        title="Emails"
+        description="Generate professional job search emails."
+        items={[
+          { icon: <Mail className="w-4 h-4 text-pink-500" />, label: 'Types', text: 'Thank You, Follow Up, Withdraw, Negotiate' },
+          { icon: <MessageSquare className="w-4 h-4 text-pink-500" />, label: 'Refine', text: 'Adjust tone or content via chat' },
+        ]}
+        location="Job detail → Emails tab"
+        gradient="from-pink-500 to-rose-600"
+      />
 
-        <FeatureCard
-          icon={<Mail className="w-5 h-5 text-pink-600 dark:text-pink-400" />}
-          title="Emails"
-          description="Generate professional job search emails."
-          items={[
-            { icon: <Mail className="w-4 h-4 text-pink-500" />, label: 'Types', text: 'Thank You, Follow Up, Withdraw, Negotiate' },
-            { icon: <MessageSquare className="w-4 h-4 text-pink-500" />, label: 'Refine', text: 'Adjust tone or content via chat' },
-          ]}
-          location="Job detail → Emails tab"
-          color="pink"
-        />
+      <FeatureCard
+        icon={<MessageSquare className="w-6 h-6 text-white" />}
+        title="Interview Prep (Q&A)"
+        description="Practice and prepare with AI coaching."
+        items={[
+          { icon: <MessageSquare className="w-4 h-4 text-indigo-500" />, label: 'Ask', text: '"What questions might they ask?"' },
+          { icon: <Sparkles className="w-4 h-4 text-indigo-500" />, label: 'Generate', text: 'Structured preparation guide' },
+          { icon: <BookmarkCheck className="w-4 h-4 text-indigo-500" />, label: 'Save', text: 'Keep great answers for reuse' },
+        ]}
+        location="Job detail → Prep tab"
+        gradient="from-indigo-500 to-purple-600"
+      />
 
-        <FeatureCard
-          icon={<MessageSquare className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-          title="Interview Prep (Q&A)"
-          description="Practice and prepare with AI coaching."
-          items={[
-            { icon: <MessageSquare className="w-4 h-4 text-indigo-500" />, label: 'Ask', text: '"What questions might they ask?"' },
-            { icon: <Sparkles className="w-4 h-4 text-indigo-500" />, label: 'Generate', text: 'Structured preparation guide' },
-            { icon: <BookmarkCheck className="w-4 h-4 text-indigo-500" />, label: 'Save', text: 'Keep great answers for reuse' },
-          ]}
-          location="Job detail → Prep tab"
-          color="indigo"
-        />
-
-        <FeatureCard
-          icon={<StickyNote className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
-          title="Notes, Contacts & Timeline"
-          description="Track everything about each application."
-          items={[
-            { icon: <StickyNote className="w-4 h-4 text-amber-500" />, label: 'Notes', text: 'Research, prep notes, reminders' },
-            { icon: <Users className="w-4 h-4 text-blue-500" />, label: 'Contacts', text: 'Recruiters and hiring managers' },
-            { icon: <Calendar className="w-4 h-4 text-purple-500" />, label: 'Timeline', text: 'Key dates and events' },
-          ]}
-          location="Job detail → Notes tab"
-          color="amber"
-        />
-      </div>
+      <FeatureCard
+        icon={<StickyNote className="w-6 h-6 text-white" />}
+        title="Notes, Contacts & Timeline"
+        description="Track everything about each application."
+        items={[
+          { icon: <StickyNote className="w-4 h-4 text-amber-500" />, label: 'Notes', text: 'Research, prep notes, reminders' },
+          { icon: <Users className="w-4 h-4 text-blue-500" />, label: 'Contacts', text: 'Recruiters and hiring managers' },
+          { icon: <Calendar className="w-4 h-4 text-purple-500" />, label: 'Timeline', text: 'Key dates and events' },
+        ]}
+        location="Job detail → Notes tab"
+        gradient="from-amber-500 to-orange-600"
+      />
     </div>
   );
 }
 
 function AIFeaturesTab() {
   return (
-    <div className="space-y-6">
-      <p className="text-foreground-muted">
-        AI-powered features to supercharge your job search.
-      </p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <FeatureCard
+        icon={<Command className="w-6 h-6 text-white" />}
+        title="AI Agent (Ctrl+K)"
+        description="Natural language interface for your job search."
+        items={[
+          { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search', text: '"Find remote React jobs in Seattle"' },
+          { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Questions', text: 'Ask about any job in your board' },
+          { icon: <ArrowRight className="w-4 h-4 text-violet-500" />, label: 'Import', text: 'Preview and add jobs directly' },
+        ]}
+        location="Header → AI Agent or Ctrl+K"
+        gradient="from-violet-500 to-purple-600"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeatureCard
-          icon={<Command className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
-          title="AI Agent (Ctrl+K)"
-          description="Natural language interface for your job search."
-          items={[
-            { icon: <Search className="w-4 h-4 text-violet-500" />, label: 'Search', text: '"Find remote React jobs in Seattle"' },
-            { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: 'Questions', text: 'Ask about any job in your board' },
-            { icon: <ArrowRight className="w-4 h-4 text-violet-500" />, label: 'Import', text: 'Preview and add jobs directly' },
-          ]}
-          location="Header → AI Agent or Ctrl+K"
-          color="violet"
-        />
+      <FeatureCard
+        icon={<Search className="w-6 h-6 text-white" />}
+        title="Find Jobs"
+        description="Search Google Jobs without leaving the app."
+        items={[
+          { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query by title, company, location' },
+          { icon: <Sparkles className="w-4 h-4 text-cyan-500" />, label: 'AI Mode', text: 'Generate queries from descriptions' },
+          { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add to board with one click' },
+        ]}
+        location="Header → Find Jobs"
+        gradient="from-cyan-500 to-blue-600"
+      />
 
-        <FeatureCard
-          icon={<Search className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
-          title="Find Jobs"
-          description="Search Google Jobs without leaving the app."
-          items={[
-            { icon: <Search className="w-4 h-4 text-cyan-500" />, label: 'Search', text: 'Query by title, company, location' },
-            { icon: <Sparkles className="w-4 h-4 text-cyan-500" />, label: 'AI Mode', text: 'Generate queries from descriptions' },
-            { icon: <ArrowRight className="w-4 h-4 text-cyan-500" />, label: 'Import', text: 'Add to board with one click' },
-          ]}
-          location="Header → Find Jobs"
-          color="cyan"
-        />
+      <FeatureCard
+        icon={<Target className="w-6 h-6 text-white" />}
+        title="Career Coach"
+        description="AI-powered career guidance."
+        items={[
+          { icon: <BarChart3 className="w-4 h-4 text-lime-500" />, label: 'Analysis', text: 'Patterns from your applications' },
+          { icon: <MessageSquare className="w-4 h-4 text-lime-500" />, label: 'Chat', text: 'Discuss goals and strategy' },
+          { icon: <Sparkles className="w-4 h-4 text-lime-500" />, label: 'Skills', text: 'Track and develop your skills' },
+        ]}
+        location="Header → 🎓 button"
+        gradient="from-lime-500 to-green-600"
+      />
 
-        <FeatureCard
-          icon={<Target className="w-5 h-5 text-lime-600 dark:text-lime-400" />}
-          title="Career Coach"
-          description="AI-powered career guidance."
-          items={[
-            { icon: <BarChart3 className="w-4 h-4 text-lime-500" />, label: 'Analysis', text: 'Patterns from your applications' },
-            { icon: <MessageSquare className="w-4 h-4 text-lime-500" />, label: 'Chat', text: 'Discuss goals and strategy' },
-            { icon: <Sparkles className="w-4 h-4 text-lime-500" />, label: 'Skills', text: 'Track and develop your skills' },
-          ]}
-          location="Header → 🎓 button"
-          color="lime"
-        />
-
-        <FeatureCard
-          icon={<UserCheck className="w-5 h-5 text-orange-600 dark:text-orange-400" />}
-          title="Interviewer Intel"
-          description="Get insights about your interviewers."
-          items={[
-            { icon: <Users className="w-4 h-4 text-orange-500" />, label: 'Bio', text: "Paste interviewer's LinkedIn bio" },
-            { icon: <MessageSquare className="w-4 h-4 text-orange-500" />, label: 'Insights', text: 'Style, values, talking points' },
-          ]}
-          location="Notes tab → Contacts → Generate Intel"
-          color="orange"
-        />
-      </div>
+      <FeatureCard
+        icon={<UserCheck className="w-6 h-6 text-white" />}
+        title="Interviewer Intel"
+        description="Get insights about your interviewers."
+        items={[
+          { icon: <Users className="w-4 h-4 text-orange-500" />, label: 'Bio', text: "Paste interviewer's LinkedIn bio" },
+          { icon: <MessageSquare className="w-4 h-4 text-orange-500" />, label: 'Insights', text: 'Style, values, talking points' },
+        ]}
+        location="Notes tab → Contacts → Generate Intel"
+        gradient="from-orange-500 to-amber-600"
+      />
     </div>
   );
 }
 
 function ProfileDataTab() {
   return (
-    <div className="space-y-6">
-      <p className="text-foreground-muted">
-        Manage your profile, documents, and data.
-      </p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <FeatureCard
+        icon={<BookmarkCheck className="w-6 h-6 text-white" />}
+        title="Saved Stories / Memories"
+        description="Build a reusable profile of your best answers."
+        items={[
+          { icon: <Save className="w-4 h-4 text-purple-500" />, label: 'Save', text: 'Keep great answers from Q&A chats' },
+          { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reuse', text: 'Available when prepping any job' },
+        ]}
+        location="Settings → Profile → Saved Stories"
+        gradient="from-purple-500 to-pink-600"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeatureCard
-          icon={<BookmarkCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
-          title="Saved Stories / Memories"
-          description="Build a reusable profile of your best answers."
-          items={[
-            { icon: <Save className="w-4 h-4 text-purple-500" />, label: 'Save', text: 'Keep great answers from Q&A chats' },
-            { icon: <RefreshCw className="w-4 h-4 text-purple-500" />, label: 'Reuse', text: 'Available when prepping any job' },
-          ]}
-          location="Settings → Profile → Saved Stories"
-          color="purple"
-        />
+      <FeatureCard
+        icon={<UserCircle className="w-6 h-6 text-white" />}
+        title="Additional Context"
+        description="Tell AI about yourself beyond your resume."
+        items={[
+          { icon: <Sparkles className="w-4 h-4 text-blue-500" />, label: 'Include', text: 'Skills, goals, projects, achievements' },
+          { icon: <FileEdit className="w-4 h-4 text-blue-500" />, label: 'Used for', text: 'Grading, cover letters, prep' },
+        ]}
+        location="Settings → Profile → Additional Context"
+        gradient="from-blue-500 to-cyan-600"
+      />
 
-        <FeatureCard
-          icon={<UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-          title="Additional Context"
-          description="Tell AI about yourself beyond your resume."
-          items={[
-            { icon: <Sparkles className="w-4 h-4 text-blue-500" />, label: 'Include', text: 'Skills, goals, projects, achievements' },
-            { icon: <FileEdit className="w-4 h-4 text-blue-500" />, label: 'Used for', text: 'Grading, cover letters, prep' },
-          ]}
-          location="Settings → Profile → Additional Context"
-          color="blue"
-        />
+      <FeatureCard
+        icon={<FolderOpen className="w-6 h-6 text-white" />}
+        title="Context Documents"
+        description="Upload PDFs for more AI context."
+        items={[
+          { icon: <FileText className="w-4 h-4 text-violet-500" />, label: 'Upload', text: 'Portfolio, certs, recommendations' },
+          { icon: <Sparkles className="w-4 h-4 text-violet-500" />, label: 'Summarize', text: 'AI condenses large docs' },
+        ]}
+        location="Settings → Profile → Context Documents"
+        gradient="from-violet-500 to-purple-600"
+      />
 
-        <FeatureCard
-          icon={<FolderOpen className="w-5 h-5 text-violet-600 dark:text-violet-400" />}
-          title="Context Documents"
-          description="Upload PDFs for more AI context."
-          items={[
-            { icon: <FileText className="w-4 h-4 text-violet-500" />, label: 'Upload', text: 'Portfolio, certs, recommendations' },
-            { icon: <Sparkles className="w-4 h-4 text-violet-500" />, label: 'Summarize', text: 'AI condenses large docs' },
-          ]}
-          location="Settings → Profile → Context Documents"
-          color="violet"
-        />
+      <FeatureCard
+        icon={<Database className="w-6 h-6 text-white" />}
+        title="Data & Privacy"
+        description="Your data stays on your computer."
+        items={[
+          { icon: <Database className="w-4 h-4 text-slate-500" />, label: 'Local', text: "Stored in your browser's database" },
+          { icon: <Download className="w-4 h-4 text-slate-500" />, label: 'Backup', text: 'Export as JSON anytime' },
+          { icon: <Sparkles className="w-4 h-4 text-slate-500" />, label: 'API', text: 'Key only sent to your provider' },
+        ]}
+        location="Settings → Data Backup"
+        gradient="from-slate-500 to-slate-700"
+      />
 
-        <FeatureCard
-          icon={<Database className="w-5 h-5 text-foreground-muted" />}
-          title="Data & Privacy"
-          description="Your data stays on your computer."
-          items={[
-            { icon: <Database className="w-4 h-4 text-slate-500" />, label: 'Local', text: "Stored in your browser's database" },
-            { icon: <Download className="w-4 h-4 text-slate-500" />, label: 'Backup', text: 'Export as JSON anytime' },
-            { icon: <Sparkles className="w-4 h-4 text-slate-500" />, label: 'API', text: 'Key only sent to your provider' },
-          ]}
-          location="Settings → Data Backup"
-          color="slate"
-        />
-
-        <FeatureCard
-          icon={<Download className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
-          title="CSV Export"
-          description="Export jobs to spreadsheet format."
-          items={[
-            { icon: <Download className="w-4 h-4 text-gray-500" />, label: 'Export', text: 'One-click download' },
-            { icon: <FileText className="w-4 h-4 text-gray-500" />, label: 'Fields', text: 'Company, Title, Status, Match %, etc.' },
-          ]}
-          location="Settings → Data Backup → Export CSV"
-          color="gray"
-        />
-      </div>
+      <FeatureCard
+        icon={<Download className="w-6 h-6 text-white" />}
+        title="CSV Export"
+        description="Export jobs to spreadsheet format."
+        items={[
+          { icon: <Download className="w-4 h-4 text-gray-500" />, label: 'Export', text: 'One-click download' },
+          { icon: <FileText className="w-4 h-4 text-gray-500" />, label: 'Fields', text: 'Company, Title, Status, Match %, etc.' },
+        ]}
+        location="Settings → Data Backup → Export CSV"
+        gradient="from-gray-500 to-gray-700"
+      />
     </div>
   );
 }
