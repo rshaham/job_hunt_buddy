@@ -3,7 +3,6 @@ import {
   FlaskConical,
   Brain,
   Search,
-  Loader2,
   Check,
   X,
   AlertCircle,
@@ -13,7 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Button, Textarea } from '../ui';
+import { Button, Textarea, AILoadingIndicator } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { showToast } from '../../stores/toastStore';
 import { cn } from '../../utils/helpers';
@@ -331,7 +330,7 @@ function ConfidenceCheckUI({
             disabled={isAsking}
           />
           <Button onClick={onAskQuestion} disabled={!currentQuestion.trim() || isAsking}>
-            {isAsking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ask'}
+            {isAsking ? <AILoadingIndicator isLoading label="Asking..." /> : 'Ask'}
           </Button>
         </div>
 
@@ -560,10 +559,7 @@ function GapFinderUI({
       <div className="flex items-center gap-4">
         <Button onClick={onAnalyze} disabled={isAnalyzing}>
           {isAnalyzing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Analyzing {storiesCount} stories...
-            </>
+            <AILoadingIndicator isLoading label={`Analyzing ${storiesCount} stories...`} />
           ) : gapAnalysis ? (
             <>
               <RefreshCw className="w-4 h-4 mr-2" />

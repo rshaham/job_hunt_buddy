@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle, Download, FolderOpen, Upload } from 'lucide-react';
-import { Button, ConfirmModal, Modal, ThinkingBubble } from '../ui';
+import { AILoadingIndicator, Button, ConfirmModal, Modal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
@@ -417,10 +417,7 @@ export function PrepTab({ job }: PrepTabProps) {
               disabled={prepOp.isLoading || !hasAIConfigured}
             >
               {prepOp.isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Generating...
-                </>
+                <AILoadingIndicator isLoading label="Generating..." />
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-1" />
@@ -551,7 +548,7 @@ export function PrepTab({ job }: PrepTabProps) {
             title="Send message"
           >
             {chatOp.isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <AILoadingIndicator isLoading />
             ) : (
               <Send className="w-4 h-4" />
             )}
@@ -570,10 +567,7 @@ export function PrepTab({ job }: PrepTabProps) {
             disabled={prepOp.isLoading || !hasAIConfigured}
           >
             {prepOp.isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                Generating...
-              </>
+              <AILoadingIndicator isLoading label="Generating..." />
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-1" />

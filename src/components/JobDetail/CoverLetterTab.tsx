@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, HelpCircle, Download, ChevronDown, FileText } from 'lucide-react';
-import { Button, Textarea, ThinkingBubble } from '../ui';
+import { AILoadingIndicator, Button, Textarea, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateCoverLetter, refineCoverLetter } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
@@ -184,10 +184,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
       <div className="flex gap-2 mb-3 items-center">
         <Button onClick={handleGenerate} disabled={generateOp.isLoading || !hasAIConfigured}>
           {generateOp.isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              Generating...
-            </>
+            <AILoadingIndicator isLoading label="Generating..." />
           ) : job.coverLetter ? (
             <>
               <RefreshCw className="w-4 h-4 mr-1" />
@@ -410,7 +407,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                     >
                       {refineOp.isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <AILoadingIndicator isLoading />
                       ) : (
                         <Send className="w-4 h-4" />
                       )}

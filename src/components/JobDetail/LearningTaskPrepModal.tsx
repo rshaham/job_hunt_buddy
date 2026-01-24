@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, X, Sparkles, AlertCircle, Bookmark, Globe, FileText, ChevronDown, RotateCcw } from 'lucide-react';
-import { Button, Modal, ThinkingBubble } from '../ui';
+import { Send, X, Sparkles, AlertCircle, Bookmark, Globe, FileText, ChevronDown, RotateCcw } from 'lucide-react';
+import { AILoadingIndicator, Button, Modal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { useAIOperation } from '../../hooks/useAIOperation';
 import {
@@ -381,7 +381,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
               className="text-xs text-slate-500 hover:text-primary transition-colors"
             >
               {detectOp.isLoading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <AILoadingIndicator isLoading size="sm" />
               ) : (
                 'Re-detect'
               )}
@@ -468,10 +468,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
                     disabled={searchOp.isLoading}
                   >
                     {searchOp.isLoading ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        Searching...
-                      </>
+                      <AILoadingIndicator isLoading size="sm" label="Searching..." />
                     ) : (
                       <>
                         <Globe className="w-3 h-3 mr-1" />
@@ -569,7 +566,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
             title="Send message"
           >
             {chatOp.isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <AILoadingIndicator isLoading />
             ) : (
               <Send className="w-4 h-4" />
             )}
@@ -597,10 +594,7 @@ export function LearningTaskPrepModal({ isOpen, onClose, job, task }: LearningTa
                 disabled={saveOp.isLoading}
               >
                 {saveOp.isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    Saving...
-                  </>
+                  <AILoadingIndicator isLoading label="Saving..." />
                 ) : (
                   <>
                     <Bookmark className="w-4 h-4 mr-1" />

@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   Sparkles,
   Send,
-  Loader2,
   Copy,
   Download,
   RefreshCw,
@@ -22,7 +21,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import * as Diff from 'diff';
-import { Button, ConfirmModal, ThinkingBubble } from '../ui';
+import { AILoadingIndicator, Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { useAIOperation } from '../../hooks/useAIOperation';
 import { autoTailorResume, refineTailoredResume, gradeResume, rewriteForMemory } from '../../services/ai';
@@ -342,10 +341,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
               disabled={autoTailorOp.isLoading || !hasAIConfigured}
             >
               {autoTailorOp.isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Tailoring...
-                </>
+                <AILoadingIndicator isLoading label="Tailoring..." />
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-1" />
@@ -374,7 +370,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                     <Pencil className="w-4 h-4" />
                   </Button>
                   <Button variant="secondary" size="sm" onClick={handleRegrade} disabled={regradeOp.isLoading}>
-                    {regradeOp.isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    {regradeOp.isLoading ? <AILoadingIndicator isLoading /> : <RefreshCw className="w-4 h-4" />}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={handleCopy}>
                     {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -388,7 +384,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                       title="Download"
                     >
                       {pdfOp.isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <AILoadingIndicator isLoading />
                       ) : (
                         <>
                           <Download className="w-4 h-4" />
@@ -543,10 +539,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                             className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
                           >
                             {savingMemoryEntryId === entry.id && saveMemoryOp.isLoading ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Saving...
-                              </>
+                              <AILoadingIndicator isLoading size="sm" label="Saving..." />
                             ) : (
                               <>
                                 <Bookmark className="w-3 h-3" />
@@ -606,7 +599,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                 >
                   {refineOp.isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <AILoadingIndicator isLoading />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}

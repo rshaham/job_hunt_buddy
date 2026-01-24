@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle, XCircle, AlertCircle, FileText, Trash2, Sparkles, Eye, Download, Tag, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Button, Modal } from '../ui';
+import { AILoadingIndicator, Button, Modal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { gradeResume, convertResumeToMarkdown } from '../../services/ai';
 import { extractTextFromPDF } from '../../services/pdfParser';
@@ -241,10 +241,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
       {hasResume && !job.resumeAnalysis && (
         <Button onClick={handleAnalyze} disabled={analyzeOp.isLoading || !hasAIConfigured}>
           {analyzeOp.isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              Analyzing...
-            </>
+            <AILoadingIndicator isLoading label="Analyzing..." />
           ) : (
             'Analyze Resume Fit'
           )}
@@ -298,10 +295,7 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                 disabled={analyzeOp.isLoading}
               >
                 {analyzeOp.isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    Analyzing...
-                  </>
+                  <AILoadingIndicator isLoading label="Analyzing..." />
                 ) : (
                   'Re-analyze'
                 )}

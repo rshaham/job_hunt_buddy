@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Loader2, Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, Mail } from 'lucide-react';
-import { Button, Textarea, ThinkingBubble } from '../ui';
+import { Copy, RefreshCw, Check, AlertCircle, MessageSquare, Send, X, Mail } from 'lucide-react';
+import { Button, Textarea, ThinkingBubble, AILoadingIndicator } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateEmailDraft, refineEmail } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
@@ -226,10 +226,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
           className="bg-teal-500 hover:bg-teal-600"
         >
           {generateOp.isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              Generating...
-            </>
+            <AILoadingIndicator isLoading label="Generating..." />
           ) : editedEmail ? (
             <>
               <RefreshCw className="w-4 h-4 mr-1" />
@@ -403,7 +400,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
                       title="Send message"
                     >
                       {refineOp.isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <AILoadingIndicator isLoading />
                       ) : (
                         <Send className="w-4 h-4" />
                       )}

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, FileText, Trash2, Loader2, Eye, Sparkles, RefreshCw, Wand2 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
-import { Button, ConfirmModal, Modal, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
+import { AILoadingIndicator, Button, ConfirmModal, Modal, Tabs, TabsList, TabsTrigger, TabsContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { summarizeDocument, convertDocumentToMarkdown } from '../../services/ai';
@@ -277,10 +277,7 @@ export function DocumentsSection(): JSX.Element {
                   disabled={summarizingDocId === doc.id && summarizeOp.isLoading}
                 >
                   {summarizingDocId === doc.id && summarizeOp.isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      Summarizing...
-                    </>
+                    <AILoadingIndicator isLoading label="Summarizing..." />
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-1" />
@@ -363,10 +360,7 @@ export function DocumentsSection(): JSX.Element {
                 disabled={formatOp.isLoading || !editedFullText.trim()}
               >
                 {formatOp.isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Formatting...
-                  </>
+                  <AILoadingIndicator isLoading label="Formatting..." />
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4 mr-2" />
@@ -381,10 +375,7 @@ export function DocumentsSection(): JSX.Element {
               disabled={regenerateOp.isLoading || !editedFullText.trim()}
             >
               {regenerateOp.isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Regenerating...
-                </>
+                <AILoadingIndicator isLoading label="Regenerating..." />
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2" />

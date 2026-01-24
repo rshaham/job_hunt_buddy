@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Target, RefreshCw, Plus, X } from 'lucide-react';
-import { Badge, Button, Input } from '../ui';
+import { AILoadingIndicator, Badge, Button, Input } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractUserSkills } from '../../services/ai';
 import { showToast } from '../../stores/toastStore';
@@ -129,8 +129,14 @@ export function SkillsSection(): JSX.Element {
         </p>
         <div className="flex flex-col gap-4 items-center">
           <Button onClick={handleAnalyzeSkills} disabled={analyzeOp.isLoading}>
-            <RefreshCw className={cn('w-4 h-4 mr-2', analyzeOp.isLoading && 'animate-spin')} />
-            {analyzeOp.isLoading ? 'Analyzing...' : 'Analyze Skills'}
+            {analyzeOp.isLoading ? (
+              <AILoadingIndicator isLoading label="Analyzing..." />
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Analyze Skills
+              </>
+            )}
           </Button>
           {analyzeOp.error && (
             <p className="text-sm text-danger">{analyzeOp.error}</p>
@@ -171,8 +177,14 @@ export function SkillsSection(): JSX.Element {
           </p>
         </div>
         <Button onClick={handleAnalyzeSkills} disabled={analyzeOp.isLoading} variant="secondary" size="sm">
-          <RefreshCw className={cn('w-4 h-4 mr-2', analyzeOp.isLoading && 'animate-spin')} />
-          {analyzeOp.isLoading ? 'Analyzing...' : 'Re-analyze'}
+          {analyzeOp.isLoading ? (
+            <AILoadingIndicator isLoading label="Analyzing..." />
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Re-analyze
+            </>
+          )}
         </Button>
       </div>
 

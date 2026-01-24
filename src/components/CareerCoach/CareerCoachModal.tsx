@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, RefreshCw, Clock, BarChart3, Copy, Check, X, Plus, FileText, StickyNote, Paperclip, Hand, ChevronDown, ChevronRight } from 'lucide-react';
-import { Modal, Button, ConfirmModal, ThinkingBubble } from '../ui';
+import { Send, Trash2, Sparkles, AlertCircle, Bookmark, RefreshCw, Clock, BarChart3, Copy, Check, X, Plus, FileText, StickyNote, Paperclip, Hand, ChevronDown, ChevronRight } from 'lucide-react';
+import { Modal, Button, ConfirmModal, ThinkingBubble, AILoadingIndicator } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractUserSkills, analyzeCareer, chatAboutCareer } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
@@ -536,10 +536,7 @@ export function CareerCoachModal() {
                 disabled={analyzeOp.isLoading || !hasAIConfigured}
               >
                 {analyzeOp.isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    Analyzing...
-                  </>
+                  <AILoadingIndicator isLoading label="Analyzing..." />
                 ) : (
                   <>
                     <BarChart3 className="w-4 h-4 mr-1" />
@@ -772,7 +769,7 @@ export function CareerCoachModal() {
                 title="Send message"
               >
                 {chatOp.isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <AILoadingIndicator isLoading />
                 ) : (
                   <Send className="w-4 h-4" />
                 )}
@@ -792,10 +789,7 @@ export function CareerCoachModal() {
                   disabled={extractSkillsOp.isLoading || !hasAIConfigured}
                 >
                   {extractSkillsOp.isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      Extracting...
-                    </>
+                    <AILoadingIndicator isLoading label="Extracting..." />
                   ) : (
                     <>
                       <RefreshCw className="w-4 h-4 mr-1" />
