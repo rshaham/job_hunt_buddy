@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Sparkles, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { Loader2, Sparkles, ChevronLeft, ChevronRight, Star, RefreshCw } from 'lucide-react';
 import { Modal, Button, Input, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractStoryMetadata, extractStarFromText, type StarExtractionResult } from '../../services/ai';
@@ -21,12 +21,13 @@ type Phase = 'raw' | 'star' | 'classify' | 'simple';
 export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalProps): JSX.Element | null {
   const { addSavedStory, updateSavedStory } = useAppStore();
 
-  // Phase state
+  // Phase state - always start in 'simple' when editing
   const [phase, setPhase] = useState<Phase>(editingStory ? 'simple' : 'raw');
 
   // Raw input phase
   const [rawText, setRawText] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isReassessing, setIsReassessing] = useState(false);
 
   // STAR phase
   const [situation, setSituation] = useState('');
@@ -74,12 +75,8 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
       setStrengthRank(editingStory.strengthRank);
       setSuggestedQuestions(editingStory.suggestedQuestions || []);
 
-      // Start in simple view for editing, or star view if story has STAR
-      if (editingStory.situation || editingStory.task || editingStory.action || editingStory.result) {
-        setPhase('star');
-      } else {
-        setPhase('simple');
-      }
+      // Always start in simple view when editing (Issue 3 fix)
+      setPhase('simple');
     }
   }, [editingStory]);
 
@@ -87,6 +84,7 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
     setPhase(editingStory ? 'simple' : 'raw');
     setRawText('');
     setIsExtracting(false);
+    setIsReassessing(false);
     setSituation('');
     setTask('');
     setAction('');
@@ -168,6 +166,51 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
     }
   }
 
+  // Re-assess STAR content with AI (Issue 1 fix)
+  async function handleReassessStar(): Promise<void> {
+    // Build the current STAR content into text for re-assessment
+    const currentContent = [
+      situation && `Situation: ${situation}`,
+      task && `Task: ${task}`,
+      action && `Action: ${action}`,
+      result && `Result: ${result}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    if (!currentContent.trim()) {
+      showToast('Add some content to STAR sections first', 'error');
+      return;
+    }
+
+    setIsReassessing(true);
+    try {
+      const extracted = await extractStarFromText(currentContent);
+
+      // Update gaps based on new content
+      setStarGaps(extracted.gaps || []);
+
+      // Update themes and suggestions if AI found better ones
+      if (extracted.themes && extracted.themes.length > 0) {
+        setThemes(extracted.themes);
+      }
+      if (extracted.suggestedQuestions && extracted.suggestedQuestions.length > 0) {
+        setSuggestedQuestions(extracted.suggestedQuestions);
+      }
+
+      if (extracted.gaps && extracted.gaps.length > 0) {
+        showToast(`Found ${extracted.gaps.length} area(s) that could be improved`, 'info');
+      } else {
+        showToast('Your STAR story looks complete!', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to re-assess STAR:', error);
+      showToast('Failed to re-assess. Please try again.', 'error');
+    } finally {
+      setIsReassessing(false);
+    }
+  }
+
   // Navigate from STAR to classification
   function handleStarNext(): void {
     // Build answer from STAR if not already set
@@ -182,11 +225,16 @@ export function AddStoryModal({ isOpen, onClose, editingStory }: AddStoryModalPr
     setPhase('classify');
   }
 
-  // Switch from simple to STAR editing
+  // Switch from simple to STAR editing (also used for "View/Edit STAR" button)
   function handleEnhanceWithStar(): void {
+    // If already has STAR content, just switch to STAR view
+    if (hasStarContent) {
+      setPhase('star');
+      return;
+    }
+
     // Pre-populate STAR if possible
-    if (answer && !hasStarContent) {
-      // Try to parse existing answer for STAR-like content
+    if (answer) {
       setIsExtracting(true);
       extractStarFromText(answer)
         .then((extracted) => {
@@ -327,7 +375,7 @@ Example: At my previous company, we were struggling with slow deployments. As th
         {phase === 'star' && (
           <>
             <p className="text-sm text-foreground-muted">
-              Structure your story using the STAR method for behavioral interviews. Each section helps interviewers understand your experience clearly.
+              Structure your story using the STAR method for behavioral interviews. Click each section to expand/collapse. Edit the content, then re-assess to check for gaps.
             </p>
 
             <StarEditor
@@ -341,6 +389,30 @@ Example: At my previous company, we were struggling with slow deployments. As th
               onActionChange={setAction}
               onResultChange={setResult}
             />
+
+            {/* Re-assess button (Issue 1 fix) */}
+            {hasStarContent && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="secondary"
+                  onClick={handleReassessStar}
+                  disabled={isReassessing}
+                  className="gap-2"
+                >
+                  {isReassessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Re-assessing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Re-assess with AI
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
 
             <div className="flex justify-between pt-2">
               <Button
@@ -564,7 +636,16 @@ Example: At my previous company, we were struggling with slow deployments. As th
                 >
                   {editingStory ? 'Cancel' : 'Back'}
                 </Button>
-                {answer && !hasStarContent && (
+                {/* Show different button based on whether story has STAR content */}
+                {hasStarContent ? (
+                  <Button
+                    variant="secondary"
+                    onClick={handleEnhanceWithStar}
+                  >
+                    <Star className="w-4 h-4 mr-1" />
+                    View/Edit STAR
+                  </Button>
+                ) : answer && (
                   <Button
                     variant="secondary"
                     onClick={handleEnhanceWithStar}

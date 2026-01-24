@@ -588,12 +588,14 @@ export interface PitchOutlineBlock {
 // "Tell Me About Yourself" pitch stored in settings
 export interface TellMeAboutYourselfPitch {
   id: string;
+  name: string;  // User-friendly name like "Fintech Focus" or "Leadership Emphasis"
   script: string;
   outline: PitchOutlineBlock[];
   emphasis: 'balanced' | 'technical' | 'leadership';
   length: 'brief' | 'standard' | 'detailed';
   targetIndustry?: string;
   estimatedDuration?: string;
+  isActive: boolean;  // Which pitch shows in Teleprompter by default
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -681,8 +683,8 @@ export interface AppSettings {
   // Custom interview types (user-defined)
   customInterviewTypes?: CustomInterviewType[];
 
-  // "Tell Me About Yourself" pitch for interview prep
-  savedPitch?: TellMeAboutYourselfPitch;
+  // "Tell Me About Yourself" pitches for interview prep (multiple pitches supported)
+  savedPitches?: TellMeAboutYourselfPitch[];
 }
 
 export const DEFAULT_STATUSES: Status[] = [
@@ -800,5 +802,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   savedStories: [],
   contextDocuments: [],
   careerProjects: [],
+  savedPitches: [],
   onboardingCompleted: false,
 };

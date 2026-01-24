@@ -3,7 +3,6 @@ import { Plus, Search, Star, Filter } from 'lucide-react';
 import { Button, Input } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { StoryCard } from './StoryCard';
-import { MyPitchSection } from './MyPitchSection';
 import { STORY_THEMES, type StoryTheme } from '../../types';
 
 interface StoriesSectionProps {
@@ -81,35 +80,26 @@ export function StoriesSection({ onAddStory, onEditStory }: StoriesSectionProps)
 
   if (stories.length === 0) {
     return (
-      <div className="space-y-8">
-        {/* My Pitch Section - always visible */}
-        <MyPitchSection />
-
-        {/* Empty state for stories */}
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 bg-surface-raised rounded-full flex items-center justify-center mb-4">
-            <Plus className="w-8 h-8 text-foreground-subtle" />
-          </div>
-          <h3 className="font-display text-heading-lg text-foreground mb-2">
-            Your story bank is empty
-          </h3>
-          <p className="text-foreground-muted max-w-md mb-6">
-            Add experiences the AI can reference when writing cover letters and preparing for interviews.
-          </p>
-          <Button onClick={onAddStory}>
-            <Plus className="w-4 h-4 mr-1" />
-            Add Story
-          </Button>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-16 h-16 bg-surface-raised rounded-full flex items-center justify-center mb-4">
+          <Plus className="w-8 h-8 text-foreground-subtle" />
         </div>
+        <h3 className="font-display text-heading-lg text-foreground mb-2">
+          Your story bank is empty
+        </h3>
+        <p className="text-foreground-muted max-w-md mb-6">
+          Add experiences the AI can reference when writing cover letters and preparing for interviews.
+        </p>
+        <Button onClick={onAddStory}>
+          <Plus className="w-4 h-4 mr-1" />
+          Add Story
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* My Pitch Section */}
-      <MyPitchSection />
-
+    <div className="space-y-6">
       {/* Stories Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
