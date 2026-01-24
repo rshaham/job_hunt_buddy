@@ -132,7 +132,7 @@ export function CareerCoachModal() {
   };
 
   // Skills tab handlers
-  const handleAddSkill = (category: SkillCategory) => {
+  const handleAddSkill = async (category: SkillCategory) => {
     if (!newSkillInput.trim()) return;
 
     // Check for duplicate
@@ -145,14 +145,14 @@ export function CareerCoachModal() {
       return;
     }
 
-    addSkill(newSkillInput.trim(), category);
+    await addSkill(newSkillInput.trim(), category);
     setNewSkillInput('');
     setAddingToCategory(null);
     showToast('Skill added', 'success');
   };
 
-  const handleRemoveSkill = (skillName: string) => {
-    removeSkill(skillName);
+  const handleRemoveSkill = async (skillName: string) => {
+    await removeSkill(skillName);
     showToast('Skill removed', 'success');
   };
 
@@ -188,12 +188,30 @@ export function CareerCoachModal() {
       return;
     }
 
+    // Auto-extract skills if none exist
+    let profileToUse = skillProfile;
+    if (!skillProfile?.skills?.length) {
+      const existingSkills = skillProfile?.skills || [];
+      const profile = await extractSkillsOp.execute(async () => {
+        return await extractUserSkills(existingSkills);
+      });
+
+      if (profile) {
+        await updateSkillProfile(profile);
+        profileToUse = profile;
+        showToast(`Extracted ${profile.skills.length} skills from your profile`, 'success');
+      } else {
+        // If skill extraction failed, we can still proceed with no skills
+        // The AI will handle this gracefully
+      }
+    }
+
     // Add pending assistant message
     const pendingId = generateId();
     setPendingMessageId(pendingId);
 
     const analysis = await analyzeOp.execute(async () => {
-      return await analyzeCareer(jobs, skillProfile, includeAllJobs);
+      return await analyzeCareer(jobs, profileToUse, includeAllJobs);
     });
 
     if (analysis) {
@@ -476,10 +494,10 @@ export function CareerCoachModal() {
                 variant="primary"
                 size="sm"
                 onClick={handleAnalyze}
-                disabled={analyzeOp.isLoading || !hasAIConfigured}
+                disabled={analyzeOp.isLoading || extractSkillsOp.isLoading || !hasAIConfigured}
               >
-                {analyzeOp.isLoading ? (
-                  <AILoadingIndicator isLoading label="Analyzing..." />
+                {analyzeOp.isLoading || extractSkillsOp.isLoading ? (
+                  <AILoadingIndicator isLoading label={extractSkillsOp.isLoading ? "Extracting skills..." : "Analyzing..."} />
                 ) : (
                   <>
                     <BarChart3 className="w-4 h-4 mr-1" />
@@ -528,7 +546,7 @@ export function CareerCoachModal() {
 
             {/* Chat History */}
             <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-surface rounded-xl">
-              {history.length === 0 && !analyzeOp.isLoading ? (
+              {history.length === 0 && !analyzeOp.isLoading && !extractSkillsOp.isLoading ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
                   <Sparkles className="w-8 h-8 text-primary/50 mb-3" />
                   <p className="text-sm text-slate-500 mb-4">
@@ -540,7 +558,7 @@ export function CareerCoachModal() {
                     </p>
                   ) : (
                     <>
-                      <Button variant="primary" size="sm" onClick={handleAnalyze} disabled={!hasAIConfigured}>
+                      <Button variant="primary" size="sm" onClick={handleAnalyze} disabled={analyzeOp.isLoading || extractSkillsOp.isLoading || !hasAIConfigured}>
                         <BarChart3 className="w-4 h-4 mr-1" />
                         Start Career Analysis
                       </Button>
@@ -676,16 +694,16 @@ export function CareerCoachModal() {
                       )}
                     </div>
                   ))}
-                  {(analyzeOp.isLoading || pendingMessageId) && <ThinkingBubble />}
+                  {(analyzeOp.isLoading || extractSkillsOp.isLoading || pendingMessageId) && <ThinkingBubble />}
                   <div ref={chatEndRef} />
                 </>
               )}
             </div>
 
-            {(chatOp.error || analyzeOp.error) && (
+            {(chatOp.error || analyzeOp.error || extractSkillsOp.error) && (
               <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{chatOp.error || analyzeOp.error}</span>
+                <span>{chatOp.error || analyzeOp.error || extractSkillsOp.error}</span>
               </div>
             )}
 

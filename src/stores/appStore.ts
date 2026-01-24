@@ -225,10 +225,10 @@ interface AppState {
   // Career Coach actions
   addCareerCoachEntry: (entry: Omit<CareerCoachEntry, 'id' | 'timestamp'>) => void;
   clearCareerCoachHistory: () => void;
-  updateSkillProfile: (profile: UserSkillProfile) => void;
-  addSkill: (skill: string, category: SkillCategory) => void;
-  removeSkill: (skillName: string) => void;
-  updateSkillCategory: (skillName: string, category: SkillCategory) => void;
+  updateSkillProfile: (profile: UserSkillProfile) => Promise<void>;
+  addSkill: (skill: string, category: SkillCategory) => Promise<void>;
+  removeSkill: (skillName: string) => Promise<void>;
+  updateSkillCategory: (skillName: string, category: SkillCategory) => Promise<void>;
 
   // Career project actions
   addCareerProject: (project: Omit<CareerProject, 'id' | 'createdAt' | 'updatedAt'>) => Promise<CareerProject>;
@@ -1227,7 +1227,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  updateSkillProfile: (profile) => {
+  updateSkillProfile: async (profile) => {
     set((state) => ({
       careerCoachState: {
         ...state.careerCoachState,
@@ -1236,10 +1236,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     // Persist to settings
     const { settings } = get();
-    db.saveSettings({ ...settings, skillProfile: profile });
+    await db.saveSettings({ ...settings, skillProfile: profile });
   },
 
-  addSkill: (skill, category) => {
+  addSkill: async (skill, category) => {
     const existingSkills = get().careerCoachState.skillProfile?.skills || [];
     // Check for duplicates (case-insensitive)
     if (existingSkills.some(s => s.skill.toLowerCase() === skill.toLowerCase())) {
@@ -1263,10 +1263,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     // Persist to settings
     const { settings } = get();
-    db.saveSettings({ ...settings, skillProfile: newProfile });
+    await db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
-  removeSkill: (skillName) => {
+  removeSkill: async (skillName) => {
     const existingSkills = get().careerCoachState.skillProfile?.skills || [];
     const newProfile = {
       skills: existingSkills.filter(s => s.skill.toLowerCase() !== skillName.toLowerCase()),
@@ -1280,10 +1280,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     // Persist to settings
     const { settings } = get();
-    db.saveSettings({ ...settings, skillProfile: newProfile });
+    await db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
-  updateSkillCategory: (skillName, category) => {
+  updateSkillCategory: async (skillName, category) => {
     const existingSkills = get().careerCoachState.skillProfile?.skills || [];
     const newProfile = {
       skills: existingSkills.map(s =>
@@ -1301,7 +1301,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     // Persist to settings
     const { settings } = get();
-    db.saveSettings({ ...settings, skillProfile: newProfile });
+    await db.saveSettings({ ...settings, skillProfile: newProfile });
   },
 
   // Career project actions
