@@ -12,3 +12,5 @@ export { ThinkingBubble } from './ThinkingBubble';
 export { SlideOverPanel } from './SlideOverPanel';
 export { InterviewTypeSelect } from './InterviewTypeSelect';
 export { MarkdownContent } from './MarkdownContent';
+export { AILoadingIndicator } from './AILoadingIndicator';
+export { AIThinkingBlock } from './AIThinkingBlock';

@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle,
+  Send, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle,
   Download, FolderOpen, Upload, Flame, Calendar, MessageSquare,
   ChevronRight, Check, ChevronUp, GripVertical, Maximize2
 } from 'lucide-react';
-import { Button, ConfirmModal, Modal, ThinkingBubble, MarkdownContent } from '../ui';
+import { AILoadingIndicator, Button, ConfirmModal, Modal, ThinkingBubble, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { useResizablePanel } from '../../hooks';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId, cn } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import { showToast } from '../../stores/toastStore';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import { format, isFuture, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import type { Job, QAEntry, SavedStory, SavedPrepConversation, InterviewRound, PrepMaterial } from '../../types';
 import { getInterviewTypeLabel } from '../../types';
@@ -133,11 +134,10 @@ function CompactTimelineItem({ round, onOpenPrepModal, linkedMaterialsCount }: C
 
 export function PrepTab({ job }: PrepTabProps) {
   const { settings, updateJob, updateSettings } = useAppStore();
+  const chatOp = useAIOperation<string>('chat');
+  const prepOp = useAIOperation<string>('prep-generation');
   const [question, setQuestion] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingPrep, setIsGeneratingPrep] = useState(false);
-  const [isSavingMemory, setIsSavingMemory] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [isSavingMemory, setIsSavingMemory] = useState<string | null>(null); // entry.id being saved
   const [prepMaterial, setPrepMaterial] = useState('');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [selectedInterviewerId, setSelectedInterviewerId] = useState<string | null>(null);
@@ -249,13 +249,15 @@ export function PrepTab({ job }: PrepTabProps) {
     if (!question.trim()) return;
 
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
+      chatOp.reset();
+      prepOp.reset();
+      showToast('AI is not configured. Please configure it in Settings before using interview prep.');
       return;
     }
 
     const userQuestion = question.trim();
     setQuestion('');
-    setError('');
+    chatOp.reset();
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -274,29 +276,27 @@ export function PrepTab({ job }: PrepTabProps) {
       qaHistory: [...job.qaHistory, pendingEntry],
     });
 
-    setIsLoading(true);
-
     // Store original history for the API call (before pending entry was added)
     const originalHistory = job.qaHistory;
 
-    try {
+    const result = await chatOp.execute(async () => {
       const response = await chatAboutJob(
         job.jdText,
         resumeText,
         originalHistory,
         userQuestion
       );
+      // chatAboutJob returns a QAEntry with answer always set after successful API call
+      return response.answer!;
+    });
 
+    if (result) {
       // Replace pending entry with completed entry (original history + completed entry)
       await updateJob(job.id, {
-        qaHistory: [...originalHistory, { ...pendingEntry, answer: response.answer }],
+        qaHistory: [...originalHistory, { ...pendingEntry, answer: result }],
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
-      // Keep the user's question visible with null answer to show error state
-    } finally {
-      setIsLoading(false);
     }
+    // On error, keep the user's question visible with null answer to show error state
   };
 
   const handleClearHistory = async () => {
@@ -323,20 +323,16 @@ export function PrepTab({ job }: PrepTabProps) {
 
   const handleGeneratePrep = async () => {
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
       return;
     }
 
-    setIsGeneratingPrep(true);
-    setError('');
+    prepOp.reset();
+    const prep = await prepOp.execute(async () => {
+      return await generateInterviewPrep(job.jdText, resumeText);
+    });
 
-    try {
-      const prep = await generateInterviewPrep(job.jdText, resumeText, job);
+    if (prep) {
       setPrepMaterial(prep);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate prep materials');
-    } finally {
-      setIsGeneratingPrep(false);
     }
   };
 
@@ -579,14 +575,11 @@ export function PrepTab({ job }: PrepTabProps) {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => handleGeneratePrep()}
-              disabled={isGeneratingPrep || !hasAIConfigured}
+              onClick={handleGeneratePrep}
+              disabled={prepOp.isLoading || !hasAIConfigured}
             >
-              {isGeneratingPrep ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Generating...
-                </>
+              {prepOp.isLoading ? (
+                <AILoadingIndicator isLoading label="Generating..." />
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-1" />
@@ -666,10 +659,7 @@ export function PrepTab({ job }: PrepTabProps) {
                             className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
                           >
                             {isSavingMemory === entry.id ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Saving...
-                              </>
+                              <AILoadingIndicator isLoading label="Saving..." />
                             ) : (
                               <>
                                 <Bookmark className="w-3 h-3" />
@@ -687,10 +677,10 @@ export function PrepTab({ job }: PrepTabProps) {
             )}
           </div>
 
-          {error && (
+          {(chatOp.error || prepOp.error) && (
             <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <span>{chatOp.error || prepOp.error}</span>
             </div>
           )}
 
@@ -711,12 +701,12 @@ export function PrepTab({ job }: PrepTabProps) {
             <button
               type="button"
               onClick={handleSend}
-              disabled={isLoading || !question.trim()}
+              disabled={chatOp.isLoading || !question.trim() || !hasAIConfigured}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               title="Send message"
             >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+              {chatOp.isLoading ? (
+                <AILoadingIndicator isLoading />
               ) : (
                 <Send className="w-4 h-4" />
               )}

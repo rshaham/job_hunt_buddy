@@ -436,7 +436,10 @@ function SetupScreen({
         )}
       >
         {isLoading ? (
-          'Preparing...'
+          <>
+            <Loader2 className="w-7 h-7 animate-spin" />
+            Preparing...
+          </>
         ) : (
           <>
             <Play className="w-7 h-7" />
@@ -855,9 +858,16 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
               <button
                 onClick={handleInputSubmit}
                 disabled={!inputValue.trim() || isGenerating}
-                className="px-6 py-4 text-xl font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-4 text-xl font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                {isGenerating ? '...' : 'Add'}
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  'Add'
+                )}
               </button>
             </div>
           </div>
