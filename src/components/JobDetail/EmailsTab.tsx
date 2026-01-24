@@ -4,6 +4,7 @@ import { Button, Textarea, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { generateEmailDraft, refineEmail } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Job, EmailDraftEntry, EmailType } from '../../types';
@@ -25,13 +26,13 @@ export function EmailsTab({ job }: EmailsTabProps) {
   const [selectedType, setSelectedType] = useState<EmailType>(job.emailDraftType || 'thank-you');
   const [customType, setCustomType] = useState(job.emailDraftCustomType || '');
   const [additionalContext, setAdditionalContext] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [error, setError] = useState('');
   const [editedEmail, setEditedEmail] = useState(job.emailDraft || '');
   const [userMessage, setUserMessage] = useState('');
+
+  const generateOp = useAIOperation<string>('email-generation');
+  const refineOp = useAIOperation<{ reply: string; updatedEmail: string }>('email-refinement');
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -58,21 +59,20 @@ export function EmailsTab({ job }: EmailsTabProps) {
 
   const handleGenerate = async () => {
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
       return;
     }
 
-    setIsGenerating(true);
-    setError('');
-
-    try {
-      const email = await generateEmailDraft(
+    const email = await generateOp.execute(async () => {
+      return await generateEmailDraft(
         { title: job.title, company: job.company, summary: job.summary },
         resumeText,
         selectedType,
         additionalContext,
         selectedType === 'custom' ? customType : undefined
       );
+    });
+
+    if (email) {
       setEditedEmail(email);
       await updateJob(job.id, {
         emailDraft: email,
@@ -80,10 +80,6 @@ export function EmailsTab({ job }: EmailsTabProps) {
         emailDraftCustomType: selectedType === 'custom' ? customType : undefined,
         emailDraftHistory: [],
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate email');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -102,7 +98,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
 
     const messageContent = userMessage.trim();
     setUserMessage('');
-    setError('');
+    refineOp.reset();
 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -121,17 +117,19 @@ export function EmailsTab({ job }: EmailsTabProps) {
       emailDraftHistory: [...history, userEntry],
     });
 
-    setIsSending(true);
-
-    try {
-      const { reply, updatedEmail } = await refineEmail(
+    const result = await refineOp.execute(async () => {
+      return await refineEmail(
         { title: job.title, company: job.company },
-        job.emailDraftType,
+        job.emailDraftType!, // Safe: guarded by early return
         editedEmail,
         originalHistory,
         messageContent,
         job.emailDraftCustomType
       );
+    });
+
+    if (result) {
+      const { reply, updatedEmail } = result;
 
       const assistantEntry: EmailDraftEntry = {
         id: generateId(),
@@ -146,10 +144,6 @@ export function EmailsTab({ job }: EmailsTabProps) {
         emailDraft: updatedEmail,
         emailDraftHistory: [...originalHistory, userEntry, assistantEntry],
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refine email');
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -228,10 +222,10 @@ export function EmailsTab({ job }: EmailsTabProps) {
       <div className="flex gap-2 mb-3">
         <Button
           onClick={handleGenerate}
-          disabled={isGenerating || !hasAIConfigured || (selectedType === 'custom' && !customType.trim())}
+          disabled={generateOp.isLoading || !hasAIConfigured || (selectedType === 'custom' && !customType.trim())}
           className="bg-teal-500 hover:bg-teal-600"
         >
-          {isGenerating ? (
+          {generateOp.isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               Generating...
@@ -280,10 +274,10 @@ export function EmailsTab({ job }: EmailsTabProps) {
         )}
       </div>
 
-      {error && (
+      {(generateOp.error || refineOp.error) && (
         <div className="flex items-center gap-2 text-sm text-danger mb-3">
           <AlertCircle className="w-4 h-4" />
-          {error}
+          {generateOp.error || refineOp.error}
         </div>
       )}
 
@@ -379,7 +373,7 @@ export function EmailsTab({ job }: EmailsTabProps) {
                           </div>
                         </div>
                       ))}
-                      {isSending && <ThinkingBubble />}
+                      {refineOp.isLoading && <ThinkingBubble />}
                       <div ref={chatEndRef} />
                     </>
                   )}
@@ -404,11 +398,11 @@ export function EmailsTab({ job }: EmailsTabProps) {
                     <button
                       type="button"
                       onClick={handleSendMessage}
-                      disabled={isSending || !userMessage.trim()}
+                      disabled={refineOp.isLoading || !userMessage.trim()}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                       title="Send message"
                     >
-                      {isSending ? (
+                      {refineOp.isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Send className="w-4 h-4" />
