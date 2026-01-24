@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle,
   Download, FolderOpen, Upload, Flame, Calendar, MessageSquare,
-  ChevronRight, Check, ChevronUp, GripVertical
+  ChevronRight, Check, ChevronUp, GripVertical, Maximize2
 } from 'lucide-react';
 import { Button, ConfirmModal, Modal, ThinkingBubble, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -155,6 +155,9 @@ export function PrepTab({ job }: PrepTabProps) {
   // Interview Prep Modal state
   const [selectedRoundForPrep, setSelectedRoundForPrep] = useState<InterviewRound | null>(null);
   const [isPrepModalOpen, setIsPrepModalOpen] = useState(false);
+
+  // Prep Material viewer modal state
+  const [viewingMaterial, setViewingMaterial] = useState<PrepMaterial | null>(null);
 
   // Resizable sidebar
   const {
@@ -507,6 +510,51 @@ export function PrepTab({ job }: PrepTabProps) {
           interviewRound={selectedRoundForPrep}
         />
       )}
+
+      {/* Prep Material Viewer Modal */}
+      <Modal
+        isOpen={!!viewingMaterial}
+        onClose={() => setViewingMaterial(null)}
+        title={
+          <div className="flex items-center gap-2">
+            <Bookmark className="w-4 h-4 text-primary" />
+            <span>{viewingMaterial?.title}</span>
+          </div>
+        }
+        size="full"
+      >
+        {viewingMaterial && (
+          <div className="flex flex-col h-full">
+            {/* Content area with comfortable reading width */}
+            <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-800/30 dark:to-slate-900/50">
+              <div className="max-w-3xl mx-auto">
+                <MarkdownContent content={viewingMaterial.content} />
+              </div>
+            </div>
+
+            {/* Footer with actions */}
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border bg-surface">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  handleDownloadPrepMaterial(viewingMaterial.title, viewingMaterial.content);
+                }}
+              >
+                <Download className="w-4 h-4 mr-1.5" />
+                Download PDF
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewingMaterial(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Compact Next Up Banner - only when there's an upcoming interview */}
       {nextInterview && (
@@ -863,6 +911,14 @@ export function PrepTab({ job }: PrepTabProps) {
                           </div>
                         </details>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setViewingMaterial(material)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/10 rounded text-slate-400 hover:text-primary transition-all"
+                            title="View full content"
+                          >
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleDownloadPrepMaterial(material.title, material.content)}
