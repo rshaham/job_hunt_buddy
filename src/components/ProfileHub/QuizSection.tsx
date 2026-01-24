@@ -17,6 +17,7 @@ import { Button, Textarea } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { showToast } from '../../stores/toastStore';
 import { cn } from '../../utils/helpers';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import {
   answerConfidenceQuestion,
   analyzeStoryGaps,
@@ -55,13 +56,13 @@ export function QuizSection(): JSX.Element {
   // Confidence Check state
   const [confidenceQuestions, setConfidenceQuestions] = useState<ConfidenceQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState('');
-  const [isAsking, setIsAsking] = useState(false);
+  const askOp = useAIOperation<ConfidenceCheckResult>('confidence-check');
   const [expandedCorrection, setExpandedCorrection] = useState<string | null>(null);
   const [correctionText, setCorrectionText] = useState('');
 
   // Gap Finder state
   const [gapAnalysis, setGapAnalysis] = useState<StoryGapAnalysis | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analyzeOp = useAIOperation<StoryGapAnalysis>('gap-analysis');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   function handleModeChange(newMode: QuizMode): void {
@@ -71,12 +72,13 @@ export function QuizSection(): JSX.Element {
   // ========== Confidence Check Functions ==========
 
   async function handleAskQuestion(): Promise<void> {
-    if (!currentQuestion.trim() || isAsking) return;
+    if (!currentQuestion.trim() || askOp.isLoading) return;
 
-    setIsAsking(true);
-    try {
-      const result: ConfidenceCheckResult = await answerConfidenceQuestion(currentQuestion);
+    const result = await askOp.execute(async () => {
+      return await answerConfidenceQuestion(currentQuestion);
+    });
 
+    if (result) {
       const newQuestion: ConfidenceQuestion = {
         id: `q_${Date.now()}`,
         question: currentQuestion,
@@ -88,11 +90,8 @@ export function QuizSection(): JSX.Element {
 
       setConfidenceQuestions((prev) => [newQuestion, ...prev]);
       setCurrentQuestion('');
-    } catch (error) {
-      console.error('Failed to ask confidence question:', error);
+    } else if (askOp.error) {
       showToast('Failed to get AI response. Please try again.', 'error');
-    } finally {
-      setIsAsking(false);
     }
   }
 
@@ -148,25 +147,24 @@ export function QuizSection(): JSX.Element {
   // ========== Gap Finder Functions ==========
 
   async function handleAnalyzeGaps(): Promise<void> {
-    if (isAnalyzing) return;
+    if (analyzeOp.isLoading) return;
 
-    setIsAnalyzing(true);
-    try {
-      const storiesForAnalysis = stories.map((s) => ({
-        id: s.id,
-        question: s.question,
-        answer: s.answer,
-        company: s.company,
-        skills: s.skills,
-      }));
+    const storiesForAnalysis = stories.map((s) => ({
+      id: s.id,
+      question: s.question,
+      answer: s.answer,
+      company: s.company,
+      skills: s.skills,
+    }));
 
-      const result = await analyzeStoryGaps(storiesForAnalysis);
+    const result = await analyzeOp.execute(async () => {
+      return await analyzeStoryGaps(storiesForAnalysis);
+    });
+
+    if (result) {
       setGapAnalysis(result);
-    } catch (error) {
-      console.error('Failed to analyze story gaps:', error);
+    } else if (analyzeOp.error) {
       showToast('Failed to analyze stories. Please try again.', 'error');
-    } finally {
-      setIsAnalyzing(false);
     }
   }
 
@@ -241,7 +239,7 @@ export function QuizSection(): JSX.Element {
           questions={confidenceQuestions}
           currentQuestion={currentQuestion}
           setCurrentQuestion={setCurrentQuestion}
-          isAsking={isAsking}
+          isAsking={askOp.isLoading}
           onAskQuestion={handleAskQuestion}
           onRating={handleRating}
           expandedCorrection={expandedCorrection}
@@ -254,7 +252,7 @@ export function QuizSection(): JSX.Element {
       ) : (
         <GapFinderUI
           gapAnalysis={gapAnalysis}
-          isAnalyzing={isAnalyzing}
+          isAnalyzing={analyzeOp.isLoading}
           onAnalyze={handleAnalyzeGaps}
           expandedCategory={expandedCategory}
           setExpandedCategory={setExpandedCategory}
