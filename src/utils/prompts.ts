@@ -1163,8 +1163,7 @@ Return ONLY valid JSON:
       "items": ["Combine technical depth with product thinking", "Excited about [Company]'s mission"]
     }
   ],
-  "estimatedDuration": "45 seconds",
-  "wordCount": 185
+  "estimatedDuration": "45 seconds"
 }`;
 
 // Pitch refinement prompt for iterating on generated pitches
@@ -1219,7 +1218,6 @@ Return ONLY valid JSON:
     }
   ],
   "estimatedDuration": "X seconds",
-  "wordCount": 185,
   "changesApplied": "Brief description of what was changed"
 }`;
 
