@@ -5,7 +5,8 @@ import { useAppStore } from '../../stores/appStore';
 import { extractUserSkills } from '../../services/ai';
 import { showToast } from '../../stores/toastStore';
 import { cn } from '../../utils/helpers';
-import type { SkillEntry } from '../../types';
+import { useAIOperation } from '../../hooks/useAIOperation';
+import type { SkillEntry, UserSkillProfile } from '../../types';
 
 const categoryColors: Record<string, string> = {
   technical: 'bg-primary-subtle text-primary',
@@ -24,22 +25,20 @@ export function SkillsSection(): JSX.Element {
   const skillProfile = careerCoachState?.skillProfile;
   const savedStories = settings.savedStories;
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analyzeOp = useAIOperation<UserSkillProfile>('skill-analysis');
   const [newSkill, setNewSkill] = useState('');
   const [newCategory, setNewCategory] = useState<SkillEntry['category']>('technical');
 
   async function handleAnalyzeSkills(): Promise<void> {
-    setIsAnalyzing(true);
-    try {
-      const existingSkills = skillProfile?.skills || [];
-      const profile = await extractUserSkills(existingSkills);
-      updateSkillProfile(profile);
-      showToast(`Found ${profile.skills.length} skills`, 'success');
-    } catch (error) {
-      console.error('Failed to analyze skills:', error);
+    const existingSkills = skillProfile?.skills || [];
+    const result = await analyzeOp.execute(async () => {
+      return await extractUserSkills(existingSkills);
+    });
+    if (result) {
+      updateSkillProfile(result);
+      showToast(`Found ${result.skills.length} skills`, 'success');
+    } else if (analyzeOp.error) {
       showToast('Failed to analyze skills', 'error');
-    } finally {
-      setIsAnalyzing(false);
     }
   }
 
@@ -129,10 +128,13 @@ export function SkillsSection(): JSX.Element {
           Analyze your resume and documents to extract skills, or add them manually.
         </p>
         <div className="flex flex-col gap-4 items-center">
-          <Button onClick={handleAnalyzeSkills} disabled={isAnalyzing}>
-            <RefreshCw className={cn('w-4 h-4 mr-2', isAnalyzing && 'animate-spin')} />
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Skills'}
+          <Button onClick={handleAnalyzeSkills} disabled={analyzeOp.isLoading}>
+            <RefreshCw className={cn('w-4 h-4 mr-2', analyzeOp.isLoading && 'animate-spin')} />
+            {analyzeOp.isLoading ? 'Analyzing...' : 'Analyze Skills'}
           </Button>
+          {analyzeOp.error && (
+            <p className="text-sm text-danger">{analyzeOp.error}</p>
+          )}
           <div className="flex gap-2 items-center">
             <Input
               value={newSkill}
@@ -168,11 +170,15 @@ export function SkillsSection(): JSX.Element {
             {allSkills.size} skills from resume and stories
           </p>
         </div>
-        <Button onClick={handleAnalyzeSkills} disabled={isAnalyzing} variant="secondary" size="sm">
-          <RefreshCw className={cn('w-4 h-4 mr-2', isAnalyzing && 'animate-spin')} />
-          {isAnalyzing ? 'Analyzing...' : 'Re-analyze'}
+        <Button onClick={handleAnalyzeSkills} disabled={analyzeOp.isLoading} variant="secondary" size="sm">
+          <RefreshCw className={cn('w-4 h-4 mr-2', analyzeOp.isLoading && 'animate-spin')} />
+          {analyzeOp.isLoading ? 'Analyzing...' : 'Re-analyze'}
         </Button>
       </div>
+
+      {analyzeOp.error && (
+        <p className="text-sm text-danger">{analyzeOp.error}</p>
+      )}
 
       <div className="flex gap-2 items-center">
         <Input
