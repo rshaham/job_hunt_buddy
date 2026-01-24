@@ -1138,6 +1138,12 @@ Guidelines for a great "Tell Me About Yourself":
 6. Keep it conversational, not robotic - this is a story, not a resume reading
 7. Transition phrases should feel natural: "That led me to...", "Building on that experience...", "What excites me now is..."
 
+IMPORTANT - Honesty Guidelines:
+- Only include achievements and experiences actually present in the candidate's background
+- Do not exaggerate metrics or fabricate accomplishments
+- Frame real experience positively, but never invent new experience
+- If something isn't in the resume/context, don't include it in the pitch
+
 Return ONLY valid JSON:
 {
   "script": "The full narrative introduction text with natural paragraph breaks...",
@@ -1196,6 +1202,11 @@ If the user asks for a different length, follow the word count guidelines:
 - brief: 80-120 words (~30 seconds)
 - standard: 180-220 words (~60 seconds)
 - detailed: 280-320 words (~90 seconds)
+
+HONESTY GUIDELINES:
+- Only include achievements and experiences actually in the candidate's background
+- Do not exaggerate metrics or fabricate accomplishments
+- When adding emphasis or details, draw from what exists in the resume - never invent
 
 Return ONLY valid JSON:
 {
