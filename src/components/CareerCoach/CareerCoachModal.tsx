@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, RefreshCw, Clock, BarChart3, Copy, Check, X, Plus, FileText, StickyNote, Paperclip, Hand, ChevronDown, ChevronRight } from 'lucide-react';
-import { Modal, Button, ConfirmModal, ThinkingBubble } from '../ui';
+import { Modal, Button, ConfirmModal, ThinkingBubble, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractUserSkills, analyzeCareer, chatAboutCareer } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
 import { showToast } from '../../stores/toastStore';
 import { format, formatDistanceToNow } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { SavedStory, SkillCategory, SkillEntry } from '../../types';
 import { ProjectsTab } from './ProjectsTab';
 import { Lightbulb } from 'lucide-react';
@@ -43,61 +41,6 @@ function parseProjectSuggestions(content: string): { cleanContent: string; proje
   });
 
   return { cleanContent: cleanContent.trim(), projects };
-}
-
-// Markdown renderer component with proper styling
-function MarkdownContent({ content }: { content: string }) {
-  return (
-    <div className="text-sm text-foreground">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        skipHtml
-        components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-bold mt-4 mb-2 text-foreground first:mt-0">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold mt-4 mb-2 text-foreground first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold mt-3 mb-1.5 text-foreground">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
-          ),
-          em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="bg-surface-raised px-1.5 py-0.5 rounded text-xs font-mono">
-              {children}
-            </code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-surface p-3 rounded-lg overflow-x-auto mb-3 text-xs">
-              {children}
-            </pre>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-foreground-muted">
-              {children}
-            </blockquote>
-          ),
-          hr: () => <hr className="my-4 border-border" />,
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 export function CareerCoachModal() {

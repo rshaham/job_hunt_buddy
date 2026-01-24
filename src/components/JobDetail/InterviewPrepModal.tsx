@@ -4,15 +4,13 @@ import {
   ChevronDown, FileText, Trash2, Download, Bookmark, ExternalLink, User,
   MessageCircle, AlertTriangle, Target, Lightbulb
 } from 'lucide-react';
-import { Button, Modal, ThinkingBubble } from '../ui';
+import { Button, Modal, ThinkingBubble, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId, cn } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import { showToast } from '../../stores/toastStore';
 import { format } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { Job, InterviewRound, QAEntry, SavedStory, PrepMaterial } from '../../types';
 import { getInterviewTypeLabel } from '../../types';
 import { parseInterviewerIntel, hasIntelContent, type ParsedIntel } from '../TeleprompterModal/ContextPanel/intelParser';
@@ -22,60 +20,6 @@ interface InterviewPrepModalProps {
   onClose: () => void;
   job: Job;
   interviewRound: InterviewRound;
-}
-
-// Markdown renderer component
-function MarkdownContent({ content }: { content: string }) {
-  return (
-    <div className="text-sm text-foreground">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        skipHtml
-        components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-bold mt-4 mb-2 text-foreground first:mt-0">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold mt-4 mb-2 text-foreground first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold mt-3 mb-1.5 text-foreground">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
-          ),
-          em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono">
-              {children}
-            </code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto mb-3 text-xs">
-              {children}
-            </pre>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-foreground-muted">
-              {children}
-            </blockquote>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 // Structured intel display component for parsed JSON intel

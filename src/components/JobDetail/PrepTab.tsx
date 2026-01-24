@@ -1,113 +1,23 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Send, Loader2, Trash2, Sparkles, AlertCircle, Bookmark, Users, ChevronDown, X, HelpCircle,
   Download, FolderOpen, Upload, Flame, Calendar, MessageSquare,
   ChevronRight, Check, ChevronUp, GripVertical
 } from 'lucide-react';
-import { Button, ConfirmModal, Modal, ThinkingBubble } from '../ui';
+import { Button, ConfirmModal, Modal, ThinkingBubble, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
+import { useResizablePanel } from '../../hooks';
 import { chatAboutJob, generateInterviewPrep, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId, cn } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import { showToast } from '../../stores/toastStore';
 import { format, isFuture, isToday, isTomorrow, differenceInDays } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { Job, QAEntry, SavedStory, SavedPrepConversation, InterviewRound, PrepMaterial } from '../../types';
 import { getInterviewTypeLabel } from '../../types';
 import { InterviewPrepModal } from './InterviewPrepModal';
 
 interface PrepTabProps {
   job: Job;
-}
-
-// Markdown renderer component with proper styling
-function MarkdownContent({ content }: { content: string }) {
-  return (
-    <div className="text-sm text-foreground">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        skipHtml
-        components={{
-        h1: ({ children }) => (
-          <h1 className="text-lg font-bold mt-4 mb-2 text-foreground first:mt-0">
-            {children}
-          </h1>
-        ),
-        h2: ({ children }) => (
-          <h2 className="text-base font-semibold mt-4 mb-2 text-foreground first:mt-0">
-            {children}
-          </h2>
-        ),
-        h3: ({ children }) => (
-          <h3 className="text-sm font-semibold mt-3 mb-1.5 text-foreground">
-            {children}
-          </h3>
-        ),
-        p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-        ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-        strong: ({ children }) => (
-          <strong className="font-semibold text-foreground">{children}</strong>
-        ),
-        em: ({ children }) => <em className="italic">{children}</em>,
-        code: ({ children }) => (
-          <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono">
-            {children}
-          </code>
-        ),
-        pre: ({ children }) => (
-          <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto mb-3 text-xs">
-            {children}
-          </pre>
-        ),
-        blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-foreground-muted">
-            {children}
-          </blockquote>
-        ),
-        hr: () => <hr className="my-4 border-border" />,
-        a: ({ href, children }) => (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline"
-          >
-            {children}
-          </a>
-        ),
-        table: ({ children }) => (
-          <div className="overflow-x-auto my-3">
-            <table className="min-w-full border-collapse border border-slate-300 dark:border-slate-600 text-sm">
-              {children}
-            </table>
-          </div>
-        ),
-        thead: ({ children }) => (
-          <thead className="bg-slate-100 dark:bg-slate-700">{children}</thead>
-        ),
-        tbody: ({ children }) => <tbody>{children}</tbody>,
-        tr: ({ children }) => (
-          <tr className="border-b border-slate-300 dark:border-slate-600">{children}</tr>
-        ),
-        th: ({ children }) => (
-          <th className="px-3 py-2 text-left font-semibold text-foreground border border-slate-300 dark:border-slate-600">
-            {children}
-          </th>
-        ),
-        td: ({ children }) => (
-          <td className="px-3 py-2 text-foreground-muted border border-slate-300 dark:border-slate-600">
-            {children}
-          </td>
-        ),
-      }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 // Helper to get formatted date label
@@ -246,13 +156,14 @@ export function PrepTab({ job }: PrepTabProps) {
   const [selectedRoundForPrep, setSelectedRoundForPrep] = useState<InterviewRound | null>(null);
   const [isPrepModalOpen, setIsPrepModalOpen] = useState(false);
 
-  // Resizable sidebar state
-  const [sidebarWidth, setSidebarWidth] = useState(320); // Default 320px (was w-72 = 288px, slightly wider)
-  const [isResizing, setIsResizing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const widthRef = useRef(320);
-  const rafRef = useRef<number>();
+  // Resizable sidebar
+  const {
+    width: sidebarWidth,
+    isResizing,
+    containerRef,
+    panelRef: sidebarRef,
+    handleMouseDown,
+  } = useResizablePanel({ defaultWidth: 320, minWidth: 150, maxWidthPercent: 0.9 });
 
   // Get contacts with interviewer intel
   const contactsWithIntel = job.contacts.filter((c) => c.interviewerIntel);
@@ -262,66 +173,6 @@ export function PrepTab({ job }: PrepTabProps) {
 
   const hasAIConfigured = isAIConfigured(settings);
   const resumeText = job.resumeText || settings.defaultResumeText;
-
-  // Resize handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing || !containerRef.current) return;
-
-    // Cancel previous frame to coalesce rapid updates
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-
-    rafRef.current = requestAnimationFrame(() => {
-      const containerRect = containerRef.current!.getBoundingClientRect();
-      const newWidth = containerRect.right - e.clientX;
-      const maxWidth = containerRect.width * 0.9; // Allow up to 90% of container
-
-      // Constrain width between 150px minimum and 90% of container
-      const constrainedWidth = Math.min(Math.max(newWidth, 150), maxWidth);
-
-      // Store in ref (no re-render)
-      widthRef.current = constrainedWidth;
-
-      // Update DOM directly (bypasses React)
-      if (sidebarRef.current) {
-        sidebarRef.current.style.width = `${constrainedWidth}px`;
-      }
-    });
-  }, [isResizing]);
-
-  const handleMouseUp = useCallback(() => {
-    // Cancel any pending animation frame
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    // Sync final width to React state once (single re-render)
-    setSidebarWidth(widthRef.current);
-    setIsResizing(false);
-  }, []);
-
-  // Add/remove global mouse listeners for resize
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
-
-  // Keep widthRef in sync when sidebarWidth changes externally
-  useEffect(() => {
-    widthRef.current = sidebarWidth;
-  }, [sidebarWidth]);
 
   // Interview data - sorted and filtered
   const interviews = useMemo(() => {
