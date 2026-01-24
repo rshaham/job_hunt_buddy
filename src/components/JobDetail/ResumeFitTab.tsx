@@ -9,7 +9,8 @@ import { extractTextFromPDF } from '../../services/pdfParser';
 import { isAIConfigured, getGradeColor } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import { ResumeTailoringView } from './ResumeTailoringView';
-import type { Job } from '../../types';
+import { useAIOperation } from '../../hooks/useAIOperation';
+import type { Job, ResumeAnalysis } from '../../types';
 
 interface ResumeFitTabProps {
   job: Job;
@@ -17,13 +18,13 @@ interface ResumeFitTabProps {
 
 export function ResumeFitTab({ job }: ResumeFitTabProps) {
   const { settings, updateJob } = useAppStore();
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analyzeOp = useAIOperation<ResumeAnalysis>('resume-analysis');
   const [isUploading, setIsUploading] = useState(false);
   const [isTailoringMode, setIsTailoringMode] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState<string | undefined>();
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [keywordsExpanded, setKeywordsExpanded] = useState(true);
-  const [error, setError] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasAIConfigured = isAIConfigured(settings);
@@ -35,14 +36,15 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
     if (!file) return;
 
     setIsUploading(true);
-    setError('');
+    setUploadError('');
+    analyzeOp.reset();
     try {
       const text = await extractTextFromPDF(file);
       // Convert to markdown for better comparison/diff results
       const markdown = await convertResumeToMarkdown(text);
       await updateJob(job.id, { resumeText: markdown });
     } catch (err) {
-      setError('Failed to parse PDF. Please try a different file.');
+      setUploadError('Failed to parse PDF. Please try a different file.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -84,25 +86,22 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
   const handleAnalyze = async () => {
     if (!resumeText) {
-      setError('Please upload a resume first');
+      setUploadError('Please upload a resume first');
       return;
     }
 
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
+      setUploadError('Please configure your AI provider in Settings');
       return;
     }
 
-    setIsAnalyzing(true);
-    setError('');
+    setUploadError('');
+    const analysis = await analyzeOp.execute(async () => {
+      return await gradeResume(job.jdText, resumeText);
+    });
 
-    try {
-      const analysis = await gradeResume(job.jdText, resumeText);
+    if (analysis) {
       await updateJob(job.id, { resumeAnalysis: analysis });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze resume');
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -240,8 +239,8 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
 
       {/* Analyze Button */}
       {hasResume && !job.resumeAnalysis && (
-        <Button onClick={handleAnalyze} disabled={isAnalyzing || !hasAIConfigured}>
-          {isAnalyzing ? (
+        <Button onClick={handleAnalyze} disabled={analyzeOp.isLoading || !hasAIConfigured}>
+          {analyzeOp.isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               Analyzing...
@@ -252,10 +251,10 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
         </Button>
       )}
 
-      {error && (
+      {(uploadError || analyzeOp.error) && (
         <div className="flex items-center gap-2 text-sm text-danger">
           <AlertCircle className="w-4 h-4" />
-          {error}
+          {uploadError || analyzeOp.error}
         </div>
       )}
 
@@ -296,9 +295,16 @@ export function ResumeFitTab({ job }: ResumeFitTabProps) {
                 variant="secondary"
                 size="sm"
                 onClick={handleAnalyze}
-                disabled={isAnalyzing}
+                disabled={analyzeOp.isLoading}
               >
-                Re-analyze
+                {analyzeOp.isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  'Re-analyze'
+                )}
               </Button>
               <Button
                 size="sm"

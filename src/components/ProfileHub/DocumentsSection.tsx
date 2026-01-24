@@ -6,11 +6,16 @@ import { useAppStore } from '../../stores/appStore';
 import { extractTextFromPDF } from '../../services/pdfParser';
 import { summarizeDocument, convertDocumentToMarkdown } from '../../services/ai';
 import { showToast } from '../../stores/toastStore';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import type { ContextDocument } from '../../types';
 
 export function DocumentsSection(): JSX.Element {
   const { settings, addContextDocument, updateContextDocument, deleteContextDocument } = useAppStore();
   const documents = settings.contextDocuments || [];
+
+  const summarizeOp = useAIOperation<string>('summarize-document');
+  const regenerateOp = useAIOperation<string>('regenerate-summary');
+  const formatOp = useAIOperation<string>('format-markdown');
 
   const [isUploading, setIsUploading] = useState(false);
   const [summarizingDocId, setSummarizingDocId] = useState<string | null>(null);
@@ -19,9 +24,7 @@ export function DocumentsSection(): JSX.Element {
   const [viewTab, setViewTab] = useState<'full' | 'summary'>('full');
   const [editedFullText, setEditedFullText] = useState('');
   const [editedSummary, setEditedSummary] = useState('');
-  const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSavingDoc, setIsSavingDoc] = useState(false);
-  const [isFormatting, setIsFormatting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync viewing doc to edit state
@@ -62,20 +65,21 @@ export function DocumentsSection(): JSX.Element {
 
   async function handleSummarize(doc: ContextDocument): Promise<void> {
     setSummarizingDocId(doc.id);
-    try {
-      const summary = await summarizeDocument(doc.fullText, doc.name);
+    const summary = await summarizeOp.execute(async () => {
+      return await summarizeDocument(doc.fullText, doc.name);
+    });
+
+    if (summary) {
       await updateContextDocument(doc.id, {
         summary,
         summaryWordCount: summary.split(/\s+/).length,
         useSummary: true,
       });
       showToast('Summary generated', 'success');
-    } catch (error) {
-      console.error('Failed to summarize:', error);
+    } else {
       showToast('Failed to generate summary', 'error');
-    } finally {
-      setSummarizingDocId(null);
     }
+    setSummarizingDocId(null);
   }
 
   async function handleDelete(): Promise<void> {
@@ -113,31 +117,29 @@ export function DocumentsSection(): JSX.Element {
 
   async function handleRegenerateSummary(): Promise<void> {
     if (!viewingDoc) return;
-    setIsRegenerating(true);
-    try {
-      const summary = await summarizeDocument(editedFullText, viewingDoc.name);
+    const summary = await regenerateOp.execute(async () => {
+      return await summarizeDocument(editedFullText, viewingDoc.name);
+    });
+
+    if (summary) {
       setEditedSummary(summary);
       showToast('Summary regenerated', 'success');
-    } catch (error) {
-      console.error('Failed to regenerate summary:', error);
+    } else {
       showToast('Failed to regenerate summary', 'error');
-    } finally {
-      setIsRegenerating(false);
     }
   }
 
   async function handleFormatAsMarkdown(): Promise<void> {
     if (!viewingDoc) return;
-    setIsFormatting(true);
-    try {
-      const formatted = await convertDocumentToMarkdown(editedFullText, viewingDoc.name);
+    const formatted = await formatOp.execute(async () => {
+      return await convertDocumentToMarkdown(editedFullText, viewingDoc.name);
+    });
+
+    if (formatted) {
       setEditedFullText(formatted);
       showToast('Formatted as markdown', 'success');
-    } catch (error) {
-      console.error('Failed to format document:', error);
+    } else {
       showToast('Failed to format document', 'error');
-    } finally {
-      setIsFormatting(false);
     }
   }
 
@@ -272,10 +274,13 @@ export function DocumentsSection(): JSX.Element {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSummarize(doc)}
-                  disabled={summarizingDocId === doc.id}
+                  disabled={summarizingDocId === doc.id && summarizeOp.isLoading}
                 >
-                  {summarizingDocId === doc.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {summarizingDocId === doc.id && summarizeOp.isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      Summarizing...
+                    </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-1" />
@@ -355,27 +360,37 @@ export function DocumentsSection(): JSX.Element {
               <Button
                 variant="secondary"
                 onClick={handleFormatAsMarkdown}
-                disabled={isFormatting || !editedFullText.trim()}
+                disabled={formatOp.isLoading || !editedFullText.trim()}
               >
-                {isFormatting ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {formatOp.isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Formatting...
+                  </>
                 ) : (
-                  <Wand2 className="w-4 h-4 mr-2" />
+                  <>
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Format
+                  </>
                 )}
-                Format
               </Button>
             )}
             <Button
               variant="secondary"
               onClick={handleRegenerateSummary}
-              disabled={isRegenerating || !editedFullText.trim()}
+              disabled={regenerateOp.isLoading || !editedFullText.trim()}
             >
-              {isRegenerating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              {regenerateOp.isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Regenerating...
+                </>
               ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Regenerate Summary
+                </>
               )}
-              Regenerate Summary
             </Button>
             <Button
               onClick={handleSaveDocChanges}

@@ -5,6 +5,7 @@ import { useAppStore } from '../../stores/appStore';
 import { generateCoverLetter, refineCoverLetter } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Job, CoverLetterEntry } from '../../types';
@@ -15,13 +16,13 @@ interface CoverLetterTabProps {
 
 export function CoverLetterTab({ job }: CoverLetterTabProps) {
   const { settings, updateJob } = useAppStore();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const generateOp = useAIOperation<string>('cover-letter-generate');
+  const refineOp = useAIOperation<{ reply: string; updatedLetter: string }>('cover-letter-refine');
   const [isRefining, setIsRefining] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
   const [editedLetter, setEditedLetter] = useState(job.coverLetter || '');
   const [userMessage, setUserMessage] = useState('');
 
@@ -50,26 +51,24 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
 
   const handleGenerate = async () => {
     if (!resumeText) {
-      setError('Please upload a resume in the Resume Fit tab first');
+      setLocalError('Please upload a resume in the Resume Fit tab first');
       return;
     }
 
     if (!hasAIConfigured) {
-      setError('Please configure your AI provider in Settings');
+      setLocalError('Please configure your AI provider in Settings');
       return;
     }
 
-    setIsGenerating(true);
-    setError('');
+    setLocalError('');
+    generateOp.reset();
+    const letter = await generateOp.execute(async () => {
+      return await generateCoverLetter(job.jdText, resumeText);
+    });
 
-    try {
-      const letter = await generateCoverLetter(job.jdText, resumeText);
+    if (letter) {
       setEditedLetter(letter);
       await updateJob(job.id, { coverLetter: letter, coverLetterHistory: [] });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate cover letter');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -113,7 +112,8 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
 
     const messageContent = userMessage.trim();
     setUserMessage('');
-    setError('');
+    setLocalError('');
+    refineOp.reset();
 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -132,17 +132,18 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
       coverLetterHistory: [...history, userEntry],
     });
 
-    setIsSending(true);
-
-    try {
-      const { reply, updatedLetter } = await refineCoverLetter(
+    const result = await refineOp.execute(async () => {
+      return await refineCoverLetter(
         job.jdText,
         resumeText,
         editedLetter,
         originalHistory,
         messageContent
       );
+    });
 
+    if (result) {
+      const { reply, updatedLetter } = result;
       const assistantEntry: CoverLetterEntry = {
         id: generateId(),
         role: 'assistant',
@@ -156,10 +157,6 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
         coverLetter: updatedLetter,
         coverLetterHistory: [...originalHistory, userEntry, assistantEntry],
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refine cover letter');
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -185,8 +182,8 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
     <div className="flex flex-col h-[calc(100vh-180px)]">
       {/* Actions */}
       <div className="flex gap-2 mb-3 items-center">
-        <Button onClick={handleGenerate} disabled={isGenerating || !hasAIConfigured}>
-          {isGenerating ? (
+        <Button onClick={handleGenerate} disabled={generateOp.isLoading || !hasAIConfigured}>
+          {generateOp.isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               Generating...
@@ -286,10 +283,10 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
         </div>
       )}
 
-      {error && (
+      {(localError || generateOp.error || refineOp.error) && (
         <div className="flex items-center gap-2 text-sm text-danger mb-3">
           <AlertCircle className="w-4 h-4" />
-          {error}
+          {localError || generateOp.error || refineOp.error}
         </div>
       )}
 
@@ -384,7 +381,7 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                           </div>
                         </div>
                       ))}
-                      {isSending && <ThinkingBubble />}
+                      {refineOp.isLoading && <ThinkingBubble />}
                       <div ref={chatEndRef} />
                     </>
                   )}
@@ -409,10 +406,10 @@ export function CoverLetterTab({ job }: CoverLetterTabProps) {
                     <button
                       type="button"
                       onClick={handleSendMessage}
-                      disabled={isSending || !userMessage.trim()}
+                      disabled={refineOp.isLoading || !userMessage.trim()}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                     >
-                      {isSending ? (
+                      {refineOp.isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Send className="w-4 h-4" />
