@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Sparkles, AlertCircle, Bookmark, RefreshCw, Clock, BarChart3, Copy, Check, X, Plus, FileText, StickyNote, Paperclip, Hand, ChevronDown, ChevronRight } from 'lucide-react';
-import { Modal, Button, ConfirmModal, ThinkingBubble, AILoadingIndicator } from '../ui';
+import { Modal, Button, ConfirmModal, ThinkingBubble, MarkdownContent, AILoadingIndicator } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { extractUserSkills, analyzeCareer, chatAboutCareer } from '../../services/ai';
 import { isAIConfigured, generateId } from '../../utils/helpers';
@@ -8,8 +8,6 @@ import { showToast } from '../../stores/toastStore';
 import { useAIOperation } from '../../hooks/useAIOperation';
 import type { UserSkillProfile } from '../../types';
 import { format, formatDistanceToNow } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { SavedStory, SkillCategory, SkillEntry } from '../../types';
 import { ProjectsTab } from './ProjectsTab';
 import { Lightbulb } from 'lucide-react';
@@ -45,61 +43,6 @@ function parseProjectSuggestions(content: string): { cleanContent: string; proje
   });
 
   return { cleanContent: cleanContent.trim(), projects };
-}
-
-// Markdown renderer component with proper styling
-function MarkdownContent({ content }: { content: string }) {
-  return (
-    <div className="text-sm text-foreground">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        skipHtml
-        components={{
-          h1: ({ children }) => (
-            <h1 className="text-lg font-bold mt-4 mb-2 text-foreground first:mt-0">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-base font-semibold mt-4 mb-2 text-foreground first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-semibold mt-3 mb-1.5 text-foreground">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
-          ),
-          em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="bg-surface-raised px-1.5 py-0.5 rounded text-xs font-mono">
-              {children}
-            </code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-surface p-3 rounded-lg overflow-x-auto mb-3 text-xs">
-              {children}
-            </pre>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-3 text-foreground-muted">
-              {children}
-            </blockquote>
-          ),
-          hr: () => <hr className="my-4 border-border" />,
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
 }
 
 export function CareerCoachModal() {
@@ -189,7 +132,7 @@ export function CareerCoachModal() {
   };
 
   // Skills tab handlers
-  const handleAddSkill = (category: SkillCategory) => {
+  const handleAddSkill = async (category: SkillCategory) => {
     if (!newSkillInput.trim()) return;
 
     // Check for duplicate
@@ -202,14 +145,14 @@ export function CareerCoachModal() {
       return;
     }
 
-    addSkill(newSkillInput.trim(), category);
+    await addSkill(newSkillInput.trim(), category);
     setNewSkillInput('');
     setAddingToCategory(null);
     showToast('Skill added', 'success');
   };
 
-  const handleRemoveSkill = (skillName: string) => {
-    removeSkill(skillName);
+  const handleRemoveSkill = async (skillName: string) => {
+    await removeSkill(skillName);
     showToast('Skill removed', 'success');
   };
 
@@ -245,12 +188,30 @@ export function CareerCoachModal() {
       return;
     }
 
+    // Auto-extract skills if none exist
+    let profileToUse = skillProfile;
+    if (!skillProfile?.skills?.length) {
+      const existingSkills = skillProfile?.skills || [];
+      const profile = await extractSkillsOp.execute(async () => {
+        return await extractUserSkills(existingSkills);
+      });
+
+      if (profile) {
+        await updateSkillProfile(profile);
+        profileToUse = profile;
+        showToast(`Extracted ${profile.skills.length} skills from your profile`, 'success');
+      } else {
+        // If skill extraction failed, we can still proceed with no skills
+        // The AI will handle this gracefully
+      }
+    }
+
     // Add pending assistant message
     const pendingId = generateId();
     setPendingMessageId(pendingId);
 
     const analysis = await analyzeOp.execute(async () => {
-      return await analyzeCareer(jobs, skillProfile, includeAllJobs);
+      return await analyzeCareer(jobs, profileToUse, includeAllJobs);
     });
 
     if (analysis) {
@@ -533,10 +494,10 @@ export function CareerCoachModal() {
                 variant="primary"
                 size="sm"
                 onClick={handleAnalyze}
-                disabled={analyzeOp.isLoading || !hasAIConfigured}
+                disabled={analyzeOp.isLoading || extractSkillsOp.isLoading || !hasAIConfigured}
               >
-                {analyzeOp.isLoading ? (
-                  <AILoadingIndicator isLoading label="Analyzing..." />
+                {analyzeOp.isLoading || extractSkillsOp.isLoading ? (
+                  <AILoadingIndicator isLoading label={extractSkillsOp.isLoading ? "Extracting skills..." : "Analyzing..."} />
                 ) : (
                   <>
                     <BarChart3 className="w-4 h-4 mr-1" />
@@ -585,7 +546,7 @@ export function CareerCoachModal() {
 
             {/* Chat History */}
             <div className="flex-1 overflow-y-auto space-y-4 mb-3 p-3 bg-surface rounded-xl">
-              {history.length === 0 && !analyzeOp.isLoading ? (
+              {history.length === 0 && !analyzeOp.isLoading && !extractSkillsOp.isLoading ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
                   <Sparkles className="w-8 h-8 text-primary/50 mb-3" />
                   <p className="text-sm text-slate-500 mb-4">
@@ -597,7 +558,7 @@ export function CareerCoachModal() {
                     </p>
                   ) : (
                     <>
-                      <Button variant="primary" size="sm" onClick={handleAnalyze} disabled={!hasAIConfigured}>
+                      <Button variant="primary" size="sm" onClick={handleAnalyze} disabled={analyzeOp.isLoading || extractSkillsOp.isLoading || !hasAIConfigured}>
                         <BarChart3 className="w-4 h-4 mr-1" />
                         Start Career Analysis
                       </Button>
@@ -733,16 +694,16 @@ export function CareerCoachModal() {
                       )}
                     </div>
                   ))}
-                  {(analyzeOp.isLoading || pendingMessageId) && <ThinkingBubble />}
+                  {(analyzeOp.isLoading || extractSkillsOp.isLoading || pendingMessageId) && <ThinkingBubble />}
                   <div ref={chatEndRef} />
                 </>
               )}
             </div>
 
-            {(chatOp.error || analyzeOp.error) && (
+            {(chatOp.error || analyzeOp.error || extractSkillsOp.error) && (
               <div className="flex items-center gap-2 text-sm text-danger mb-2 px-1">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{chatOp.error || analyzeOp.error}</span>
+                <span>{chatOp.error || analyzeOp.error || extractSkillsOp.error}</span>
               </div>
             )}
 

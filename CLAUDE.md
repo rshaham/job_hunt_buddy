@@ -111,6 +111,10 @@ src/
 - `react-markdown` for rendering markdown content
 - Custom UI components in `src/components/ui/`
 
+### UI Guidelines
+- **Modals should be generous with space** - Default to `size="full"` or `size="xl"` for content-heavy modals. Small modals (`sm`, `md`) are only for simple confirmations or short forms. Users have large screens; use them.
+- **Don't artificially constrain content** - Avoid small `max-h-*` limits that force unnecessary scrolling. Let content breathe.
+
 ### Data Persistence
 - IndexedDB via Dexie.js (`src/services/db.ts`)
 - Jobs, settings, and all related data stored locally

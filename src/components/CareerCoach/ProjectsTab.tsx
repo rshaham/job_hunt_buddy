@@ -1,42 +1,10 @@
 import { useState } from 'react';
 import { Plus, Trash2, Edit2, Check, X, Lightbulb, Rocket, CheckCircle2, Building2, Bot, User, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
-import { Button, ConfirmModal } from '../ui';
+import { Button, ConfirmModal, MarkdownContent } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { showToast } from '../../stores/toastStore';
 import type { CareerProject, ProjectStatus, CareerProjectSource } from '../../types';
 import { PROJECT_STATUS_LABELS } from '../../types';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
-// Simple markdown renderer for project details
-function MarkdownContent({ content }: { content: string }) {
-  return (
-    <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        skipHtml
-        components={{
-          h1: ({ children }) => <h1 className="text-base font-bold mt-3 mb-2">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-sm font-semibold mt-3 mb-1.5">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-medium mt-2 mb-1">{children}</h3>,
-          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-          ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-          code: ({ children }) => (
-            <code className="bg-surface-raised px-1 py-0.5 rounded text-xs">{children}</code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-surface p-2 rounded overflow-x-auto mb-2 text-xs">{children}</pre>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
-}
 
 // Status badge colors
 const statusColors: Record<ProjectStatus, string> = {

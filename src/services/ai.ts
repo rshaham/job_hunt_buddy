@@ -255,10 +255,19 @@ export async function generateCoverLetter(
   return await callAI([{ role: 'user', content: prompt }]);
 }
 
+// Interview context for round-specific prep
+export interface InterviewContext {
+  type: string;
+  interviewers: Array<{ name: string; role?: string; intel?: string }>;
+  notes?: string;
+  scheduledAt?: Date;
+}
+
 export async function generateInterviewPrep(
   jdText: string,
   resumeText: string,
-  job?: Job
+  job?: Job,
+  interviewContext?: InterviewContext
 ): Promise<string> {
   // Use smart context if job is provided to include relevant experiences
   let additionalContext = '';
@@ -273,9 +282,50 @@ export async function generateInterviewPrep(
     additionalContext = getAdditionalContext();
   }
 
-  const prompt = INTERVIEW_PREP_PROMPT
+  // Build interview context string if provided
+  let interviewContextStr = '';
+  if (interviewContext) {
+    const parts: string[] = [];
+    parts.push(`\n\n---\n\nINTERVIEW CONTEXT:`);
+    parts.push(`Interview Type: ${interviewContext.type}`);
+
+    if (interviewContext.scheduledAt) {
+      parts.push(`Scheduled: ${new Date(interviewContext.scheduledAt).toLocaleString()}`);
+    }
+
+    if (interviewContext.notes) {
+      parts.push(`Interview Notes: ${interviewContext.notes}`);
+    }
+
+    if (interviewContext.interviewers.length > 0) {
+      parts.push(`\nInterviewers:`);
+      for (const interviewer of interviewContext.interviewers) {
+        let interviewerInfo = `- ${interviewer.name}`;
+        if (interviewer.role) {
+          interviewerInfo += ` (${interviewer.role})`;
+        }
+        parts.push(interviewerInfo);
+
+        if (interviewer.intel) {
+          parts.push(`  Intel: ${interviewer.intel}`);
+        }
+      }
+    }
+
+    interviewContextStr = parts.join('\n');
+  }
+
+  // Build prompt with interview context
+  let prompt = INTERVIEW_PREP_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
+
+  // Add interview context section to the prompt if available
+  if (interviewContextStr) {
+    prompt += interviewContextStr;
+    prompt += `\n\n**IMPORTANT**: This prep is specifically for a ${interviewContext!.type} interview. `;
+    prompt += `Tailor your recommendations to this interview format and the specific interviewers if available.`;
+  }
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
