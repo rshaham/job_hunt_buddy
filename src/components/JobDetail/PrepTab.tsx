@@ -171,6 +171,7 @@ export function PrepTab({ job }: PrepTabProps) {
     if (!hasAIConfigured) {
       chatOp.reset();
       prepOp.reset();
+      showToast('AI is not configured. Please configure it in Settings before using interview prep.');
       return;
     }
 

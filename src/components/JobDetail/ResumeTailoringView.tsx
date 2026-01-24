@@ -203,6 +203,12 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
       });
     });
     // User message stays visible even on error
+    if (refineOp.error) {
+      window.alert(
+        'There was a problem refining your resume based on your message. ' +
+          'Your message is still visible. Please try again.'
+      );
+    }
   };
 
   const handleRegrade = async () => {
