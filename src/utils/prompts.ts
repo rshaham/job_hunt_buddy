@@ -1046,6 +1046,113 @@ export const BEHAVIORAL_CATEGORIES = [
   { id: 'problem_solving', label: 'Problem Solving', examples: ['Debugged complex issue', 'Found creative solution', 'Root cause analysis'] },
 ] as const;
 
+// ============================================================================
+// STAR Story System Prompts
+// ============================================================================
+
+export const EXTRACT_STAR_PROMPT = `Extract STAR components from this professional story/experience.
+
+Raw text:
+{rawText}
+
+STAR Format:
+- SITUATION: The context, background, and challenge faced (be specific about company, team, circumstances)
+- TASK: The specific responsibility or goal assigned to YOU (not the team)
+- ACTION: The concrete steps YOU took (focus on "I" not "we" - be specific about YOUR contributions)
+- RESULT: Quantified outcomes and impact (include numbers, percentages, timeframes when possible)
+
+Also identify:
+- Themes: Which behavioral categories this story fits. Choose from: leadership, conflict, failure, innovation, teamwork, technical, customer, deadline, initiative
+- Suggested questions: 2-3 interview questions this story could answer well
+
+If any STAR component is missing or weak, note it in the "gaps" field with a suggestion for improvement.
+If this text doesn't contain enough detail for full STAR extraction, extract what you can and note the gaps.
+
+Return ONLY valid JSON:
+{
+  "situation": "The specific context and challenge...",
+  "task": "What you were responsible for...",
+  "action": "The specific steps you took...",
+  "result": "The measurable outcome...",
+  "themes": ["leadership", "technical"],
+  "suggestedQuestions": ["Tell me about a time you...", "Describe a situation where..."],
+  "gaps": [
+    { "component": "result", "issue": "Missing quantified metric", "suggestion": "Add a specific number or percentage showing impact" }
+  ],
+  "question": "A behavioral interview question this story answers",
+  "answer": "The polished, complete story combining all STAR elements"
+}`;
+
+export const STRENGTHEN_STAR_SECTION_PROMPT = `Help strengthen this STAR story section.
+
+Story context:
+{storyContext}
+
+Current {section} section:
+{currentContent}
+
+Issues identified:
+{issues}
+
+Provide a strengthened version of this section that:
+1. Addresses the identified issues
+2. Maintains authenticity (don't invent details)
+3. Is concise but specific
+4. Uses action-oriented language
+
+Return ONLY valid JSON:
+{
+  "strengthened": "The improved section text...",
+  "tips": ["Specific tip 1 for making this stronger", "Tip 2"]
+}`;
+
+export const GENERATE_TMAY_PROMPT = `Generate a compelling "Tell Me About Yourself" introduction based on the candidate's profile.
+
+Resume:
+{resumeText}
+
+Additional context about the candidate:
+{additionalContext}
+
+Key stories/experiences:
+{savedStories}
+
+Settings:
+- Emphasis: {emphasis} (balanced = equal technical/leadership, technical = lead with tech skills, leadership = lead with management/influence)
+- Length: {length} (brief = ~30 seconds/100 words, standard = ~60 seconds/200 words, detailed = ~90 seconds/300 words)
+- Target Industry: {targetIndustry}
+
+Guidelines for a great "Tell Me About Yourself":
+1. Start with a professional identity statement (who you are professionally)
+2. Group experience into 2-3 thematic phases/chapters
+3. Show progression and growth between roles
+4. Include 1-2 specific achievements with metrics when possible
+5. End with "why this role/company" hook (use [Company] as placeholder)
+6. Keep it conversational, not robotic - this is a story, not a resume reading
+7. Transition phrases should feel natural: "That led me to...", "Building on that experience...", "What excites me now is..."
+
+Return ONLY valid JSON:
+{
+  "script": "The full narrative introduction text with natural paragraph breaks...",
+  "outline": [
+    {
+      "header": "Professional Identity",
+      "items": ["8 years in product engineering", "Focus on data infrastructure"],
+      "transition": "What drew me to this field was..."
+    },
+    {
+      "header": "Key Experience: Company A",
+      "items": ["Led platform team", "90% deployment time reduction"],
+      "transition": "That experience taught me to..."
+    },
+    {
+      "header": "Why This Role",
+      "items": ["Combine technical depth with product thinking", "Excited about [Company]'s mission"]
+    }
+  ],
+  "estimatedDuration": "45 seconds"
+}`;
+
 export const GAP_FINDER_PROMPT = `You are an expert at analyzing behavioral interview stories and categorizing them.
 
 Analyze each story and determine which behavioral interview categories it covers. A story can cover multiple categories.

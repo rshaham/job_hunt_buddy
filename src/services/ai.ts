@@ -29,8 +29,10 @@ import {
   CONFIDENCE_CHECK_PROMPT,
   GAP_FINDER_PROMPT,
   BEHAVIORAL_CATEGORIES,
+  EXTRACT_STAR_PROMPT,
+  GENERATE_TMAY_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel, StoryTheme, PitchOutlineBlock } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -1727,3 +1729,118 @@ export async function analyzeStoryGaps(
 
 // Re-export behavioral categories for use in UI
 export { BEHAVIORAL_CATEGORIES };
+
+// ============================================================================
+// STAR Story Extraction Functions
+// ============================================================================
+
+export interface StarExtractionResult {
+  situation?: string;
+  task?: string;
+  action?: string;
+  result?: string;
+  themes: StoryTheme[];
+  suggestedQuestions: string[];
+  gaps: Array<{ component: string; issue: string; suggestion: string }>;
+  question?: string;
+  answer?: string;
+}
+
+/**
+ * Extract STAR components from raw story text using AI.
+ * Used when user pastes story text and wants to structure it as STAR format.
+ */
+export async function extractStarFromText(rawText: string): Promise<StarExtractionResult> {
+  const prompt = EXTRACT_STAR_PROMPT.replace('{rawText}', rawText);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse STAR extraction response:', { response, jsonStr, error: e });
+    // Return empty result with the raw text as answer
+    return {
+      themes: [],
+      suggestedQuestions: [],
+      gaps: [{ component: 'all', issue: 'Could not extract STAR components', suggestion: 'Try providing more detail about the situation, your role, actions taken, and results achieved.' }],
+      answer: rawText,
+    };
+  }
+
+  return {
+    situation: parsed.situation as string | undefined,
+    task: parsed.task as string | undefined,
+    action: parsed.action as string | undefined,
+    result: parsed.result as string | undefined,
+    themes: (parsed.themes as StoryTheme[]) || [],
+    suggestedQuestions: (parsed.suggestedQuestions as string[]) || [],
+    gaps: (parsed.gaps as Array<{ component: string; issue: string; suggestion: string }>) || [],
+    question: parsed.question as string | undefined,
+    answer: parsed.answer as string | undefined,
+  };
+}
+
+// ============================================================================
+// "Tell Me About Yourself" Pitch Generation
+// ============================================================================
+
+export interface TMAYGenerationResult {
+  script: string;
+  outline: PitchOutlineBlock[];
+  estimatedDuration: string;
+}
+
+/**
+ * Generate a "Tell Me About Yourself" pitch based on user's profile.
+ */
+export async function generateTellMeAboutYourself(options: {
+  emphasis: 'balanced' | 'technical' | 'leadership';
+  length: 'brief' | 'standard' | 'detailed';
+  targetIndustry?: string;
+}): Promise<TMAYGenerationResult> {
+  const { settings } = useAppStore.getState();
+
+  const resumeText = settings.defaultResumeText || '';
+  const additionalContext = settings.additionalContext || '';
+
+  // Format saved stories for context
+  const savedStories = settings.savedStories?.length
+    ? settings.savedStories
+        .slice(0, 5) // Use top 5 stories
+        .map(s => {
+          let storyText = `**${s.question}**\n${s.answer}`;
+          if (s.company) storyText += `\n(At ${s.company})`;
+          if (s.outcome) storyText += `\nOutcome: ${s.outcome}`;
+          return storyText;
+        })
+        .join('\n\n---\n\n')
+    : 'No saved stories';
+
+  const prompt = GENERATE_TMAY_PROMPT
+    .replace('{resumeText}', resumeText || 'No resume provided')
+    .replace('{additionalContext}', additionalContext || 'None provided')
+    .replace('{savedStories}', savedStories)
+    .replace('{emphasis}', options.emphasis)
+    .replace('{length}', options.length)
+    .replace('{targetIndustry}', options.targetIndustry || 'Not specified');
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse TMAY generation response:', { response, jsonStr, error: e });
+    throw new Error('Failed to generate introduction. Please try again.');
+  }
+
+  return {
+    script: (parsed.script as string) || '',
+    outline: (parsed.outline as PitchOutlineBlock[]) || [],
+    estimatedDuration: (parsed.estimatedDuration as string) || '60 seconds',
+  };
+}
