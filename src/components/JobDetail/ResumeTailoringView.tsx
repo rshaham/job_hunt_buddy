@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   Sparkles,
   Send,
-  Loader2,
   Copy,
   Download,
   RefreshCw,
@@ -22,8 +21,9 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import * as Diff from 'diff';
-import { Button, ConfirmModal, ThinkingBubble } from '../ui';
+import { AILoadingIndicator, Button, ConfirmModal, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
+import { useAIOperation } from '../../hooks/useAIOperation';
 import { autoTailorResume, refineTailoredResume, gradeResume, rewriteForMemory } from '../../services/ai';
 import { isAIConfigured, generateId, getGradeColor } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
@@ -38,16 +38,20 @@ interface ResumeTailoringViewProps {
 
 export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailoringViewProps) {
   const { settings, updateJob, updateSettings } = useAppStore();
-  const [isAutoTailoring, setIsAutoTailoring] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
-  const [isRegrading, setIsRegrading] = useState(false);
+
+  // AI operation hooks for consistent loading state management
+  const autoTailorOp = useAIOperation<void>('auto-tailor');
+  const refineOp = useAIOperation<void>('refine');
+  const regradeOp = useAIOperation<void>('regrade');
+  const saveMemoryOp = useAIOperation<void>('save-memory');
+  const pdfOp = useAIOperation<void>('pdf-export');
+
   const [isCopied, setIsCopied] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTailoredResume, setEditedTailoredResume] = useState('');
-  const [isSavingMemory, setIsSavingMemory] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [savingMemoryEntryId, setSavingMemoryEntryId] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState('');
   const [viewMode, setViewMode] = useState<'tailored' | 'compare' | 'diff'>('tailored');
   const [keywordsExpanded, setKeywordsExpanded] = useState(true);
@@ -98,8 +102,8 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
   };
 
   const handleSaveToMemory = async (entryId: string, question: string, answer: string) => {
-    setIsSavingMemory(entryId);
-    try {
+    setSavingMemoryEntryId(entryId);
+    const result = await saveMemoryOp.execute(async () => {
       const cleaned = await rewriteForMemory(question, answer);
       const newStory: SavedStory = {
         id: generateId(),
@@ -110,21 +114,19 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
       await updateSettings({
         savedStories: [...(settings.savedStories || []), newStory],
       });
+    });
+    if (result !== undefined) {
       showToast('Saved to profile', 'success');
-    } catch (err) {
+    } else {
       showToast('Failed to save', 'error');
-    } finally {
-      setIsSavingMemory(null);
     }
+    setSavingMemoryEntryId(null);
   };
 
   const handleAutoTailor = async () => {
     if (!hasAIConfigured || !originalAnalysis) return;
 
-    setIsAutoTailoring(true);
-    setError('');
-
-    try {
+    await autoTailorOp.execute(async () => {
       const { tailoredResume: newResume, changesSummary, suggestedQuestions } = await autoTailorResume(
         job.jdText,
         originalResume,
@@ -150,11 +152,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
         tailoringHistory: [assistantMessage],
         tailoringSuggestions: suggestedQuestions,
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to tailor resume');
-    } finally {
-      setIsAutoTailoring(false);
-    }
+    });
   };
 
   const handleSendMessage = async () => {
@@ -162,7 +160,6 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
 
     const messageContent = userMessage.trim();
     setUserMessage('');
-    setError('');
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -182,9 +179,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
       tailoringHistory: [...history, userEntry],
     });
 
-    setIsRefining(true);
-
-    try {
+    await refineOp.execute(async () => {
       const { reply, updatedResume } = await refineTailoredResume(
         job.jdText,
         originalResume,
@@ -206,28 +201,23 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
         tailoredResume: updatedResume,
         tailoringHistory: [...originalHistory, userEntry, assistantEntry],
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refine resume');
-      // User message stays visible
-    } finally {
-      setIsRefining(false);
+    });
+    // User message stays visible even on error
+    if (refineOp.error) {
+      window.alert(
+        'There was a problem refining your resume based on your message. ' +
+          'Your message is still visible. Please try again.'
+      );
     }
   };
 
   const handleRegrade = async () => {
     if (!hasAIConfigured) return;
 
-    setIsRegrading(true);
-    setError('');
-
-    try {
+    await regradeOp.execute(async () => {
       const newAnalysis = await gradeResume(job.jdText, tailoredResume);
       await updateJob(job.id, { tailoredResumeAnalysis: newAnalysis });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to regrade resume');
-    } finally {
-      setIsRegrading(false);
-    }
+    });
   };
 
   const handleCopy = async () => {
@@ -263,22 +253,16 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
     setIsEditing(false);
   };
 
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const handleDownloadPDF = async () => {
-    setIsGeneratingPdf(true);
     setShowDownloadMenu(false);
-    try {
+    await pdfOp.execute(async () => {
       // Use edited content if in edit mode
       const contentToPrint = isEditing ? editedTailoredResume : tailoredResume;
       const filename = generatePdfFilename(job.company, job.title, 'tailored-resume');
       await exportMarkdownToPdf(contentToPrint, { filename });
-    } catch (err) {
-      console.error('Failed to generate PDF:', err);
-    } finally {
-      setIsGeneratingPdf(false);
-    }
+    });
   };
 
   const handleReset = async () => {
@@ -360,13 +344,10 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
           {!job.tailoredResume && (
             <Button
               onClick={handleAutoTailor}
-              disabled={isAutoTailoring || !hasAIConfigured}
+              disabled={autoTailorOp.isLoading || !hasAIConfigured}
             >
-              {isAutoTailoring ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  Tailoring...
-                </>
+              {autoTailorOp.isLoading ? (
+                <AILoadingIndicator isLoading label="Tailoring..." />
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-1" />
@@ -394,8 +375,8 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                   <Button variant="secondary" size="sm" onClick={handleStartEditing} title="Edit manually">
                     <Pencil className="w-4 h-4" />
                   </Button>
-                  <Button variant="secondary" size="sm" onClick={handleRegrade} disabled={isRegrading}>
-                    {isRegrading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  <Button variant="secondary" size="sm" onClick={handleRegrade} disabled={regradeOp.isLoading}>
+                    {regradeOp.isLoading ? <AILoadingIndicator isLoading /> : <RefreshCw className="w-4 h-4" />}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={handleCopy}>
                     {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -405,11 +386,11 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                       variant="secondary"
                       size="sm"
                       onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                      disabled={isGeneratingPdf}
+                      disabled={pdfOp.isLoading}
                       title="Download"
                     >
-                      {isGeneratingPdf ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                      {pdfOp.isLoading ? (
+                        <AILoadingIndicator isLoading />
                       ) : (
                         <>
                           <Download className="w-4 h-4" />
@@ -456,10 +437,11 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
         </div>
       </div>
 
-      {error && (
+      {/* Consolidated error display from all AI operations */}
+      {(autoTailorOp.error || refineOp.error || regradeOp.error) && (
         <div className="flex items-center gap-2 text-sm text-danger mt-2 px-1">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
+          <span>{autoTailorOp.error || refineOp.error || regradeOp.error}</span>
         </div>
       )}
 
@@ -559,14 +541,11 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                           <button
                             type="button"
                             onClick={() => handleSaveToMemory(entry.id, previousUserMessage, entry.content)}
-                            disabled={isSavingMemory === entry.id}
+                            disabled={savingMemoryEntryId === entry.id && saveMemoryOp.isLoading}
                             className="text-xs text-slate-400 hover:text-primary mt-1.5 ml-1 flex items-center gap-1 transition-colors disabled:opacity-50"
                           >
-                            {isSavingMemory === entry.id ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Saving...
-                              </>
+                            {savingMemoryEntryId === entry.id && saveMemoryOp.isLoading ? (
+                              <AILoadingIndicator isLoading size="sm" label="Saving..." />
                             ) : (
                               <>
                                 <Bookmark className="w-3 h-3" />
@@ -579,7 +558,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                     </div>
                   );
                 })}
-                {isRefining && <ThinkingBubble />}
+                {refineOp.isLoading && <ThinkingBubble />}
                 <div ref={chatEndRef} />
               </>
             )}
@@ -622,11 +601,11 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  disabled={isRefining || !userMessage.trim()}
+                  disabled={refineOp.isLoading || !userMessage.trim()}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                 >
-                  {isRefining ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {refineOp.isLoading ? (
+                    <AILoadingIndicator isLoading />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}

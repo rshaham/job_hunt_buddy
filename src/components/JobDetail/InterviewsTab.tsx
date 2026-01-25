@@ -3,6 +3,7 @@ import { Plus, Calendar } from 'lucide-react';
 import { Button, Modal, Input, Textarea, InterviewTypeSelect } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { InterviewRoundCard } from './InterviewRoundCard';
+import { InterviewPrepModal } from './InterviewPrepModal';
 import { cn } from '../../utils/helpers';
 import type { Job, InterviewStatus, InterviewRound } from '../../types';
 import { INTERVIEW_STATUS_LABELS } from '../../types';
@@ -20,9 +21,11 @@ interface InterviewsTabProps {
 }
 
 export function InterviewsTab({ job }: InterviewsTabProps) {
-  const { addInterviewRound, updateInterviewRound, deleteInterviewRound } = useAppStore();
+  const { addInterviewRound, updateInterviewRound, deleteInterviewRound, openTeleprompterModal } = useAppStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRoundForPrep, setSelectedRoundForPrep] = useState<InterviewRound | null>(null);
+  const [isPrepModalOpen, setIsPrepModalOpen] = useState(false);
 
   // New round form state
   const [newRound, setNewRound] = useState({
@@ -112,6 +115,14 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
               contacts={job.contacts || []}
               onUpdate={(updates) => handleUpdateRound(round.id, updates)}
               onDelete={() => handleDeleteRound(round.id)}
+              onOpenPrep={() => {
+                setSelectedRoundForPrep(round);
+                setIsPrepModalOpen(true);
+              }}
+              onOpenTeleprompter={() => {
+                // Open teleprompter with interview context
+                openTeleprompterModal(job.id);
+              }}
             />
           ))}
         </div>
@@ -127,6 +138,19 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
             Add Round
           </Button>
         </div>
+      )}
+
+      {/* Interview Prep Modal */}
+      {selectedRoundForPrep && (
+        <InterviewPrepModal
+          isOpen={isPrepModalOpen}
+          onClose={() => {
+            setIsPrepModalOpen(false);
+            setSelectedRoundForPrep(null);
+          }}
+          job={job}
+          interviewRound={selectedRoundForPrep}
+        />
       )}
 
       {/* Add Round Modal */}

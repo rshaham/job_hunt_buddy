@@ -1,0 +1,1 @@
+export { useResizablePanel } from './useResizablePanel';

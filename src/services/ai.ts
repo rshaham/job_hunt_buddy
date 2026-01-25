@@ -29,8 +29,11 @@ import {
   CONFIDENCE_CHECK_PROMPT,
   GAP_FINDER_PROMPT,
   BEHAVIORAL_CATEGORIES,
+  EXTRACT_STAR_PROMPT,
+  GENERATE_TMAY_PROMPT,
+  REFINE_PITCH_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel, StoryTheme, PitchOutlineBlock } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -252,10 +255,19 @@ export async function generateCoverLetter(
   return await callAI([{ role: 'user', content: prompt }]);
 }
 
+// Interview context for round-specific prep
+export interface InterviewContext {
+  type: string;
+  interviewers: Array<{ name: string; role?: string; intel?: string }>;
+  notes?: string;
+  scheduledAt?: Date;
+}
+
 export async function generateInterviewPrep(
   jdText: string,
   resumeText: string,
-  job?: Job
+  job?: Job,
+  interviewContext?: InterviewContext
 ): Promise<string> {
   // Use smart context if job is provided to include relevant experiences
   let additionalContext = '';
@@ -270,9 +282,50 @@ export async function generateInterviewPrep(
     additionalContext = getAdditionalContext();
   }
 
-  const prompt = INTERVIEW_PREP_PROMPT
+  // Build interview context string if provided
+  let interviewContextStr = '';
+  if (interviewContext) {
+    const parts: string[] = [];
+    parts.push(`\n\n---\n\nINTERVIEW CONTEXT:`);
+    parts.push(`Interview Type: ${interviewContext.type}`);
+
+    if (interviewContext.scheduledAt) {
+      parts.push(`Scheduled: ${new Date(interviewContext.scheduledAt).toLocaleString()}`);
+    }
+
+    if (interviewContext.notes) {
+      parts.push(`Interview Notes: ${interviewContext.notes}`);
+    }
+
+    if (interviewContext.interviewers.length > 0) {
+      parts.push(`\nInterviewers:`);
+      for (const interviewer of interviewContext.interviewers) {
+        let interviewerInfo = `- ${interviewer.name}`;
+        if (interviewer.role) {
+          interviewerInfo += ` (${interviewer.role})`;
+        }
+        parts.push(interviewerInfo);
+
+        if (interviewer.intel) {
+          parts.push(`  Intel: ${interviewer.intel}`);
+        }
+      }
+    }
+
+    interviewContextStr = parts.join('\n');
+  }
+
+  // Build prompt with interview context
+  let prompt = INTERVIEW_PREP_PROMPT
     .replace('{jdText}', jdText)
     .replace('{resumeText}', resumeText + additionalContext);
+
+  // Add interview context section to the prompt if available
+  if (interviewContextStr) {
+    prompt += interviewContextStr;
+    prompt += `\n\n**IMPORTANT**: This prep is specifically for a ${interviewContext!.type} interview. `;
+    prompt += `Tailor your recommendations to this interview format and the specific interviewers if available.`;
+  }
 
   return await callAI([{ role: 'user', content: prompt }]);
 }
@@ -1727,3 +1780,194 @@ export async function analyzeStoryGaps(
 
 // Re-export behavioral categories for use in UI
 export { BEHAVIORAL_CATEGORIES };
+
+// ============================================================================
+// STAR Story Extraction Functions
+// ============================================================================
+
+export interface StarExtractionResult {
+  situation?: string;
+  task?: string;
+  action?: string;
+  result?: string;
+  themes: StoryTheme[];
+  suggestedQuestions: string[];
+  gaps: Array<{ component: string; issue: string; suggestion: string }>;
+  question?: string;
+  answer?: string;
+}
+
+/**
+ * Extract STAR components from raw story text using AI.
+ * Used when user pastes story text and wants to structure it as STAR format.
+ */
+export async function extractStarFromText(rawText: string): Promise<StarExtractionResult> {
+  const prompt = EXTRACT_STAR_PROMPT.replace('{rawText}', rawText);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse STAR extraction response:', { response, jsonStr, error: e });
+    // Return empty result with the raw text as answer
+    return {
+      themes: [],
+      suggestedQuestions: [],
+      gaps: [{ component: 'all', issue: 'Could not extract STAR components', suggestion: 'Try providing more detail about the situation, your role, actions taken, and results achieved.' }],
+      answer: rawText,
+    };
+  }
+
+  return {
+    situation: parsed.situation as string | undefined,
+    task: parsed.task as string | undefined,
+    action: parsed.action as string | undefined,
+    result: parsed.result as string | undefined,
+    themes: (parsed.themes as StoryTheme[]) || [],
+    suggestedQuestions: (parsed.suggestedQuestions as string[]) || [],
+    gaps: (parsed.gaps as Array<{ component: string; issue: string; suggestion: string }>) || [],
+    question: parsed.question as string | undefined,
+    answer: parsed.answer as string | undefined,
+  };
+}
+
+// ============================================================================
+// "Tell Me About Yourself" Pitch Generation
+// ============================================================================
+
+export interface TMAYGenerationResult {
+  script: string;
+  outline: PitchOutlineBlock[];
+  estimatedDuration: string;
+}
+
+/**
+ * Generate a "Tell Me About Yourself" pitch based on user's profile.
+ */
+export async function generateTellMeAboutYourself(options: {
+  emphasis: 'balanced' | 'technical' | 'leadership';
+  length: 'brief' | 'standard' | 'detailed';
+  targetIndustry?: string;
+}): Promise<TMAYGenerationResult> {
+  const { settings } = useAppStore.getState();
+
+  const resumeText = settings.defaultResumeText || '';
+  const additionalContext = settings.additionalContext || '';
+
+  // Format saved stories for context
+  const savedStories = settings.savedStories?.length
+    ? settings.savedStories
+        .slice(0, 5) // Use top 5 stories
+        .map(s => {
+          let storyText = `**${s.question}**\n${s.answer}`;
+          if (s.company) storyText += `\n(At ${s.company})`;
+          if (s.outcome) storyText += `\nOutcome: ${s.outcome}`;
+          return storyText;
+        })
+        .join('\n\n---\n\n')
+    : 'No saved stories';
+
+  const prompt = GENERATE_TMAY_PROMPT
+    .replace('{resumeText}', resumeText || 'No resume provided')
+    .replace('{additionalContext}', additionalContext || 'None provided')
+    .replace('{savedStories}', savedStories)
+    .replace('{emphasis}', options.emphasis)
+    .replace('{length}', options.length)
+    .replace('{targetIndustry}', options.targetIndustry || 'Not specified');
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse TMAY generation response:', { response, jsonStr, error: e });
+    throw new Error('Failed to generate introduction. Please try again.');
+  }
+
+  return {
+    script: (parsed.script as string) || '',
+    outline: (parsed.outline as PitchOutlineBlock[]) || [],
+    estimatedDuration: (parsed.estimatedDuration as string) || '60 seconds',
+  };
+}
+
+/**
+ * Refine an existing pitch based on user feedback.
+ */
+export interface PitchRefinementEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  scriptSnapshot?: string;
+  timestamp: Date;
+}
+
+export interface PitchRefinementResult {
+  script: string;
+  outline: PitchOutlineBlock[];
+  estimatedDuration: string;
+  changesApplied: string;
+}
+
+export async function refinePitch(options: {
+  currentScript: string;
+  currentOutline: PitchOutlineBlock[];
+  emphasis: 'balanced' | 'technical' | 'leadership';
+  length: 'brief' | 'standard' | 'detailed';
+  targetIndustry?: string;
+  refinementHistory: PitchRefinementEntry[];
+  userRequest: string;
+}): Promise<PitchRefinementResult> {
+  const { settings } = useAppStore.getState();
+  const resumeText = settings.defaultResumeText || '';
+
+  // Format outline for the prompt
+  const outlineText = options.currentOutline
+    .map(block => {
+      let text = `**${block.header}**\n`;
+      text += block.items.map(item => `- ${item}`).join('\n');
+      if (block.transition) text += `\n→ ${block.transition}`;
+      return text;
+    })
+    .join('\n\n');
+
+  // Format refinement history
+  const historyText = options.refinementHistory.length > 0
+    ? options.refinementHistory
+        .map(entry => `${entry.role === 'user' ? 'User' : 'Assistant'}: ${entry.content}`)
+        .join('\n\n')
+    : 'No previous refinements';
+
+  const prompt = REFINE_PITCH_PROMPT
+    .replace('{currentScript}', options.currentScript)
+    .replace('{currentOutline}', outlineText)
+    .replace('{emphasis}', options.emphasis)
+    .replace('{length}', options.length)
+    .replace('{targetIndustry}', options.targetIndustry || 'Not specified')
+    .replace('{resumeText}', resumeText || 'No resume provided')
+    .replace('{refinementHistory}', historyText)
+    .replace('{userRequest}', options.userRequest);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+  const jsonStr = extractJSON(response);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to parse pitch refinement response:', { response, jsonStr, error: e });
+    throw new Error('Failed to refine pitch. Please try again.');
+  }
+
+  return {
+    script: (parsed.script as string) || options.currentScript,
+    outline: (parsed.outline as PitchOutlineBlock[]) || options.currentOutline,
+    estimatedDuration: (parsed.estimatedDuration as string) || '60 seconds',
+    changesApplied: (parsed.changesApplied as string) || 'Changes applied',
+  };
+}

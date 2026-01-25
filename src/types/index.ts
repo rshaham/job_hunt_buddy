@@ -117,6 +117,7 @@ export interface PrepMaterial {
   title: string;
   content: string;
   type: 'question' | 'answer' | 'research' | 'other';
+  interviewRoundId?: string;  // Links material to specific interview round
 }
 
 // Learning task category types for AI-assisted preparation
@@ -196,6 +197,7 @@ export interface SavedPrepConversation {
   name: string;
   entries: QAEntry[];
   savedAt: Date;
+  interviewRoundId?: string;  // Links conversation to specific interview round
 }
 
 export interface TailoringEntry {
@@ -380,6 +382,41 @@ export interface CareerCoachState {
   lastAnalyzedAt?: Date;
 }
 
+// Story themes for behavioral interview categorization
+export type StoryTheme =
+  | 'leadership'
+  | 'conflict'
+  | 'failure'
+  | 'innovation'
+  | 'teamwork'
+  | 'technical'
+  | 'customer'
+  | 'deadline'
+  | 'initiative'
+  | string; // Allow custom themes
+
+// Default story themes with display metadata
+export const STORY_THEMES: { id: StoryTheme; label: string; color: string }[] = [
+  { id: 'leadership', label: 'Leadership', color: 'emerald' },
+  { id: 'conflict', label: 'Conflict Resolution', color: 'rose' },
+  { id: 'failure', label: 'Failure & Learning', color: 'amber' },
+  { id: 'innovation', label: 'Innovation', color: 'blue' },
+  { id: 'teamwork', label: 'Teamwork', color: 'cyan' },
+  { id: 'technical', label: 'Technical Challenge', color: 'purple' },
+  { id: 'customer', label: 'Customer Focus', color: 'pink' },
+  { id: 'deadline', label: 'Deadline Pressure', color: 'orange' },
+  { id: 'initiative', label: 'Initiative', color: 'teal' },
+];
+
+// Strength rating descriptions
+export const STRENGTH_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
+  5: 'Your best - lead with this story',
+  4: 'Strong - use early in interviews',
+  3: 'Solid - good backup option',
+  2: 'Developing - practice more',
+  1: 'Needs work - refine before using',
+};
+
 export interface SavedStory {
   id: string;
   question: string;  // The topic/question this story answers
@@ -404,6 +441,17 @@ export interface SavedStory {
   source?: 'manual' | 'chat' | 'import';
   sourceJobId?: string;
   updatedAt?: Date;
+
+  // STAR format fields (all optional - stories can exist without STAR structure)
+  situation?: string;
+  task?: string;
+  action?: string;
+  result?: string;
+
+  // Interview prep fields
+  strengthRank?: 1 | 2 | 3 | 4 | 5;  // 1 = weakest, 5 = strongest
+  themes?: StoryTheme[];
+  suggestedQuestions?: string[];  // AI-suggested questions this story answers
 }
 
 // ============================================================================
@@ -532,6 +580,38 @@ export interface ContextDocument {
   useSummary: boolean;    // Whether to use summary for AI calls
 }
 
+// "Tell Me About Yourself" pitch outline block
+export interface PitchOutlineBlock {
+  header: string;
+  items: string[];
+  transition?: string;
+}
+
+// Pitch refinement history entry
+export interface PitchRefinementEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  scriptSnapshot?: string;  // Pitch state after this refinement
+  timestamp: Date;
+}
+
+// "Tell Me About Yourself" pitch stored in settings
+export interface TellMeAboutYourselfPitch {
+  id: string;
+  name: string;  // User-friendly name like "Fintech Focus" or "Leadership Emphasis"
+  script: string;
+  outline: PitchOutlineBlock[];
+  emphasis: 'balanced' | 'technical' | 'leadership';
+  length: 'brief' | 'standard' | 'detailed';
+  targetIndustry?: string;
+  estimatedDuration?: string;
+  isActive: boolean;  // Which pitch shows in Teleprompter by default
+  refinementHistory?: PitchRefinementEntry[];  // History of refinements for iteration
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
 export interface Status {
   id: string;
   name: string;
@@ -614,6 +694,9 @@ export interface AppSettings {
 
   // Custom interview types (user-defined)
   customInterviewTypes?: CustomInterviewType[];
+
+  // "Tell Me About Yourself" pitches for interview prep (multiple pitches supported)
+  savedPitches?: TellMeAboutYourselfPitch[];
 }
 
 export const DEFAULT_STATUSES: Status[] = [
@@ -731,5 +814,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   savedStories: [],
   contextDocuments: [],
   careerProjects: [],
+  savedPitches: [],
   onboardingCompleted: false,
 };

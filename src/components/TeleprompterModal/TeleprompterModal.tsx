@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark, Plus, Loader2, Calendar, User } from 'lucide-react';
+import { X, Play, ChevronDown, ThumbsUp, ThumbsDown, Bookmark, Plus, Loader2, Calendar, User, MessageSquare, BookOpen, FileText } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { useAppStore } from '../../stores/appStore';
 import { generateRealtimeTeleprompterKeywords } from '../../services/ai';
 import type { Job, TeleprompterCustomType, TeleprompterRoundupItem, InterviewRound, Contact } from '../../types';
 import { DEFAULT_INTERVIEW_TYPES, getInterviewTypeLabel } from '../../types';
 import { ContextPanel } from './ContextPanel';
+import { StoriesTab } from './StoriesTab';
+import { MyPitchTab } from './MyPitchTab';
 
 type ModalState = 'setup' | 'active' | 'roundup';
 
@@ -436,7 +438,10 @@ function SetupScreen({
         )}
       >
         {isLoading ? (
-          'Preparing...'
+          <>
+            <Loader2 className="w-7 h-7 animate-spin" />
+            Preparing...
+          </>
         ) : (
           <>
             <Play className="w-7 h-7" />
@@ -447,6 +452,9 @@ function SetupScreen({
     </div>
   );
 }
+
+// Active screen tabs
+type ActiveTab = 'keywords' | 'stories' | 'pitch';
 
 // Active Screen Component - main teleprompter display during interview
 interface ActiveScreenProps {
@@ -470,6 +478,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
     setTeleprompterViewMode,
   } = useAppStore();
 
+  const [activeTab, setActiveTab] = useState<ActiveTab>('keywords');
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -582,7 +591,7 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Top bar with job info and controls */}
-      <div className="pb-4 border-b border-border mb-4 space-y-2 flex-shrink-0">
+      <div className="pb-4 border-b border-border mb-4 space-y-3 flex-shrink-0">
         {/* Row 1: Title + End button */}
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-2xl font-bold text-foreground min-w-0 break-words">
@@ -596,44 +605,91 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
           </button>
         </div>
 
-        {/* Row 2: Interview type + View toggle */}
+        {/* Row 2: Tabs + View toggle */}
         <div className="flex items-center justify-between">
-          <p className="text-lg text-foreground-muted">
-            {interviewTypeLabel}
-          </p>
-          {/* View mode toggle */}
+          {/* Tab navigation */}
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button
-              onClick={() => setTeleprompterViewMode('categorized')}
+              onClick={() => setActiveTab('keywords')}
               className={cn(
-                'px-4 py-2 text-sm font-medium transition-colors',
-                teleprompterSession.viewMode === 'categorized'
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
+                activeTab === 'keywords'
                   ? 'bg-primary text-white'
                   : 'bg-surface text-foreground-muted hover:bg-surface-raised'
               )}
             >
-              Categorized
+              <MessageSquare className="w-4 h-4" />
+              Keywords
             </button>
             <button
-              onClick={() => setTeleprompterViewMode('flat')}
+              onClick={() => setActiveTab('stories')}
               className={cn(
-                'px-4 py-2 text-sm font-medium transition-colors',
-                teleprompterSession.viewMode === 'flat'
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
+                activeTab === 'stories'
                   ? 'bg-primary text-white'
                   : 'bg-surface text-foreground-muted hover:bg-surface-raised'
               )}
             >
-              Flat
+              <BookOpen className="w-4 h-4" />
+              My Stories
+            </button>
+            <button
+              onClick={() => setActiveTab('pitch')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors',
+                activeTab === 'pitch'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface text-foreground-muted hover:bg-surface-raised'
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              My Pitch
             </button>
           </div>
+
+          {/* View mode toggle - only show for keywords tab */}
+          {activeTab === 'keywords' && (
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button
+                onClick={() => setTeleprompterViewMode('categorized')}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium transition-colors',
+                  teleprompterSession.viewMode === 'categorized'
+                    ? 'bg-primary text-white'
+                    : 'bg-surface text-foreground-muted hover:bg-surface-raised'
+                )}
+              >
+                Categorized
+              </button>
+              <button
+                onClick={() => setTeleprompterViewMode('flat')}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium transition-colors',
+                  teleprompterSession.viewMode === 'flat'
+                    ? 'bg-primary text-white'
+                    : 'bg-surface text-foreground-muted hover:bg-surface-raised'
+                )}
+              >
+                Flat
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Interview type label */}
+        <p className="text-sm text-foreground-muted">
+          {interviewTypeLabel}
+        </p>
       </div>
 
-      {/* Main content area with context panel */}
+      {/* Main content area */}
       <div className="flex-1 flex gap-4 min-h-0">
-        {/* Left side - keywords and input */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Staging area for initial suggestions */}
+        {/* Tab content */}
+        {activeTab === 'keywords' && (
+          <>
+            {/* Left side - keywords and input */}
+            <div className="flex-1 flex flex-col min-w-0">
+              {/* Staging area for initial suggestions */}
           {(teleprompterSession.isGeneratingInitialKeywords || teleprompterSession.stagingKeywords.length > 0) && (
             <div className="mb-4 bg-surface-raised rounded-lg border border-border overflow-hidden">
               {/* Collapsible header */}
@@ -855,20 +911,43 @@ function ActiveScreen({ onEndInterview }: ActiveScreenProps) {
               <button
                 onClick={handleInputSubmit}
                 disabled={!inputValue.trim() || isGenerating}
-                className="px-6 py-4 text-xl font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-4 text-xl font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                {isGenerating ? '...' : 'Add'}
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  'Add'
+                )}
               </button>
             </div>
           </div>
         </div>
 
         {/* Right side - context panel */}
-        <ContextPanel
-          job={job || null}
-          addedKeywords={allKeywords}
-          onAddKeyword={handleAddFromContext}
-        />
+            <ContextPanel
+              job={job || null}
+              addedKeywords={allKeywords}
+              onAddKeyword={handleAddFromContext}
+            />
+          </>
+        )}
+
+        {/* My Stories tab */}
+        {activeTab === 'stories' && (
+          <div className="flex-1 overflow-y-auto">
+            <StoriesTab />
+          </div>
+        )}
+
+        {/* My Pitch tab */}
+        {activeTab === 'pitch' && (
+          <div className="flex-1 overflow-y-auto">
+            <MyPitchTab />
+          </div>
+        )}
       </div>
 
       {/* End confirmation modal */}
@@ -923,8 +1002,14 @@ function RoundupScreen({ onComplete }: RoundupScreenProps) {
 
   // Load roundup items on mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadRoundup = async () => {
       const items = await endTeleprompterSession();
+
+      // Only update state if component is still mounted
+      if (!isMounted) return;
+
       setRoundupItems(items);
 
       // Check if custom type should be saved
@@ -933,6 +1018,10 @@ function RoundupScreen({ onComplete }: RoundupScreenProps) {
       }
     };
     loadRoundup();
+
+    return () => {
+      isMounted = false;
+    };
   }, [endTeleprompterSession, teleprompterSession]);
 
   const toggleHelpful = useCallback((index: number, helpful: boolean) => {

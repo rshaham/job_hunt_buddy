@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Users, Pencil, Trash2, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Target, Mic } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button, Textarea, Input, InterviewTypeSelect } from '../ui';
 import { cn } from '../../utils/helpers';
@@ -12,9 +12,11 @@ interface InterviewRoundCardProps {
   contacts: Contact[];
   onUpdate: (updates: Partial<InterviewRound>) => void;
   onDelete: () => void;
+  onOpenPrep?: () => void;
+  onOpenTeleprompter?: () => void;
 }
 
-export function InterviewRoundCard({ round, contacts, onUpdate, onDelete }: InterviewRoundCardProps) {
+export function InterviewRoundCard({ round, contacts, onUpdate, onDelete, onOpenPrep, onOpenTeleprompter }: InterviewRoundCardProps) {
   const { settings } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -329,6 +331,38 @@ export function InterviewRoundCard({ round, contacts, onUpdate, onDelete }: Inte
 
               {!round.location && !round.notes && !round.feedback && interviewers.length === 0 && (
                 <p className="text-sm text-foreground-muted italic">No additional details</p>
+              )}
+
+              {/* Action buttons */}
+              {round.status !== 'completed' && round.status !== 'cancelled' && (onOpenPrep || onOpenTeleprompter) && (
+                <div className="flex gap-2 pt-2 border-t border-border mt-3">
+                  {onOpenPrep && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenPrep();
+                      }}
+                    >
+                      <Target className="w-4 h-4 mr-1" />
+                      Prep for This Round
+                    </Button>
+                  )}
+                  {onOpenTeleprompter && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenTeleprompter();
+                      }}
+                    >
+                      <Mic className="w-4 h-4 mr-1" />
+                      Teleprompter
+                    </Button>
+                  )}
+                </div>
               )}
             </>
           )}
