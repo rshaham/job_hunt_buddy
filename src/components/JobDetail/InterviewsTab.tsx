@@ -24,8 +24,13 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
   const { addInterviewRound, updateInterviewRound, deleteInterviewRound, openTeleprompterModal } = useAppStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedRoundForPrep, setSelectedRoundForPrep] = useState<InterviewRound | null>(null);
+  const [selectedRoundIdForPrep, setSelectedRoundIdForPrep] = useState<string | null>(null);
   const [isPrepModalOpen, setIsPrepModalOpen] = useState(false);
+
+  // Derive fresh round from job (updates when job updates)
+  const selectedRoundForPrep = selectedRoundIdForPrep
+    ? (job.interviews || []).find(r => r.id === selectedRoundIdForPrep) || null
+    : null;
 
   // New round form state
   const [newRound, setNewRound] = useState({
@@ -116,7 +121,7 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
               onUpdate={(updates) => handleUpdateRound(round.id, updates)}
               onDelete={() => handleDeleteRound(round.id)}
               onOpenPrep={() => {
-                setSelectedRoundForPrep(round);
+                setSelectedRoundIdForPrep(round.id);
                 setIsPrepModalOpen(true);
               }}
               onOpenTeleprompter={() => {
@@ -146,7 +151,7 @@ export function InterviewsTab({ job }: InterviewsTabProps) {
           isOpen={isPrepModalOpen}
           onClose={() => {
             setIsPrepModalOpen(false);
-            setSelectedRoundForPrep(null);
+            setSelectedRoundIdForPrep(null);
           }}
           job={job}
           interviewRound={selectedRoundForPrep}
