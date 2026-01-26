@@ -17,8 +17,118 @@ import { useCommandBarStore } from '../../stores/commandBarStore';
 import { Column } from './Column';
 import { JobCard } from './JobCard';
 import { Button } from '../ui';
-import { EmbeddingStatus } from '../EmbeddingStatus';
-import type { Job } from '../../types';
+import type { Job, Status } from '../../types';
+
+// --- Status Bar Header ---
+function StatusBarHeader({
+  statuses,
+  jobsByStatus,
+  totalJobs,
+  onAddJob,
+  onBatchScan,
+  onOpenCommandBar,
+  activeModel,
+}: {
+  statuses: Status[];
+  jobsByStatus: Record<string, Job[]>;
+  totalJobs: number;
+  onAddJob: () => void;
+  onBatchScan: () => void;
+  onOpenCommandBar: () => void;
+  activeModel: string;
+}) {
+  // Calculate progress bar segments
+  const segments = statuses
+    .filter(s => !['Rejected', 'Withdrawn'].includes(s.name))
+    .sort((a, b) => a.order - b.order)
+    .map(status => ({
+      name: status.name,
+      color: status.color,
+      count: jobsByStatus[status.name]?.length || 0,
+    }));
+
+  const activeJobCount = segments.reduce((sum, s) => sum + s.count, 0);
+
+  return (
+    <header className="relative bg-surface border-b border-border w-full max-w-full overflow-hidden">
+      {/* Progress bar at top */}
+      <div className="h-1 flex w-full bg-surface-raised">
+        {totalJobs > 0 && segments.map((segment) => (
+          <div
+            key={segment.name}
+            className="h-full transition-all duration-300"
+            style={{
+              backgroundColor: segment.color,
+              width: `${(segment.count / totalJobs) * 100}%`,
+            }}
+            title={`${segment.name}: ${segment.count}`}
+          />
+        ))}
+      </div>
+
+      {/* Main header content - buttons first (priority), then stats */}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-6 py-3">
+        {/* Actions first - always visible */}
+        <div className="flex items-center gap-2">
+          <Button onClick={onAddJob} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            Add Job
+          </Button>
+          <Button
+            onClick={onBatchScan}
+            size="sm"
+            style={{ backgroundColor: '#16a34a', borderColor: '#16a34a', color: 'white' }}
+          >
+            <ScanLine className="w-4 h-4 mr-1" />
+            Batch Scan
+          </Button>
+          <button
+            type="button"
+            onClick={onOpenCommandBar}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted
+              hover:bg-surface-raised rounded-lg transition-colors duration-fast"
+            title="Open AI Agent (Ctrl+K)"
+          >
+            <Sparkles className="w-4 h-4" />
+            <kbd className="px-1.5 py-0.5 text-xs bg-surface-raised rounded font-mono">
+              ⌘K
+            </kbd>
+          </button>
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 text-xs text-foreground-muted
+              bg-surface-raised rounded-lg border border-border"
+            title={`Active AI: ${activeModel}`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="font-medium font-body">{activeModel || 'No model'}</span>
+          </div>
+        </div>
+
+        {/* Stats after - can wrap if needed */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {segments
+            .filter((segment) => segment.count > 0)
+            .map((segment) => (
+              <div key={segment.name} className="flex items-center gap-1 text-sm">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: segment.color }}
+                />
+                <span className="text-foreground-muted">
+                  {segment.count} {segment.name}
+                </span>
+              </div>
+            ))}
+          {activeJobCount !== totalJobs && (
+            <span className="text-xs text-foreground-subtle">
+              ({totalJobs - activeJobCount} archived)
+            </span>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
 
 type SortOption = 'dateAdded' | 'company' | 'title' | 'resumeFit';
 type SortDirection = 'asc' | 'desc';
@@ -148,65 +258,21 @@ export function BoardView() {
     setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
   };
 
+  const activeModel = settings.providers[settings.activeProvider]?.model || 'No model';
+  const openCommandBar = () => useCommandBarStore.getState().open();
+
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-x-hidden">
       {/* Header */}
-      <header
-        className="relative flex items-center justify-end px-6 py-5 bg-primary-subtle"
-      >
-        {/* Wireframe mesh pattern */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(74, 158, 143, 0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(74, 158, 143, 0.5) 1px, transparent 1px),
-              linear-gradient(45deg, rgba(74, 158, 143, 0.25) 1px, transparent 1px),
-              linear-gradient(-45deg, rgba(74, 158, 143, 0.25) 1px, transparent 1px)
-            `,
-            backgroundSize: '20px 20px, 20px 20px, 28px 28px, 28px 28px',
-          }}
-        />
-        {/* Bottom accent line */}
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary" />
-        <div className="relative z-10 flex items-center gap-2">
-          <Button onClick={openAddJobModal} size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            Add Job
-          </Button>
-          <Button
-            onClick={() => openJobFinderModal('batch')}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white border-green-600"
-          >
-            <ScanLine className="w-4 h-4 mr-1" />
-            Batch Scan
-          </Button>
-          <button
-            type="button"
-            onClick={() => useCommandBarStore.getState().open()}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted
-              hover:bg-surface-raised rounded-lg transition-colors duration-fast"
-            title="Open AI Agent (Ctrl+K)"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>AI Agent</span>
-            <kbd className="px-1.5 py-0.5 text-xs bg-surface-raised rounded font-mono">
-              Ctrl+K
-            </kbd>
-          </button>
-          {/* Active AI Model Indicator */}
-          <div
-            className="flex items-center gap-1.5 px-2 py-1 text-xs text-foreground-muted
-              bg-surface-raised rounded-lg border border-border"
-            title={`Active AI: ${settings.providers[settings.activeProvider]?.model || 'Not configured'}`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <span className="font-medium font-body">{settings.providers[settings.activeProvider]?.model || 'No model'}</span>
-          </div>
-          <EmbeddingStatus />
-        </div>
-      </header>
+      <StatusBarHeader
+        statuses={settings.statuses}
+        jobsByStatus={jobsByStatus}
+        totalJobs={jobs.length}
+        onAddJob={openAddJobModal}
+        onBatchScan={() => openJobFinderModal('batch')}
+        onOpenCommandBar={openCommandBar}
+        activeModel={activeModel}
+      />
 
       {/* Filter/Sort Toolbar */}
       <div className="flex items-center gap-4 px-6 py-2 bg-surface border-b border-border">
