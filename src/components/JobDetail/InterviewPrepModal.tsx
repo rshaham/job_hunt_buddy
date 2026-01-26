@@ -187,13 +187,17 @@ export function InterviewPrepModal({ isOpen, onClose, job, interviewRound }: Int
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [localChat]);
 
-  // Reset state when modal opens with new round
+  // Load existing chat when modal opens or round changes
+  // Note: Do NOT include interviewRound.prepChat in deps - that would reset chat
+  // every time we persist, undoing local state updates before they're visible
   useEffect(() => {
     if (isOpen) {
-      setLocalChat([]);
+      // Load persisted chat from the interview round
+      setLocalChat(interviewRound.prepChat || []);
       setQuestion('');
       setError('');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, interviewRound.id]);
 
   // Auto-resize textarea
@@ -232,6 +236,17 @@ export function InterviewPrepModal({ isOpen, onClose, job, interviewRound }: Int
     setLocalChat(prev => [...prev, pendingEntry]);
     setIsLoading(true);
 
+    // Persist the pending entry to database
+    // IMPORTANT: Use fresh state from store, not stale job prop from closure
+    const freshJob = useAppStore.getState().jobs.find(j => j.id === job.id);
+    const currentInterviews = freshJob?.interviews || [];
+    const updatedRoundsWithPending = currentInterviews.map(r =>
+      r.id === interviewRound.id
+        ? { ...r, prepChat: [...(r.prepChat || []), pendingEntry] }
+        : r
+    );
+    await updateJob(job.id, { interviews: updatedRoundsWithPending });
+
     try {
       // Build context including interview round info
       const interviewContext = `
@@ -253,6 +268,22 @@ ${selectedInterviewer?.interviewerIntel ? `\nInterviewer Intel for ${selectedInt
       setLocalChat(prev =>
         prev.map(e => e.id === pendingEntry.id ? { ...e, answer: response.answer } : e)
       );
+
+      // Persist the answer to database
+      // IMPORTANT: Use fresh state from store, not stale job prop from closure
+      const freshJobForAnswer = useAppStore.getState().jobs.find(j => j.id === job.id);
+      const currentInterviewsForAnswer = freshJobForAnswer?.interviews || [];
+      const updatedRoundsWithAnswer = currentInterviewsForAnswer.map(r =>
+        r.id === interviewRound.id
+          ? {
+              ...r,
+              prepChat: (r.prepChat || []).map(e =>
+                e.id === pendingEntry.id ? { ...e, answer: response.answer } : e
+              ),
+            }
+          : r
+      );
+      await updateJob(job.id, { interviews: updatedRoundsWithAnswer });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
     } finally {

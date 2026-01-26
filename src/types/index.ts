@@ -302,6 +302,7 @@ export interface InterviewRound {
   outcome: InterviewOutcome;
   notes?: string;
   feedback?: string;
+  prepChat?: QAEntry[];  // Persisted Q&A chat for this interview round
   createdAt: Date;
   updatedAt: Date;
 }

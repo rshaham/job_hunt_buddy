@@ -153,8 +153,13 @@ export function PrepTab({ job }: PrepTabProps) {
   const [showTimelinePanel, setShowTimelinePanel] = useState(true);
 
   // Interview Prep Modal state
-  const [selectedRoundForPrep, setSelectedRoundForPrep] = useState<InterviewRound | null>(null);
+  const [selectedRoundIdForPrep, setSelectedRoundIdForPrep] = useState<string | null>(null);
   const [isPrepModalOpen, setIsPrepModalOpen] = useState(false);
+
+  // Derive fresh round from job (updates when job updates)
+  const selectedRoundForPrep = selectedRoundIdForPrep
+    ? (job.interviews || []).find(r => r.id === selectedRoundIdForPrep) || null
+    : null;
 
   // Prep Material viewer modal state
   const [viewingMaterial, setViewingMaterial] = useState<PrepMaterial | null>(null);
@@ -410,7 +415,7 @@ export function PrepTab({ job }: PrepTabProps) {
   };
 
   const handleOpenPrepModal = (round: InterviewRound) => {
-    setSelectedRoundForPrep(round);
+    setSelectedRoundIdForPrep(round.id);
     setIsPrepModalOpen(true);
   };
 
@@ -500,7 +505,7 @@ export function PrepTab({ job }: PrepTabProps) {
           isOpen={isPrepModalOpen}
           onClose={() => {
             setIsPrepModalOpen(false);
-            setSelectedRoundForPrep(null);
+            setSelectedRoundIdForPrep(null);
           }}
           job={job}
           interviewRound={selectedRoundForPrep}
