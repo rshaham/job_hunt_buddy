@@ -33,7 +33,8 @@ export function JobDetailView({ job }: JobDetailViewProps) {
   const handleClose = () => selectJob(null);
 
   const currentStatus = settings.statuses.find((s) => s.name === job.status);
-  const hasOutcomeData = job.rejectionDetails || job.offerDetails;
+  const hasOutcomeData = job.rejectionDetails || job.offerDetails ||
+                         job.status === 'Rejected' || job.status === 'Offer';
 
   return (
     <>

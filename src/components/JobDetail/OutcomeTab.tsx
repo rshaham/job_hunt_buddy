@@ -11,13 +11,14 @@ interface OutcomeTabProps {
 }
 
 export function OutcomeTab({ job }: OutcomeTabProps) {
-  const isRejection = !!job.rejectionDetails;
-  const isOffer = !!job.offerDetails;
+  // Show sections based on data OR current status (so users can add details anytime)
+  const showRejection = !!job.rejectionDetails || job.status === 'Rejected';
+  const showOffer = !!job.offerDetails || job.status === 'Offer';
 
   return (
     <div className="space-y-6">
-      {isRejection && <RejectionOutcome job={job} />}
-      {isOffer && <OfferOutcome job={job} />}
+      {showRejection && <RejectionOutcome job={job} />}
+      {showOffer && <OfferOutcome job={job} />}
     </div>
   );
 }
@@ -28,7 +29,7 @@ export function OutcomeTab({ job }: OutcomeTabProps) {
 
 function RejectionOutcome({ job }: { job: Job }) {
   const updateJob = useAppStore((state) => state.updateJob);
-  const details = job.rejectionDetails!;
+  const details = job.rejectionDetails || {};
 
   const [isEditing, setIsEditing] = useState(false);
   const [editReason, setEditReason] = useState<RejectionReason | ''>(details.reason || '');
@@ -257,7 +258,7 @@ function RejectionOutcome({ job }: { job: Job }) {
 
 function OfferOutcome({ job }: { job: Job }) {
   const updateJob = useAppStore((state) => state.updateJob);
-  const details = job.offerDetails!;
+  const details = job.offerDetails || {};
 
   const [isEditing, setIsEditing] = useState(false);
   const [editBaseSalary, setEditBaseSalary] = useState(details.baseSalary?.toString() || '');
