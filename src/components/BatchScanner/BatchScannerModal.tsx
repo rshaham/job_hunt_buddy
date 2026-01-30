@@ -92,37 +92,13 @@ export function BatchScannerModal() {
       <div className="flex flex-col h-full">
         {/* Input Phase */}
         {showInput && (
-          <div className="p-6">
-            {/* Scoring capability warning */}
-            {!scoreCheck.canScore && (
-              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                      Limited Scoring
-                    </p>
-                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                      {scoreCheck.reason}
-                    </p>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleOpenSettings}
-                      className="mt-2"
-                    >
-                      Open Settings
-                    </Button>
-                  </div>
-                </div>
+          <>
+            {/* Input Header with Scan Button */}
+            <div className="px-6 py-4 border-b border-border bg-surface flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-foreground">Add URLs to Scan</h3>
+                <p className="text-sm text-foreground-muted">Paste career page URLs below</p>
               </div>
-            )}
-
-            {/* URL Input */}
-            <UrlInputForm />
-
-            {/* Scan Button */}
-            <div className="mt-4 flex justify-end">
               <Button
                 onClick={handleStartScan}
                 disabled={parsedUrls.length === 0}
@@ -131,7 +107,38 @@ export function BatchScannerModal() {
                 Scan {parsedUrls.length} {parsedUrls.length === 1 ? 'URL' : 'URLs'}
               </Button>
             </div>
-          </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-auto p-6">
+              {/* Scoring capability warning */}
+              {!scoreCheck.canScore && (
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                        Limited Scoring
+                      </p>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        {scoreCheck.reason}
+                      </p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleOpenSettings}
+                        className="mt-2"
+                      >
+                        Open Settings
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* URL Input */}
+              <UrlInputForm />
+            </div>
+          </>
         )}
 
         {/* Progress Phase */}

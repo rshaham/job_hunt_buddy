@@ -11,6 +11,7 @@ import { NotesTab } from './NotesTab';
 import { ContactsEventsTab } from './ContactsEventsTab';
 import { LearningTasksTab } from './LearningTasksTab';
 import { InterviewsTab } from './InterviewsTab';
+import { OutcomeTab } from './OutcomeTab';
 import type { Job } from '../../types';
 
 interface JobDetailViewProps {
@@ -32,6 +33,8 @@ export function JobDetailView({ job }: JobDetailViewProps) {
   const handleClose = () => selectJob(null);
 
   const currentStatus = settings.statuses.find((s) => s.name === job.status);
+  const hasOutcomeData = job.rejectionDetails || job.offerDetails ||
+                         job.status === 'Rejected' || job.status === 'Offer';
 
   return (
     <>
@@ -101,6 +104,9 @@ export function JobDetailView({ job }: JobDetailViewProps) {
                 <TabsTrigger value="learning">Learning</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts & Events</TabsTrigger>
+                {hasOutcomeData && (
+                  <TabsTrigger value="outcome">Outcome</TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -132,6 +138,11 @@ export function JobDetailView({ job }: JobDetailViewProps) {
               <TabsContent value="contacts">
                 <ContactsEventsTab job={job} />
               </TabsContent>
+              {hasOutcomeData && (
+                <TabsContent value="outcome">
+                  <OutcomeTab job={job} />
+                </TabsContent>
+              )}
             </div>
           </Tabs>
         </div>
