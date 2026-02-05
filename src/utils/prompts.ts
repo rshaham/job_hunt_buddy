@@ -117,10 +117,27 @@ Resume Analysis (gaps and suggestions):
 Gaps: {gaps}
 Suggestions: {suggestions}
 
+{additionalContextBlock}
+
+LENGTH CONSTRAINT — HARD REQUIREMENT:
+Target: {targetLength}
+- "1 page": MUST fit one printed page. ~400-500 words max. Be ruthless about brevity.
+- "2 pages": MUST fit two printed pages. ~700-900 words max. Be concise but thorough.
+- "no limit": Use judgment, but still favor conciseness.
+
+CONCISENESS STRATEGY:
+- Most recent/relevant roles: 3-4 bullet points each
+- Older roles (5+ years ago): 1-2 bullet points or a single-line summary
+- Roles 8+ years ago: Consider omitting unless directly relevant to THIS job
+- Do NOT include a paragraph summary AND bullet points for the same role — pick one
+- Summary section: 2-3 sentences max, no sub-headings
+- Skills: only list skills mentioned in or relevant to this JD
+- NEVER reorder roles — always keep reverse-chronological order (most recent first)
+
 CRITICAL RULES:
 1. NEVER fabricate experience, skills, or achievements - only reframe what exists
 2. Use keywords and phrases from the job description where they honestly apply
-3. Reorder and emphasize relevant experience
+3. Emphasize relevant experience (but NEVER change the chronological order of roles — most recent first)
 4. Quantify achievements where possible using the candidate's actual experience
 5. Adjust skill descriptions to match JD terminology (if the skill is genuinely equivalent)
 6. When a "Learned Improvements from Previous Tailoring" section is provided in the context, apply relevant improvements - these are proven phrasings that worked well in past tailoring
@@ -129,7 +146,7 @@ Also generate 2-3 short, specific follow-up questions (under 60 chars each) that
 
 Return ONLY valid JSON with this exact structure:
 {
-  "tailoredResume": "Full markdown-formatted resume with all sections",
+  "tailoredResume": "Concise markdown resume within the target length",
   "changesSummary": "Brief bullet-point summary of key changes made",
   "suggestedQuestions": ["Short question 1?", "Short question 2?", "Short question 3?"]
 }
@@ -154,6 +171,17 @@ Current Tailored Resume:
 Resume Analysis:
 Gaps: {gaps}
 Suggestions: {suggestions}
+
+{additionalContextBlock}
+
+TARGET LENGTH: {targetLength}
+
+LENGTH AWARENESS:
+- Always respect the target length
+- If user asks to shorten: aggressively consolidate bullet points, remove less-relevant roles, merge similar items. Prioritize impact over completeness.
+- When adding new content, remove or condense less-relevant content to stay within target
+- A tight, relevant resume beats a comprehensive one
+- NEVER reorder roles — always keep reverse-chronological order (most recent first)
 
 Your role is to:
 1. Help the user address remaining gaps in their resume

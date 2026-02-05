@@ -33,7 +33,7 @@ import {
   GENERATE_TMAY_PROMPT,
   REFINE_PITCH_PROMPT,
 } from '../utils/prompts';
-import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel, StoryTheme, PitchOutlineBlock } from '../types';
+import type { JobSummary, ResumeAnalysis, QAEntry, TailoringEntry, CoverLetterEntry, EmailDraftEntry, EmailType, ProviderType, ProviderSettings, Job, CareerCoachEntry, UserSkillProfile, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepMessage, SemanticCategoryResponse, Contact, InterviewerIntel, StoryTheme, PitchOutlineBlock, ResumeTargetLength } from '../types';
 import { generateId, decodeApiKey } from '../utils/helpers';
 import { useAppStore } from '../stores/appStore';
 import { getProvider, type AIMessage } from './providers';
@@ -395,7 +395,8 @@ export async function autoTailorResume(
   jdText: string,
   originalResume: string,
   resumeAnalysis: ResumeAnalysis,
-  job?: Job
+  job?: Job,
+  targetLength?: ResumeTargetLength
 ): Promise<{ tailoredResume: string; changesSummary: string; suggestedQuestions: string[] }> {
   // Use smart context with gap-focused queries if job is provided
   let additionalContext: string;
@@ -411,11 +412,17 @@ export async function autoTailorResume(
     additionalContext = getAdditionalContext();
   }
 
+  const additionalContextBlock = additionalContext.trim()
+    ? `REFERENCE MATERIAL (for content ideas only — do NOT include verbatim in the resume):\n${additionalContext}`
+    : '';
+
   const prompt = AUTO_TAILOR_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{resumeText}', originalResume + additionalContext)
+    .replace('{resumeText}', originalResume)
     .replace('{gaps}', resumeAnalysis.gaps.join(', '))
-    .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
+    .replace('{suggestions}', resumeAnalysis.suggestions.join(', '))
+    .replace('{additionalContextBlock}', additionalContextBlock)
+    .replace('{targetLength}', targetLength || '2 pages');
 
   const response = await callAI([{ role: 'user', content: prompt }]);
   const jsonStr = extractJSON(response);
@@ -443,7 +450,8 @@ export async function refineTailoredResume(
   resumeAnalysis: ResumeAnalysis,
   history: TailoringEntry[],
   userMessage: string,
-  job?: Job
+  job?: Job,
+  targetLength?: ResumeTargetLength
 ): Promise<{ reply: string; updatedResume: string }> {
   // Use smart context with user message as query
   let additionalContext: string;
@@ -460,12 +468,18 @@ export async function refineTailoredResume(
     additionalContext = getAdditionalContext();
   }
 
+  const additionalContextBlock = additionalContext.trim()
+    ? `REFERENCE MATERIAL (for content ideas only — do NOT include verbatim in the resume):\n${additionalContext}`
+    : '';
+
   const systemPrompt = REFINE_RESUME_SYSTEM_PROMPT
     .replace('{jdText}', jdText)
-    .replace('{originalResume}', originalResume + additionalContext)
+    .replace('{originalResume}', originalResume)
     .replace('{currentResume}', currentTailoredResume)
     .replace('{gaps}', resumeAnalysis.gaps.join(', '))
-    .replace('{suggestions}', resumeAnalysis.suggestions.join(', '));
+    .replace('{suggestions}', resumeAnalysis.suggestions.join(', '))
+    .replace('{additionalContextBlock}', additionalContextBlock)
+    .replace('{targetLength}', targetLength || '2 pages');
 
   // Build message history
   const messages: AIMessage[] = [];
