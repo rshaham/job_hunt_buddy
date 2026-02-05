@@ -28,7 +28,7 @@ import { autoTailorResume, refineTailoredResume, gradeResume, rewriteForMemory }
 import { isAIConfigured, generateId, getGradeColor } from '../../utils/helpers';
 import { exportMarkdownToPdf, generatePdfFilename } from '../../utils/pdfExport';
 import { showToast } from '../../stores/toastStore';
-import type { Job, TailoringEntry, SavedStory } from '../../types';
+import type { Job, TailoringEntry, SavedStory, ResumeTargetLength } from '../../types';
 
 interface ResumeTailoringViewProps {
   job: Job;
@@ -53,6 +53,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
   const [editedTailoredResume, setEditedTailoredResume] = useState('');
   const [savingMemoryEntryId, setSavingMemoryEntryId] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState('');
+  const [targetLength, setTargetLength] = useState<ResumeTargetLength | ''>('');
   const [viewMode, setViewMode] = useState<'tailored' | 'compare' | 'diff'>('tailored');
   const [keywordsExpanded, setKeywordsExpanded] = useState(true);
 
@@ -130,7 +131,9 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
       const { tailoredResume: newResume, changesSummary, suggestedQuestions } = await autoTailorResume(
         job.jdText,
         originalResume,
-        originalAnalysis
+        originalAnalysis,
+        job,
+        targetLength || undefined
       );
 
       // Auto-regrade the tailored resume
@@ -151,6 +154,45 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
         tailoredResumeAnalysis: newAnalysis,
         tailoringHistory: [assistantMessage],
         tailoringSuggestions: suggestedQuestions,
+      });
+    });
+  };
+
+  const handleResizeResume = async (newLength: ResumeTargetLength) => {
+    if (!hasAIConfigured || !originalAnalysis || refineOp.isLoading) return;
+
+    setTargetLength(newLength);
+    const resizeMessage = `Resize the resume to fit ${newLength}. Adjust content density accordingly.`;
+
+    const userEntry: TailoringEntry = {
+      id: generateId(),
+      role: 'user',
+      content: resizeMessage,
+      timestamp: new Date(),
+    };
+
+    const originalHistory = history;
+    await updateJob(job.id, {
+      tailoringHistory: [...history, userEntry],
+    });
+
+    await refineOp.execute(async () => {
+      const { reply, updatedResume } = await refineTailoredResume(
+        job.jdText, originalResume, tailoredResume, originalAnalysis,
+        originalHistory, resizeMessage, job, newLength
+      );
+
+      const assistantEntry: TailoringEntry = {
+        id: generateId(),
+        role: 'assistant',
+        content: reply,
+        resumeSnapshot: updatedResume,
+        timestamp: new Date(),
+      };
+
+      await updateJob(job.id, {
+        tailoredResume: updatedResume,
+        tailoringHistory: [...originalHistory, userEntry, assistantEntry],
       });
     });
   };
@@ -186,7 +228,9 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
         tailoredResume,
         originalAnalysis,
         originalHistory,
-        messageContent
+        messageContent,
+        job,
+        targetLength || undefined
       );
 
       const assistantEntry: TailoringEntry = {
@@ -323,6 +367,21 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Target length selector (interactive post-tailoring) */}
+          {job.tailoredResume && !isEditing && (
+            <select
+              value={targetLength}
+              onChange={(e) => handleResizeResume(e.target.value as ResumeTargetLength)}
+              disabled={refineOp.isLoading}
+              className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+              title="Change target length"
+            >
+              <option value="1 page">1 page</option>
+              <option value="2 pages">2 pages</option>
+              <option value="no limit">No limit</option>
+            </select>
+          )}
+
           {/* Grade comparison */}
           {originalAnalysis && tailoredAnalysis && (
             <div className="flex items-center gap-2 text-sm">
@@ -342,19 +401,31 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
           )}
 
           {!job.tailoredResume && (
-            <Button
-              onClick={handleAutoTailor}
-              disabled={autoTailorOp.isLoading || !hasAIConfigured}
-            >
-              {autoTailorOp.isLoading ? (
-                <AILoadingIndicator isLoading label="Tailoring..." />
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-1" />
-                  Auto-Tailor
-                </>
-              )}
-            </Button>
+            <>
+              <select
+                value={targetLength}
+                onChange={(e) => setTargetLength(e.target.value as ResumeTargetLength)}
+                className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="" disabled>Max pages...</option>
+                <option value="1 page">1 page</option>
+                <option value="2 pages">2 pages</option>
+                <option value="no limit">No limit</option>
+              </select>
+              <Button
+                onClick={handleAutoTailor}
+                disabled={autoTailorOp.isLoading || !hasAIConfigured || !targetLength}
+              >
+                {autoTailorOp.isLoading ? (
+                  <AILoadingIndicator isLoading label="Tailoring..." />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    Auto-Tailor
+                  </>
+                )}
+              </Button>
+            </>
           )}
 
           {job.tailoredResume && (
@@ -565,7 +636,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
           </div>
 
           {/* Suggested Prompts */}
-          {history.length > 0 && suggestedPrompts.length > 0 && !userMessage && (
+          {history.length > 0 && !userMessage && (
             <div className="px-3 pb-2">
               <div className="flex flex-wrap gap-1">
                 {suggestedPrompts.map((prompt, i) => (
@@ -577,6 +648,12 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
                     {prompt}
                   </button>
                 ))}
+                <button
+                  onClick={() => setUserMessage('Make the resume shorter and more concise. Remove less-relevant content to fit the target length.')}
+                  className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                >
+                  Make it shorter
+                </button>
               </div>
             </div>
           )}

@@ -226,6 +226,8 @@ export interface EmailDraftEntry {
 
 export type EmailType = 'thank-you' | 'follow-up' | 'withdraw' | 'negotiate' | 'custom';
 
+export type ResumeTargetLength = '1 page' | '2 pages' | 'no limit';
+
 // Workflow tracking types
 export type RejectionReason = 'ghosted' | 'skills_mismatch' | 'culture_fit' | 'salary' | 'position_filled' | 'other';
 // InterviewType is now a string to support custom types

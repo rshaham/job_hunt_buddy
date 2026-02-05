@@ -32,3 +32,4 @@ dist-ssr
 .vercel
 .env*.local
 nul
+do_not_commit/
