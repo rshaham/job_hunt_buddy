@@ -306,6 +306,25 @@ Rules:
 
 Return ONLY the markdown-formatted resume. No explanations, no code blocks, no extra text.`;
 
+export const UPDATE_RESUME_PROMPT = `Update this resume with the new information the candidate has provided.
+
+Current resume (markdown):
+{resumeText}
+
+New information from the candidate:
+{details}
+
+Rules:
+- Add the new information where it belongs (e.g., a new role at the top of the experience section, new skills in the skills section)
+- Match the existing resume's markdown structure, heading levels, date format, tone, and bullet style
+- Write new bullets as concise, achievement-oriented resume bullets based ONLY on what the candidate provided
+- Do NOT invent employers, titles, dates, metrics, technologies, or achievements. If a detail (like a start date) was not provided, leave it out rather than guessing
+- If the new information means an existing entry is out of date (e.g., a role listed as "Present" has ended), update that entry only as far as the provided details support
+- Update the summary or headline only if the new information makes it inaccurate
+- Leave everything else in the resume exactly as it is - do not reword, reorder, or remove existing content
+
+Return ONLY the full updated resume in markdown. No explanations, no code blocks, no extra text.`;
+
 export const INTERVIEWER_ANALYSIS_PROMPT = `Analyze this interviewer's profile to help the candidate prepare for their interview.
 
 LinkedIn Bio / About Section:

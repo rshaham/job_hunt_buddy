@@ -19,7 +19,6 @@ export const openaiCompatibleProvider: AIProvider = {
       body: JSON.stringify({
         model: config!.model,
         messages: openaiMessages,
-        max_tokens: 4096,
       }),
     });
 

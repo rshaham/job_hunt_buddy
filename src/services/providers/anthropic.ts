@@ -4,6 +4,10 @@ import type { AIMessageWithTools, AIResponseWithTools, AnthropicToolDef } from '
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
+// The API requires a limit. Thinking counts against it, so leave plenty of room
+// beyond the longest visible output (a full resume).
+const MAX_TOKENS = 16384;
+
 export const anthropicProvider: AIProvider = {
   supportsToolCalling: true,
 
@@ -20,7 +24,7 @@ export const anthropicProvider: AIProvider = {
       },
       body: JSON.stringify({
         model: config!.model,
-        max_tokens: 4096,
+        max_tokens: MAX_TOKENS,
         system: systemPrompt,
         messages,
       }),
@@ -32,6 +36,9 @@ export const anthropicProvider: AIProvider = {
     }
 
     const data = await response.json();
+    if (data.stop_reason === 'max_tokens') {
+      throw new Error('The AI response was cut off before it finished. Please try again.');
+    }
     // Thinking blocks can precede the text block on current models
     return data.content.find((block: { type: string }) => block.type === 'text').text;
   },
@@ -52,7 +59,7 @@ export const anthropicProvider: AIProvider = {
       },
       body: JSON.stringify({
         model: config!.model,
-        max_tokens: 8192,
+        max_tokens: MAX_TOKENS,
         system: systemPrompt,
         messages,
         tools,

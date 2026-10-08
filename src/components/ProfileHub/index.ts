@@ -1,4 +1,5 @@
 export { ProfileHub } from './ProfileHub';
+export { ResumeUpdateModal } from './ResumeUpdateModal';
 export { StoryCard } from './StoryCard';
 export { StoriesSection } from './StoriesSection';
 export { AddStoryModal } from './AddStoryModal';

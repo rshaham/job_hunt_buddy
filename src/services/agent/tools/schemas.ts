@@ -325,6 +325,10 @@ export const scanCareerPagesSchema = z.object({
   maxJobsPerUrl: z.number().default(20).describe('Maximum jobs to extract per URL'),
 });
 
+export const updateResumeSchema = z.object({
+  details: z.string().describe('The new information to add to the resume, including everything the user said about it (employer, title, dates, responsibilities, achievements, skills)'),
+});
+
 // ============================================
 // Type exports
 // ============================================
@@ -339,6 +343,7 @@ export type GetResumeAnalysisInput = z.infer<typeof getResumeAnalysisSchema>;
 export type ListTimelineInput = z.infer<typeof listTimelineSchema>;
 export type UpdateJobStatusInput = z.infer<typeof updateJobStatusSchema>;
 export type AddNoteInput = z.infer<typeof addNoteSchema>;
+export type UpdateResumeInput = z.infer<typeof updateResumeSchema>;
 export type AddPrepMaterialInput = z.infer<typeof addPrepMaterialSchema>;
 export type AddTimelineEventInput = z.infer<typeof addTimelineEventSchema>;
 export type AddContactInput = z.infer<typeof addContactSchema>;

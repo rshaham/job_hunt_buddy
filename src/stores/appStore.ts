@@ -108,6 +108,7 @@ interface AppState {
   isRejectionModalOpen: boolean;
   isOfferModalOpen: boolean;
   isProfileHubOpen: boolean;
+  resumeUpdateDetails: string | null; // null = review closed; string = details to prefill
   pendingStatusChange: { jobId: string; newStatus: string } | null;
 
   // Career Coach State
@@ -193,6 +194,8 @@ interface AppState {
   closeOfferModal: () => void;
   openProfileHub: () => void;
   closeProfileHub: () => void;
+  openResumeUpdate: (details?: string) => void;
+  closeResumeUpdate: () => void;
 
   // Teleprompter actions
   openTeleprompterModal: (jobId?: string) => void;
@@ -261,6 +264,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isRejectionModalOpen: false,
   isOfferModalOpen: false,
   isProfileHubOpen: false,
+  resumeUpdateDetails: null,
   pendingStatusChange: null,
   careerCoachState: { history: [] },
   isTeleprompterModalOpen: false,
@@ -792,6 +796,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeOfferModal: () => set({ isOfferModalOpen: false, pendingStatusChange: null }),
   openProfileHub: () => set({ isProfileHubOpen: true }),
   closeProfileHub: () => set({ isProfileHubOpen: false }),
+  openResumeUpdate: (details = '') => set({ resumeUpdateDetails: details }),
+  closeResumeUpdate: () => set({ resumeUpdateDetails: null }),
 
   // Teleprompter actions
   openTeleprompterModal: (jobId?: string) => set({

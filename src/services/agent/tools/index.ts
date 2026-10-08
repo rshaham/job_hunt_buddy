@@ -51,6 +51,8 @@ export { addInterviewRoundTool } from './addInterviewRoundTool';
 export { updateInterviewRoundTool } from './updateInterviewRoundTool';
 export { listInterviewsTool } from './listInterviewsTool';
 export { generateContactIntelTool } from './generateContactIntelTool';
+// Base resume
+export { updateResumeTool } from './updateResumeTool';
 
 // Schemas
 export * from './schemas';
@@ -101,6 +103,7 @@ import { addInterviewRoundTool } from './addInterviewRoundTool';
 import { updateInterviewRoundTool } from './updateInterviewRoundTool';
 import { listInterviewsTool } from './listInterviewsTool';
 import { generateContactIntelTool } from './generateContactIntelTool';
+import { updateResumeTool } from './updateResumeTool';
 import type { ToolDefinitionBase } from '../../../types/agent';
 
 /**
@@ -163,6 +166,8 @@ export const allTools: ToolDefinitionBase[] = [
   updateInterviewRoundTool,
   listInterviewsTool,
   generateContactIntelTool,
+  // Base resume
+  updateResumeTool,
 ];
 
 /**
@@ -227,4 +232,6 @@ export const writeTools: ToolDefinitionBase[] = [
   addInterviewRoundTool,
   updateInterviewRoundTool,
   generateContactIntelTool,
+  // Base resume
+  updateResumeTool,
 ];

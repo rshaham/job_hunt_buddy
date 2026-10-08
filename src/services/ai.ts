@@ -9,6 +9,7 @@ import {
   REFINE_RESUME_SYSTEM_PROMPT,
   REFINE_COVER_LETTER_PROMPT,
   CONVERT_RESUME_TO_MARKDOWN_PROMPT,
+  UPDATE_RESUME_PROMPT,
   REWRITE_FOR_MEMORY_PROMPT,
   EXTRACT_STORY_METADATA_PROMPT,
   INTERVIEWER_ANALYSIS_PROMPT,
@@ -557,13 +558,8 @@ export async function refineCoverLetter(
   }
 }
 
-// Convert plain text resume to markdown format
-export async function convertResumeToMarkdown(plainText: string): Promise<string> {
-  const prompt = CONVERT_RESUME_TO_MARKDOWN_PROMPT.replace('{resumeText}', plainText);
-
-  const response = await callAI([{ role: 'user', content: prompt }]);
-
-  // Clean up response - remove any markdown code blocks if present
+// Remove a wrapping markdown code fence if the model added one
+function stripMarkdownFence(response: string): string {
   let markdown = response.trim();
   if (markdown.startsWith('```markdown')) {
     markdown = markdown.slice(11);
@@ -575,6 +571,26 @@ export async function convertResumeToMarkdown(plainText: string): Promise<string
   }
 
   return markdown.trim();
+}
+
+// Update the base resume with new information from the user (e.g., a new job)
+export async function updateResumeWithDetails(currentResume: string, details: string): Promise<string> {
+  const prompt = UPDATE_RESUME_PROMPT
+    .replace('{resumeText}', () => currentResume)
+    .replace('{details}', () => details);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+
+  return stripMarkdownFence(response);
+}
+
+// Convert plain text resume to markdown format
+export async function convertResumeToMarkdown(plainText: string): Promise<string> {
+  const prompt = CONVERT_RESUME_TO_MARKDOWN_PROMPT.replace('{resumeText}', plainText);
+
+  const response = await callAI([{ role: 'user', content: prompt }]);
+
+  return stripMarkdownFence(response);
 }
 
 // Convert plain text document to markdown format
@@ -601,18 +617,7 @@ Return ONLY the markdown-formatted document. No explanations, no code blocks, no
 
   const response = await callAI([{ role: 'user', content: prompt }]);
 
-  // Clean up response - remove any markdown code blocks if present
-  let markdown = response.trim();
-  if (markdown.startsWith('```markdown')) {
-    markdown = markdown.slice(11);
-  } else if (markdown.startsWith('```')) {
-    markdown = markdown.slice(3);
-  }
-  if (markdown.endsWith('```')) {
-    markdown = markdown.slice(0, -3);
-  }
-
-  return markdown.trim();
+  return stripMarkdownFence(response);
 }
 
 // Rewrite Q&A into a clean, reusable memory for profile
