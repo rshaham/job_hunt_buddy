@@ -42,7 +42,14 @@ export function DocumentsSection(): JSX.Element {
 
     setIsUploading(true);
     try {
-      const text = await extractTextFromPDF(file);
+      const text = file.type === 'application/pdf'
+        ? await extractTextFromPDF(file)
+        : (await file.text()).trim();
+
+      if (!text) {
+        throw new Error('This file is empty.');
+      }
+
       const wordCount = text.split(/\s+/).length;
 
       await addContextDocument({
@@ -54,7 +61,7 @@ export function DocumentsSection(): JSX.Element {
       showToast('Document added', 'success');
     } catch (error) {
       console.error('Failed to upload document:', error);
-      showToast('Failed to upload document', 'error');
+      showToast(error instanceof Error ? error.message : 'Failed to upload document', 'error');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -185,12 +192,12 @@ export function DocumentsSection(): JSX.Element {
           No documents uploaded
         </h3>
         <p className="text-foreground-muted max-w-md mb-6">
-          Upload PDFs like performance reviews or project docs for the AI to reference.
+          Upload PDFs, markdown or text files like performance reviews or project docs for the AI to reference.
         </p>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.txt,.md"
           onChange={handleUpload}
           className="hidden"
         />
@@ -221,7 +228,7 @@ export function DocumentsSection(): JSX.Element {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.txt,.md"
           onChange={handleUpload}
           className="hidden"
         />

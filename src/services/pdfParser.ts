@@ -43,5 +43,12 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     fullText += pageText + '\n\n';
   }
 
-  return fullText.trim();
+  const text = fullText.trim();
+
+  // Scanned or "printed to PDF" files can contain only images or outlined shapes
+  if (!text) {
+    throw new Error('No text found in this PDF. It looks like a scan or image-only file. Try exporting it with selectable text, or upload the content as a .txt or .md file.');
+  }
+
+  return text;
 }
