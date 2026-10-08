@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Job, AppSettings, Status, ContextDocument, SavedStory, CareerCoachState, CareerCoachEntry, UserSkillProfile, SkillCategory, SkillEntry, LearningTask, LearningTaskCategory, LearningTaskPrepSession, LearningTaskPrepMessage, CareerProject, InterviewRound, RejectionDetails, OfferDetails, SourceInfo, TeleprompterSession, TeleprompterCategory, TeleprompterRoundupItem, TeleprompterFeedback, CustomInterviewType, TeleprompterKeyword, TeleprompterCustomType, Contact } from '../types';
-import { DEFAULT_INTERVIEW_TYPES, DEFAULT_SETTINGS, getInterviewTypeLabel } from '../types';
+import { DEFAULT_INTERVIEW_TYPES, DEFAULT_SETTINGS, SUPERSEDED_ANTHROPIC_MODELS, getInterviewTypeLabel } from '../types';
 import { generateFlatInitialTeleprompterKeywords } from '../services/ai';
 import * as db from '../services/db';
 import { saveSession, getTeleprompterCustomTypes, saveTeleprompterCustomType, saveFeedbackBatch } from '../services/db';
@@ -283,12 +283,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         settings.providers = {
           anthropic: {
             apiKey: settings.apiKey,
-            model: settings.model || 'claude-sonnet-4-5',
+            model: settings.model || 'claude-sonnet-5-5',
           },
           'openai-compatible': { apiKey: '', model: 'llama3.2', baseUrl: 'http://localhost:11434/v1' },
           gemini: { apiKey: '', model: 'gemini-1.5-flash' },
         };
         // Save migrated settings
+        await db.saveSettings(settings);
+      }
+
+      // Upgrade a saved Anthropic model from an older preset to its current replacement
+      const upgradedModel = SUPERSEDED_ANTHROPIC_MODELS[settings.providers?.anthropic?.model];
+      if (upgradedModel) {
+        settings.providers.anthropic.model = upgradedModel;
         await db.saveSettings(settings);
       }
 

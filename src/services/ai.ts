@@ -52,7 +52,7 @@ function getAIConfig(): { provider: ProviderType; config: ProviderSettings } {
       provider: 'anthropic',
       config: {
         apiKey: decodeApiKey(settings.apiKey),
-        model: settings.model || 'claude-sonnet-4-5',
+        model: settings.model || 'claude-sonnet-5-5',
       },
     };
   }
@@ -695,7 +695,7 @@ async function convertIntelToJson(markdown: string): Promise<string> {
     const response = await callAI(
       [{ role: 'user', content: prompt }],
       undefined,
-      { model: 'claude-haiku-4-5' }
+      { model: 'claude-haiku-5-5' }
     );
 
     // Extract and validate JSON

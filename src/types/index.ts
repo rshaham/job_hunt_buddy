@@ -634,9 +634,10 @@ export interface ProviderSettings {
 // Provider-specific model presets
 export const PROVIDER_MODELS: Record<ProviderType, { id: string; name: string; description: string }[]> = {
   anthropic: [
-    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5', description: 'Best balance of speed and intelligence' },
-    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', description: 'Most capable, best for complex analysis' },
-    { id: 'claude-haiku-4-5', name: 'Claude 4.5 Haiku', description: 'Fastest responses, good for quick tasks' },
+    { id: 'claude-sonnet-5-5', name: 'Claude Sonnet 5.5', description: 'Best balance of speed and intelligence' },
+    { id: 'claude-opus-5-5', name: 'Claude Opus 5.5', description: 'Most capable, best for complex analysis' },
+    { id: 'claude-fable-5-1', name: 'Claude Fable 5.1', description: 'Deepest reasoning, slowest and most expensive' },
+    { id: 'claude-haiku-5-5', name: 'Claude Haiku 5.5', description: 'Fastest responses, good for quick tasks' },
   ],
   'openai-compatible': [
     { id: 'llama3.2', name: 'Llama 3.2', description: "Meta's latest model" },
@@ -648,6 +649,13 @@ export const PROVIDER_MODELS: Record<ProviderType, { id: string; name: string; d
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Most capable' },
     { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro Preview', description: 'Flagship model' },
   ],
+};
+
+// Saved Anthropic model IDs from older presets, mapped to their current replacement
+export const SUPERSEDED_ANTHROPIC_MODELS: Record<string, string> = {
+  'claude-sonnet-4-5': 'claude-sonnet-5-5',
+  'claude-opus-4-5': 'claude-opus-5-5',
+  'claude-haiku-4-5': 'claude-haiku-5-5',
 };
 
 // Legacy - kept for backward compatibility
@@ -805,7 +813,7 @@ export interface SemanticSearchOptions {
 export const DEFAULT_SETTINGS: AppSettings = {
   activeProvider: 'anthropic',
   providers: {
-    anthropic: { apiKey: '', model: 'claude-sonnet-4-5' },
+    anthropic: { apiKey: '', model: 'claude-sonnet-5-5' },
     'openai-compatible': { apiKey: '', model: 'llama3.2', baseUrl: 'http://localhost:11434/v1' },
     gemini: { apiKey: '', model: 'gemini-1.5-flash' },
   },

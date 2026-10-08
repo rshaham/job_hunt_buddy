@@ -331,7 +331,7 @@ export function SettingsModal() {
 
                     {(isCustomModel || customModel) && (
                       <Input
-                        placeholder="Enter model ID (e.g., claude-sonnet-4-5-20250514)"
+                        placeholder="Enter model ID (e.g., claude-sonnet-5-5)"
                         value={customModel || modelInput}
                         onChange={(e) => handleCustomModelChange(e.target.value)}
                       />
