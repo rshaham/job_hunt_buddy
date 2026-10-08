@@ -32,7 +32,8 @@ export const anthropicProvider: AIProvider = {
     }
 
     const data = await response.json();
-    return data.content[0].text;
+    // Thinking blocks can precede the text block on current models
+    return data.content.find((block: { type: string }) => block.type === 'text').text;
   },
 
   async callWithTools(

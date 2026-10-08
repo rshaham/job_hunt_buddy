@@ -91,7 +91,7 @@ src/
 
 ### AI Integration
 
-- Use simple model aliases: `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-haiku-4-5`
+- Use simple model aliases: `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-haiku-5-5`
 - Access settings outside React via `useAppStore.getState()`
 - API key is base64 encoded in storage
 - Prompts are in `src/utils/prompts.ts` - always return JSON format

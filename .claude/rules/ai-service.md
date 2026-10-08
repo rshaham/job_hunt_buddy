@@ -55,7 +55,7 @@ IMPORTANT:
 const model = getModel(); // Returns user-selected model alias
 
 // Available aliases
-'claude-sonnet-4-5'  // Default, balanced
-'claude-opus-4-5'    // Most capable, slower
-'claude-haiku-4-5'   // Fastest, simpler tasks
+'claude-sonnet-5-5'  // Default, balanced
+'claude-opus-5-5'    // Most capable, slower
+'claude-haiku-5-5'   // Fastest, simpler tasks
 ```
