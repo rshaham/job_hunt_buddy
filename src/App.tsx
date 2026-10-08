@@ -17,7 +17,7 @@ import { Sidebar } from './components/Sidebar';
 import { RejectionModal } from './components/JobDetail/RejectionModal';
 import { OfferModal } from './components/JobDetail/OfferModal';
 import { TeleprompterModal } from './components/TeleprompterModal';
-import { ProfileHub } from './components/ProfileHub';
+import { ProfileHub, ResumeUpdateModal } from './components/ProfileHub';
 
 function App() {
   const { loadData, isLoading, selectedJobId, jobs, settings, openAddJobModal, openGettingStartedModal } = useAppStore();
@@ -132,6 +132,7 @@ function App() {
       <TeleprompterModal />
       <ProfileHub />
       <CommandBar />
+      <ResumeUpdateModal />
       <ToastContainer />
       <Analytics />
     </div>

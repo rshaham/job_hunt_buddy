@@ -20,8 +20,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import * as Diff from 'diff';
-import { AILoadingIndicator, Button, ConfirmModal, ThinkingBubble } from '../ui';
+import { AILoadingIndicator, Button, ConfirmModal, TextDiff, ThinkingBubble } from '../ui';
 import { useAppStore } from '../../stores/appStore';
 import { useAIOperation } from '../../hooks/useAIOperation';
 import { autoTailorResume, refineTailoredResume, gradeResume, rewriteForMemory } from '../../services/ai';
@@ -342,12 +341,8 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
   // Use AI-generated follow-up questions from auto-tailoring
   const suggestedPrompts = job.tailoringSuggestions || [];
 
-  // Compute diff between original and tailored resume (use edited content if editing)
+  // Diff compares the original against the tailored resume (use edited content if editing)
   const currentTailoredContent = isEditing ? editedTailoredResume : tailoredResume;
-  const diffParts = useMemo(() => {
-    if (!job.tailoredResume && !isEditing) return [];
-    return Diff.diffWords(originalResume, currentTailoredContent);
-  }, [originalResume, currentTailoredContent, job.tailoredResume, isEditing]);
 
   return (
     <div className="flex flex-col h-full">
@@ -748,22 +743,7 @@ export function ResumeTailoringView({ job, onBack, initialKeyword }: ResumeTailo
 
           {viewMode === 'diff' && job.tailoredResume ? (
             <div className="flex-1 overflow-y-auto p-4">
-              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                {diffParts.map((part, index) => (
-                  <span
-                    key={index}
-                    className={
-                      part.added
-                        ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
-                        : part.removed
-                        ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 line-through'
-                        : ''
-                    }
-                  >
-                    {part.value}
-                  </span>
-                ))}
-              </div>
+              <TextDiff original={originalResume} updated={currentTailoredContent} />
             </div>
           ) : viewMode === 'compare' && job.tailoredResume ? (
             <div className="flex-1 grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 overflow-hidden">

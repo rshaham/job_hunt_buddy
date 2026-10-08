@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Trash2, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Upload, FileText, Trash2, Loader2, Eye, EyeOff, Sparkles } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { Button, ConfirmModal } from '../ui';
 import { useAppStore } from '../../stores/appStore';
@@ -8,7 +8,7 @@ import { convertResumeToMarkdown } from '../../services/ai';
 import { showToast } from '../../stores/toastStore';
 
 export function ResumeSection(): JSX.Element {
-  const { settings, updateSettings } = useAppStore();
+  const { settings, updateSettings, openResumeUpdate } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -62,6 +62,10 @@ export function ResumeSection(): JSX.Element {
 
   function togglePreview(): void {
     setShowPreview(!showPreview);
+  }
+
+  function handleUpdateWithAI(): void {
+    openResumeUpdate();
   }
 
   function openClearConfirm(): void {
@@ -138,6 +142,10 @@ export function ResumeSection(): JSX.Element {
             onChange={handleFileUpload}
             className="hidden"
           />
+          <Button variant="secondary" size="sm" onClick={handleUpdateWithAI}>
+            <Sparkles className="w-4 h-4 mr-1" />
+            Update with AI
+          </Button>
           <Button
             variant="secondary"
             size="sm"
